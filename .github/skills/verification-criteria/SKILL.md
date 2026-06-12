@@ -76,6 +76,12 @@ Determine mode from the flowchart above.
 | B — Audit VC Quality | SMARTR-OC + CK-01~CK-10 Audit (B.0~B.4) | `references/vc-workflow-b.md` | VC 文档（md/xlsx/csv） | SMARTR-OC 评分表 + CK 清单 + 质量审核报告 |
 | C — Audit Coverage | Coverage completeness & orphan detection (C.0~C.5) | `references/vc-workflow-c.md` | 需求文档 + VC 文档（可同文件） | 覆盖率矩阵 + UNCOVERED/ORPHAN 清单 + 审计报告 |
 
+**Workflow 步骤速览**（详细步骤见各 workflow 文件）：
+
+- **A (VC Generation)**: A.0 解析需求 → A.1 分类需求类型 → A.2 逐条生成VC（5-element + Source Depth）→ A.3 SMARTR-OC 自检（≥6/8）→ A.4 覆盖率审计，回退补齐遗漏
+- **B (VC Quality Audit)**: B.0 解析VC文档 → B.1 分类VC类型 → B.2 SMARTR-OC 八维评分 + CK-01~CK-10 checklist → B.3 汇总 disposition（Pass/Revise/Blocked）→ B.4 输出质量审核报告
+- **C (Coverage Audit)**: C.0 建立需求+VC ID索引 → C.1 正向追溯（需求→VC）→ C.2 反向追溯（VC→需求）→ C.3 孤儿VC检测 → C.4 重复覆盖检测 → C.5 输出覆盖率矩阵 + 审计报告
+
 🔴 **CHECKPOINT · 🛑 STOP** — 加载 workflow 文件后、执行第一步之前，向用户展示 todo list，确认后再开始执行。
 
 ## 并行子Agent调度 (Parallel Dispatch)
