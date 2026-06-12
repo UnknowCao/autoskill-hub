@@ -20,6 +20,8 @@ flowchart TD
 
 Never assume the user's intent. "review my VCs" → Mode B, not A. If ambiguous, use `vscode_askQuestions` to confirm which mode: "Which would you like me to do — generate new VCs, audit existing VC quality, or audit VC coverage?"
 
+🔴 **CHECKPOINT · 🛑 STOP** — 模式确认后，暂停向用户复述所选模式及下一步操作，等用户说"继续"/"OK"后再加载对应 workflow 文件。**绝不自行跳转模式。**
+
 ## VC-First Methodology
 
 **Core Principle**: Write the VC simultaneously with every requirement, not after. VC is the requirement's "other half" — the requirement says "what"; the VC says "how we prove it."
@@ -38,6 +40,8 @@ When a VC **cannot** be written for a requirement, the requirement is immature. 
 
 **Escalation rule**: If ≥3 requirements in a review session are flagged VC-BLOCKED, stop and reassess the requirements baseline.
 
+🔴 **CHECKPOINT · 🛑 STOP** — 若触发升级规则（≥3 VC-BLOCKED），暂停所有 VC 工作，向用户报告问题需求清单，等用户决定"修订需求后继续"或"终止本次会话"后再行动。
+
 ## Workflows
 
 Determine mode from the flowchart above.
@@ -54,6 +58,8 @@ Determine mode from the flowchart above.
 | B — Audit VC Quality | SMARTR-OC + CK-01~CK-10 Audit (B.0~B.4) | `references/vc-workflow-b.md` |
 | C — Audit Coverage | Coverage completeness & orphan detection (C.0~C.5) | `references/vc-workflow-c.md` |
 
+🔴 **CHECKPOINT · 🛑 STOP** — 加载 workflow 文件后、执行第一步之前，向用户展示 todo list，确认后再开始执行。
+
 ## Key Principles
 
 1. **VC-First**: VC is written simultaneously with requirements, not after
@@ -68,6 +74,10 @@ Determine mode from the flowchart above.
    - `[E]` **Engineering judgment**: domain convention (e.g. automotive three-temperature -40/+25/+85°C, N=20 for functional tests)
    - `[A]` **Assumption / unknown**: value is unconfirmed — **MUST** document the assumption; this flag triggers an automatic `A = ✗` in SMARTR-OC scoring
    - 🔴 **Hard Gate**: If ≥3 values in a single VC carry `[A]`, that VC is VC-BLOCKED and the requirement must be revised before the VC can proceed.
+
+🔴 **CHECKPOINT** — 每条 VC 生成后、进入下一条之前：向用户展示该 VC 及其 SMARTR-OC 自检结果。若用户不满意，当场修订后再继续。
+
+🔴 **CHECKPOINT** — Workflow 最终输出前：展示完整 VC 文档 + 覆盖率报告摘要，等用户确认后再输出最终文件。
 
 ## References
 
