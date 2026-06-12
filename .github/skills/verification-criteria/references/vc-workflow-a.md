@@ -9,6 +9,8 @@ Follow VC-First methodology: VC is written simultaneously with each requirement,
 
 **IMMEDIATELY after loading this workflow**, call `manage_todo_list` with these items. Mark each `in-progress` before starting and `completed` immediately after finishing.
 
+**Sequential mode (≤ 50 requirements)**:
+
 ```
 | # | Title | Status |
 |---|-------|--------|
@@ -18,6 +20,18 @@ Follow VC-First methodology: VC is written simultaneously with each requirement,
 | 4 | A.2a Source Depth 标注（加载 vc-source-depth.md，逐字段溯源） | not-started |
 | 5 | A.3 SMARTR-OC 自检（加载 vc-smartr-oc.md，逐条打分） | not-started |
 | 6 | A.4 覆盖率审计（100% 覆盖验证 + 覆盖率矩阵） | not-started |
+```
+
+**Parallel mode (> 50 requirements)**:
+
+```
+| # | Title | Status |
+|---|-------|--------|
+| 1 | A.0 确认需求文档来源 | not-started |
+| 2 | A.1 解析需求 + 按功能域拆分 | not-started |
+| 3 | A.2 并行分派子Agent（按功能域） | not-started |
+| 4 | 合并子Agent输出 + 分层复核 | not-started |
+| 5 | A.4 覆盖率审计 + 汇总报告 | not-started |
 ```
 
 > **Important**: If a step is iterative (e.g., A.2 → A.2a → A.3 → A.4 loop-back), keep the todo item `in-progress` until the loop converges. Do NOT mark `completed` prematurely.
@@ -57,11 +71,15 @@ flowchart TD
     ASK -->|"从头生成"| A1
     ASK -->|"切换到Workflow B"| B["→ Workflow B"]
     ASK -->|"切换到Workflow C"| C["→ Workflow C"]
-    A1 --> A2["A.2 逐条生成VC"]
+    A1 --> GATE{"需求数量 > 50?"}
+    GATE -->|"否 (≤50)"| A2["A.2 逐条生成VC (顺序)"]
+    GATE -->|"是 (>50)"| PARALLEL["A.2 并行分派子Agent"]
+    PARALLEL --> MERGE["合并 + 分层复核"]
+    MERGE --> A4["A.4 覆盖率审计"]
     A2 --> A2a["A.2a Source Depth 标注"]
     A2a -->|"≥3个 [A] → VC-BLOCKED"| A2
     A2a --> A3["A.3 SMARTR-OC自检"]
-    A3 --> A4["A.4 覆盖率审计"]
+    A3 --> A4
     A4 -->|"有未覆盖 🔴"| A2
     A4 -->|"100% 覆盖 ✅"| DONE["输出：VC + Source Depth标注 + 覆盖率报告"]
 ```
@@ -120,7 +138,108 @@ Parse the identified system requirements (table, list, markdown, or free text). 
 
 ---
 
-### A.2 VC Generation (per requirement)
+### A.2 VC Generation
+
+#### A.2.0 Dispatch Gate
+
+**If requirements count > 50** → skip sequential A.2/A.2a/A.3, enter parallel dispatch:
+
+1. **Split**: Group requirements by functional domain (see `../SKILL.md §并行子Agent调度`). Each sub-batch ≤ 30 requirements, domains not split across agents.
+2. **Launch**: For each sub-batch, call `runSubagent` with the prompt template below. Launch all subAgents in parallel.
+3. **Collect**: Gather all subAgent outputs; each subAgent writes its VCs to `{workspace}/BMS_VC_Sub_{domain}.md`.
+4. **Merge**: Concatenate all subAgent outputs into the master VC document.
+5. **Review** (layered SMARTR-OC audit, per `../SKILL.md §主Agent职责`):
+   - 8/8 → trust
+   - 6-7/8 → spot-check 20%; if 1 mismatch → full audit that agent
+   - <6/8 → full audit
+   - Anomaly: any subAgent's mean score deviates >1.0 from global → full audit
+6. **Proceed to A.4** (coverage audit, main agent executes).
+
+##### SubAgent Prompt Template
+
+Each subAgent receives this self-contained prompt. **Bold** sections are inlined; paths are for the subAgent to `read_file` on demand.
+
+````markdown
+You are generating Verification Criteria (VC) for a subset of system requirements.
+
+## Requirements
+
+{requirement_subset_with_full_text_and_cross_references}
+
+## Domain Context
+
+- Domain: {functional_domain_name} (e.g., Battery Protection, Thermal Management)
+- Industry: Automotive BMS (Battery Management System)
+- Conventions: Three-temperature testing (-40°C, +25°C, +85°C); N=100 for safety functions; HIL as primary test rig
+
+## Hard Gates (MANDATORY — read first)
+
+Load `references/vc-hard-gates.md` now. These 10 gates are non-negotiable:
+- Gate 1: No subjective words in Pass/Fail
+- Gate 2: Domain-boundary coverage (3 temp points for physical quantities)
+- Gate 3: Source Depth ≥3[A] → VC-BLOCKED; any [A] → A=✗
+- Gate 4: Double-100 for safety functions
+- Gate 5-10: Anti-patterns #1-#9 (see file)
+
+## Workflow
+
+1. **Load references** (use `read_file`):
+   - `references/vc-smartr-oc.md` — SMARTR-OC 8-point rubric (always needed)
+   - `references/vc-source-depth.md` — Source Depth annotation rules (always needed)
+   - `assets/vc-template.md` — VC table + type-specific templates (always needed)
+   - `references/vc-safety-patterns.md` — IF any requirement has ASIL or safety implications
+   - `references/vc-sequence-guide.md` — IF any VC involves multi-scenario/causal-chain
+   - `references/vc-exceptions.md` — IF you encounter an anomaly
+
+2. **For each requirement** in your subset:
+   a. Determine requirement type → select template (see `assets/vc-template.md`):
+      - ASIL level → Template C (Safety)
+      - Timing/rate/accuracy → Template B (Performance)
+      - Bus/protocol/signal → Template D (Interface)
+      - Other → Template A (Functional)
+   b. Choose verification method via decision tree (Gate 7 in hard-gates)
+   c. Fill 5-element VC structure
+   d. Annotate Source Depth for every numeric value (Gate 3)
+   e. Run SMARTR-OC self-check; score ≥ 6/8 to pass
+   f. If SMARTR-OC < 6/8 after 3 revisions → mark VC-BLOCKED, record reason, move to next
+
+3. **Output format** (write to file `{workspace}/BMS_VC_Sub_{domain}.md`):
+   ```markdown
+   ## {domain_name}
+   
+   ### VC-{REQ-ID} — {brief_title}
+   
+   | VC ID | Linked Requirement | Verification Method | Test Conditions | Measurement Target | Pass/Fail Criterion |
+   |-------|-------------------|---------------------|-----------------|--------------------|---------------------|
+   | VC-{REQ-ID} | ... | ... | ... | ... | ... |
+   
+   **SMARTR-OC**:
+   | S | M | A | R | T | R | O | C | Score |
+   |---|---|---|---|---|---|---|---|---|
+   | ✅/✗ | ... | ... | ... | ... | ... | ... | ... | **X/8** |
+   
+   **Source Depth**: {value1} [R:REQ-ID] | {value2} [E:convention] | ...
+   
+   > ⚠️ {issues if any}
+   
+   ---
+   ```
+   
+   For any `[A]` assumption, append an Assumption Log entry at end of file:
+   ```markdown
+   | VC ID | Field | Assumed Value | Rationale | Resolution Owner |
+   |-------|-------|---------------|-----------|------------------|
+   ```
+
+## Behavior Constraints
+
+- ⛔ **DO NOT wait for user confirmation** — produce complete output, no checkpoints
+- VC-BLOCKED → mark 🔴 with blocking reason, continue to next requirement
+- Anomaly → mark `⚠️ degraded: {reason}`, continue
+- Do not fabricate values; when unknown, mark `[A]` and document assumption
+````
+
+#### A.2.1 Sequential Mode (≤ 50 requirements) (per requirement)
 
 **Load `assets/vc-template.md` now** for VC table templates and type-specific structured templates (functional, performance, safety, interface).
 

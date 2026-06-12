@@ -1,0 +1,9 @@
+timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-06-12T10:00	277a59f	verification-criteria	-	66.9	baseline	-	初始评估	dry_run
+2026-06-12T10:15	1590c47	verification-criteria	66.9	69.3	keep	dim4	添加5个🔴CHECKPOINT标记	dry_run
+2026-06-12T10:20	f2a4201	verification-criteria	69.3	71.7	keep	dim9	添加9条Do Not黑名单	dry_run
+2026-06-12T10:25	046a265	verification-criteria	71.7	74.5	keep	dim1	丰富frontmatter触发词+场景	dry_run
+2026-06-12T10:30	a70bced	verification-criteria	74.5	77.9	keep	dim5	模式判定规则+I/O规格+提问模板	dry_run
+2026-06-12T11:00	rebaseline_r5	verification-criteria	-	73.5	baseline	-	第5轮优化基线（更严格rubric重评）	dry_run
+2026-06-12T11:15	round5_r1	verification-criteria	73.5	77.7	keep	dim3	新增异常与边界条件9条fallback表	dry_run
+2026-06-12T11:20	round5_r2	verification-criteria	77.7	79.7	keep	dim6+dim7	Key Principles去冗余+References完整性校验	dry_run
