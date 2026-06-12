@@ -98,3 +98,21 @@ Load on demand — only when the corresponding workflow step is reached.
 | `references/vc-framework.md` | User asks about VC-First methodology theory, SMARTR-OC model rationale |
 | `references/vc-anti-patterns.md` | User asks for VC examples, or a generated VC looks suspicious |
 | `references/vc-sequence-guide.md` | **A.2**: VC involves multi-scenario / causal-chain / baseline recovery — 4-question decision framework for Sequence constraints |
+
+## ⛔ Do Not — 反例黑名单
+
+以下反模式在执行任何 workflow 时**一律禁止**。遇到即标记为错误，必须修正。
+
+| # | 反模式 | 为什么禁止 | 替代做法 |
+|---|--------|-----------|---------|
+| 1 | **把需求原文复述为 VC** | 零信息增量，无法指导测试 | VC 必须比需求更具体：加上方法、条件、数值判据 |
+| 2 | **VC 中引用 Test Case 编号**（"详见 TC-001"） | 循环引用——VC 是 TC 的上游输入 | 在 VC 中直接写明方法/条件/判据 |
+| 3 | **使用主观形容词**（"良好"/"合理"/"足够"/"正常"/"快速"/"稳定"/robust/sufficient/adequate） | 无法客观判定 pass/fail | 必须用 `≤/≥/=` + 数值 + 单位 |
+| 4 | **跳过覆盖率审计直接结束**（A.4 不执行） | 遗漏未覆盖需求，ASPICE 不合格 | 每次生成 VC 后必须跑 A.4，直到 100% 覆盖 |
+| 5 | **所有 VC 统一用 "Test" 方法** | 不同需求类型需不同验证方法 | 用决策树选择：物理测量→Test；理论推导→Analysis；文档/布局→Inspection；操作演示→Demonstration |
+| 6 | **编造无来源的数值**（凭感觉写阈值/样本量/温度） | 看似专业实则不可验证 | 每个数值标注 `[R]/[D]/[S]/[E]/[A]` 来源（见 `references/vc-source-depth.md`） |
+| 7 | **只在常温(25°C)测试** | 边界和异常条件是失效高发区 | 至少覆盖：常温 + 需求工作域下限 + 上限（如 -40°C/+85°C） |
+| 8 | **静默跳过异常或错误** | 破坏流程完整性，用户无法察觉 | 遇到异常必须向用户报告，按 fallback 规则处理 |
+| 9 | **跳过 SMARTR-OC 自检直接输出** | 质量无保障，可能产出不可测试的 VC | 每条 VC 必须 SMARTR-OC ≥ 6/8 才能进入下一步 |
+
+> 完整反例库见 `references/vc-anti-patterns.md`。本表为主文件必看的最小集。
