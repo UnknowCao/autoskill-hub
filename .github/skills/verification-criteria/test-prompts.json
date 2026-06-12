@@ -1,17 +1,17 @@
 [
   {
     "id": 1,
-    "prompt": "帮我为 BMS_System_Requirements_100.md 生成验证标准",
-    "expected": "应进入 Workflow A: 解析需求文档 → 逐条生成 VC（5-element结构 + Source Depth标注）→ SMARTR-OC 自检 → 覆盖率审计"
+    "prompt": "帮我为这个BMS需求生成验证标准：\nREQ-001: 电池组总电压测量精度≤±0.5%FSR，工作温度-40°C~+85°C\nREQ-002: BMS应在单体过压发生后100ms内断开主继电器\nREQ-003: 系统上电自检时间≤5秒，覆盖所有AFE通道",
+    "expected": "应进入 Workflow A: 逐条生成 VC（5-element 结构），每条标注 Source Depth [R]/[D]/[S]/[E]/[A]，做 SMARTR-OC 自检（≥6/8），覆盖常温和边界温度"
   },
   {
     "id": 2,
-    "prompt": "审核一下 BMS_Verification_Criteria.md 的 VC 质量",
-    "expected": "应进入 Workflow B: 解析已有 VC → SMARTR-OC 8点评分 → CK-01~CK-10 检查 → 输出质量审核报告（含 disposition）"
+    "prompt": "评审这些VC的质量，按SMARTR-OC打分：\nVC-001: 测量精度应良好\nVC-002: 详见TC-005\nVC-003: 在25°C常温下用万用表测电压≤±0.5%FSR",
+    "expected": "应进入 Workflow B: 识别反模式（VC-001主观形容词/VC-002循环引用/VC-003仅常温），SMARTR-OC 逐条评分，CK-01~CK-10 checklist 逐项检查，输出质量审核报告"
   },
   {
     "id": 3,
-    "prompt": "检查 BMS_System_Requirements_100.md 和 BMS_Verification_Criteria.md 之间的覆盖率",
-    "expected": "应进入 Workflow C: 解析需求+VC关联 → 完整性检查 → 孤儿检测 → 构建覆盖率矩阵 → 输出审计报告"
+    "prompt": "这是我的需求列表[REQ-001~REQ-010]和VC列表[VC-001~VC-008]，帮我检查哪些需求还没写VC、哪些VC对不上需求",
+    "expected": "应进入 Workflow C: 构建覆盖率矩阵，输出 UNCOVERED 需求清单 + ORPHAN VC 清单，给出覆盖率百分比"
   }
 ]
