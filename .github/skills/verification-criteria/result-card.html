@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darwin Skill · verification-criteria 优化报告</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    display:flex; justify-content:center; align-items:flex-start;
+    min-height:100vh; background:#FAFAF5;
+    font-family: 'Segoe UI', 'Noto Sans SC', sans-serif; padding:40px 20px;
+  }
+  .card {
+    width:900px; background:#FAFAF5; color:#1A1A1A;
+    border-radius:20px; overflow:hidden;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+  }
+
+  /* Brand bar */
+  .brand { background:#1A1A1A; padding:22px 44px; display:flex; justify-content:space-between; align-items:center; }
+  .brand-name { font-size:20px; font-weight:800; color:#fff; }
+  .brand-name .dot { color:#E8590C; }
+  .brand-date { font-size:14px; color:#888; }
+
+  /* Hero */
+  .hero { padding:36px 44px; display:flex; gap:40px; align-items:center; background:linear-gradient(180deg,#FAFAF5,#F5F0E8); }
+  .hero-left { flex-shrink:0; text-align:center; }
+  .score-ring {
+    width:180px; height:180px; border-radius:50%;
+    background:conic-gradient(#E8590C 0deg 310deg, #E8E0D4 310deg 360deg);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .score-inner {
+    width:148px; height:148px; border-radius:50%; background:#FAFAF5;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .score-num { font-size:56px; font-weight:900; color:#1A1A1A; line-height:1; }
+  .score-max { font-size:18px; color:#B0A898; font-weight:600; }
+  .score-label { font-size:12px; color:#999; margin-top:2px; letter-spacing:0.1em; }
+  .hero-right { flex:1; }
+  .hero-title { font-size:28px; font-weight:900; line-height:1.3; }
+  .hero-skill { color:#E8590C; }
+  .hero-delta {
+    display:inline-flex; align-items:center; gap:6px;
+    background:#E8590C; color:#fff; padding:8px 22px; border-radius:10px;
+    font-size:32px; font-weight:900; margin-top:12px;
+    box-shadow: 0 3px 12px rgba(232,89,12,0.3);
+  }
+  .hero-delta-label { font-size:14px; font-weight:700; opacity:0.9; }
+
+  /* Breakthroughs */
+  .break { padding:0 44px; display:flex; gap:16px; margin-top:-8px; }
+  .bk-card {
+    flex:1; border-radius:14px; padding:22px 22px 18px; position:relative;
+  }
+  .bk-primary { background:linear-gradient(135deg,#E8590C,#FF8A4C); color:#fff; flex:1.3; }
+  .bk-secondary { background:#F0EAE0; border:2px solid #E0D8CC; }
+  .bk-label { font-size:11px; font-weight:700; letter-spacing:0.1em; margin-bottom:8px; text-transform:uppercase; }
+  .bk-primary .bk-label { color:rgba(255,255,255,0.7); }
+  .bk-secondary .bk-label { color:#999; }
+  .bk-dim { font-size:20px; font-weight:900; margin-bottom:4px; }
+  .bk-score { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
+  .bk-from { font-size:28px; opacity:0.5; text-decoration:line-through; text-decoration-thickness:2px; }
+  .bk-arrow { font-size:18px; opacity:0.5; }
+  .bk-to { font-size:42px; font-weight:900; line-height:1; }
+  .bk-secondary .bk-to { color:#E8590C; }
+  .bk-story { font-size:14px; line-height:1.5; }
+  .bk-primary .bk-story { color:rgba(255,255,255,0.85); }
+  .bk-secondary .bk-story { color:#666; }
+
+  /* Dims grid */
+  .dims { padding:28px 44px 8px; }
+  .dims-title { font-size:14px; font-weight:700; color:#999; letter-spacing:0.08em; margin-bottom:14px; }
+  .dims-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .dim-cell {
+    background:#F0EBE3; border-radius:10px; padding:14px 12px;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .dim-cell.improved { background:#FFF0E6; border:2px solid rgba(232,89,12,0.15); }
+  .dim-name { font-size:12px; font-weight:700; color:#888; }
+  .dim-bars { display:flex; gap:4px; align-items:flex-end; height:24px; }
+  .dim-bar { width:8px; border-radius:3px 3px 0 0; }
+  .dim-bar.before { background:#D0C8B8; height:100%; }
+  .dim-bar.after { background:#E8590C; height:100%; }
+  .dim-scores { font-size:13px; font-weight:700; color:#555; }
+  .dim-scores .new { color:#E8590C; }
+  .dim-delta { font-size:11px; font-weight:600; }
+  .dim-delta.up { color:#2B8A3E; }
+  .dim-delta.same { color:#999; }
+
+  /* Stats row */
+  .stats { padding:20px 44px 32px; display:flex; gap:24px; }
+  .stat { flex:1; background:#F0EBE3; border-radius:10px; padding:14px; text-align:center; }
+  .stat-val { font-size:28px; font-weight:900; color:#1A1A1A; }
+  .stat-label { font-size:12px; color:#888; margin-top:4px; font-weight:600; }
+
+  /* Footer */
+  .footer { background:#1A1A1A; padding:16px 44px; text-align:center; }
+  .footer-text { font-size:12px; color:#666; }
+  .footer-text a { color:#E8590C; text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Brand -->
+  <div class="brand">
+    <span class="brand-name">Darwin<span class="dot">.</span>skill 2.0</span>
+    <span class="brand-date">2026-06-12</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="score-ring">
+        <div class="score-inner">
+          <div class="score-num">86</div>
+          <div class="score-max">/100</div>
+          <div class="score-label">SKILL 评分</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-title">
+        <span class="hero-skill">verification-criteria</span><br>进化完成
+      </div>
+      <div style="font-size:15px;color:#666;margin-top:6px;line-height:1.5;">
+        VC 验证标准生成 · 审核 · 追溯 &nbsp;|&nbsp; ASPICE SYS.2 BP5
+      </div>
+      <div class="hero-delta">
+        <span class="hero-delta-label">提升</span> +7.9
+      </div>
+      <div style="font-size:13px;color:#999;margin-top:6px;">
+        78.3 → 86.2 &nbsp;|&nbsp; 3 轮优化 &nbsp;|&nbsp; 3/3 keep
+      </div>
+    </div>
+  </div>
+
+  <!-- Breakthrough cards -->
+  <div class="break">
+    <div class="bk-card bk-primary">
+      <div class="bk-label">🏆 最大突破</div>
+      <div class="bk-dim">Dim 3 · 失败模式编码</div>
+      <div class="bk-score">
+        <span class="bk-from">7</span><span class="bk-arrow">→</span><span class="bk-to">9</span>
+      </div>
+      <div class="bk-story">内联 10 条 if-then 三段式 fallback 规则表，含严重度(🔴/🟡) + escalation 列。HL-3 效应：Dim 5 / Dim 7 跟涨。</div>
+    </div>
+    <div class="bk-card bk-secondary">
+      <div class="bk-label">📈 第二突破</div>
+      <div class="bk-dim">Dim 1 · Frontmatter</div>
+      <div class="bk-score">
+        <span class="bk-from">7</span><span class="bk-arrow">→</span><span class="bk-to">9</span>
+      </div>
+      <div class="bk-story">恢复中英文触发词：生成VC / SMARTR-OC / verification criteria / coverage audit 等 12 个关键词。</div>
+    </div>
+  </div>
+
+  <!-- Dimensions grid -->
+  <div class="dims">
+    <div class="dims-title">9 维度评分速览</div>
+    <div class="dims-grid">
+      <div class="dim-cell improved">
+        <div class="dim-name">1 Frontmatter</div>
+        <div class="dim-scores"><span class="new">9</span>/10</div>
+        <div class="dim-delta up">▲ +2</div>
+      </div>
+      <div class="dim-cell improved">
+        <div class="dim-name">2 工作流清晰度</div>
+        <div class="dim-scores"><span class="new">9</span>/10</div>
+        <div class="dim-delta up">▲ +1</div>
+      </div>
+      <div class="dim-cell improved">
+        <div class="dim-name">3 失败模式编码</div>
+        <div class="dim-scores"><span class="new">9</span>/10</div>
+        <div class="dim-delta up">▲ +2</div>
+      </div>
+      <div class="dim-cell">
+        <div class="dim-name">4 检查点设计</div>
+        <div class="dim-scores">8/10</div>
+        <div class="dim-delta same">—</div>
+      </div>
+      <div class="dim-cell improved">
+        <div class="dim-name">5 可执行具体性</div>
+        <div class="dim-scores"><span class="new">9</span>/10</div>
+        <div class="dim-delta up">▲ +1</div>
+      </div>
+      <div class="dim-cell">
+        <div class="dim-name">6 资源整合度</div>
+        <div class="dim-scores">9/10</div>
+        <div class="dim-delta same">—</div>
+      </div>
+      <div class="dim-cell improved">
+        <div class="dim-name">7 整体架构</div>
+        <div class="dim-scores"><span class="new">9</span>/10</div>
+        <div class="dim-delta up">▲ +1</div>
+      </div>
+      <div class="dim-cell">
+        <div class="dim-name">8 实测表现</div>
+        <div class="dim-scores">8/10</div>
+        <div class="dim-delta same">⚠ dry</div>
+      </div>
+      <div class="dim-cell">
+        <div class="dim-name">9 反例黑名单</div>
+        <div class="dim-scores">9/10</div>
+        <div class="dim-delta same">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">3</div>
+      <div class="stat-label">优化轮次</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">100%</div>
+      <div class="stat-label">保留率 (3/3 keep)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">0</div>
+      <div class="stat-label">回滚 (revert)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">+5.3</div>
+      <div class="stat-label">最大单轮提升 (R1)</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-text">
+      Train your Skills like you train your models · <a href="https://github.com/alchaincyf/darwin-skill">github.com/alchaincyf/darwin-skill</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
