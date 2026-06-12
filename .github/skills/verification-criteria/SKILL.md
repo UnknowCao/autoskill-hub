@@ -1,11 +1,11 @@
 ---
 name: verification-criteria
-description: "Generate, audit, and trace verification criteria (VC) for functional system requirements. Three modes: (A) VC Generation — write VCs with 5-element structure, SMARTR-OC self-check, Source Depth annotation; (B) VC Quality Audit — score existing VCs against SMARTR-OC 8-point rubric + CK-01~CK-10 peer review checklist; (C) Coverage Audit — traceability matrix, orphan detection, 100% coverage verification. Follows ASPICE SYS.2 BP5, ISO/IEC 29148, VC-First methodology. Use when user mentions: '生成VC', '验证标准', '审核VC', 'SMARTR-OC', '覆盖率', 'traceability', 'verification criteria', 'VC质量', 'VC评分', 'verification audit', '需求验证', '测试标准'."
+description: "Generate, audit, and trace verification criteria (VC) for functional system requirements. Three modes: VC Generation (5-element + SMARTR-OC + Source Depth), VC Quality Audit (8-point rubric + CK checklist), Coverage Audit (traceability matrix + orphan detection). ASPICE SYS.2 BP5, ISO/IEC 29148, VC-First."
 ---
 
 # Verification Criteria Generator & Auditor
 
-Generate, review, and audit verification criteria (VC) for functional system requirements. Follows ASPICE SYS.2 BP5, ISO/IEC 29148, and VC-First methodology.
+Generate, audit, and trace VCs for functional system requirements. ASPICE SYS.2 BP5 / ISO/IEC 29148 / VC-First.
 
 ## Mode Selection
 
@@ -78,44 +78,94 @@ Determine mode from the flowchart above.
 
 🔴 **CHECKPOINT · 🛑 STOP** — 加载 workflow 文件后、执行第一步之前，向用户展示 todo list，确认后再开始执行。
 
+## 并行子Agent调度 (Parallel Dispatch)
+
+Workflow A 且需求数量 > 50 → 自动启用并行子Agent模式。
+
+### 触发条件
+- 需求总数 > 50
+- 仅 Workflow A (VC Generation) 支持；Workflow B/C 不走并行
+
+### 拆分策略
+按功能域拆分，每个子Agent处理完整的功能域：
+- 每个子Agent ≤ 30 条需求
+- 功能域不跨Agent拆分（保持上下文完整性）
+- 子Agent数 = 功能域按 30 条/Agent 合并，通常 3~5 个
+
+### 主Agent职责
+
+- **分派**: 读取需求文档 → 按功能域拆分 → 并行启动子Agent
+- **合并**: 收集所有子Agent输出 → 拼接为完整 VC 文档
+- **分层复核** (SMARTR-OC):
+  - 8/8 → 信任（低风险，错判仍是 ≥6/8）
+  - 6-7/8 → 随机抽样 20%，1 条不一致则扩至全量
+  - <6/8 → 全量复核（高风险，决定需求是否重写）
+  - 异常检测: 任一子Agent均分偏离全局 >1.0 → 全量复核该Agent
+- **覆盖率审计 (A.4)**: 主Agent独立执行
+- **CHECKPOINT 展示**: 合并后一次性展示批量结果（不逐条打断）
+
+### 子Agent Prompt 结构
+
+每个子Agent接收自包含 prompt，内联 + 按需读取混合：
+
+**📋 内联（必须，~2K tokens）**:
+- 需求子集（完整原文 + 交叉引用速查）
+- 领域上下文（BMS/汽车惯例等）
+- 🔴 Hard Gates 卡（10 条，见 `references/vc-hard-gates.md`）
+- 输出格式规范（编号/路径/AssumptionLog）
+- 行为约束（禁止等待用户确认、VC-BLOCKED 处理）
+
+**📁 按需读取（传路径，子Agent自行 `read_file`）**:
+- `references/vc-smartr-oc.md` — 始终需要
+- `references/vc-source-depth.md` — 始终需要
+- `assets/vc-template.md` — 始终需要
+- `references/vc-safety-patterns.md` — 仅 ASIL 需求
+- `references/vc-sequence-guide.md` — 仅多场景需求
+- `references/vc-exceptions.md` — 仅遇异常时
+
+### 子Agent失败处理
+- 单个子Agent失败 → 重试 1 次（相同 prompt）
+- 仍失败 → 主Agent降级为顺序处理该子批次
+- ≥2 个子Agent失败 → 终止并行，全局降级为顺序模式
+- 详见 `references/vc-exceptions.md`
+
+## 异常与边界条件
+
+预定义 fallback 规则见 `references/vc-exceptions.md`。核心原则：异常先告知用户，再按规则处理；绝不静默跳过或静默失败。
+
 ## Key Principles
 
-1. **VC-First**: VC is written simultaneously with requirements, not after
-2. **VC is a design activity**, not a documentation task
-3. **If you can't write a VC, the requirement isn't mature enough** — flag it
-4. **VC ownership**: Requirements engineer writes VC; test engineer reviews for testability
-5. **One VC verifies one independently verifiable aspect** — don't merge unrelated checks
-6. **Source Depth — No Unsourced Content**: Every value in a VC (thresholds, sample sizes, environment ranges, fault types, equipment precision) must be traceable to one of five source depths. See `references/vc-source-depth.md` for the full annotation system.
-   - `[R]` **Requirement-text**: value appears verbatim in the requirement
-   - `[D]` **Derived**: logically derived from the requirement (e.g. "全生命周期" → BOL/MOL/EOL)
-   - `[S]` **Standard**: cited from a named standard, regulation, or upstream specification
-   - `[E]` **Engineering judgment**: domain convention (e.g. automotive three-temperature -40/+25/+85°C, N=20 for functional tests)
-   - `[A]` **Assumption / unknown**: value is unconfirmed — **MUST** document the assumption; this flag triggers an automatic `A = ✗` in SMARTR-OC scoring
-   - 🔴 **Hard Gate**: If ≥3 values in a single VC carry `[A]`, that VC is VC-BLOCKED and the requirement must be revised before the VC can proceed.
+- **VC-First**: VC is written with every requirement, not after. If you can't write a VC, the requirement isn't mature enough.
+- **VC is a design activity**, not a documentation task.
+- **VC ownership**: Requirements engineer writes VC; test engineer reviews for testability.
+- **One VC = one independently verifiable aspect** — don't merge unrelated checks.
+- **Source Depth — No Unsourced Content**: Every numeric value in a VC must carry a source tag (`[R]`/`[D]`/`[S]`/`[E]`/`[A]`). Full annotation rules in `references/vc-source-depth.md`.
+  - Hard Gate: ≥3 `[A]` in one VC → VC-BLOCKED → revise the requirement.
+  - Any `[A]` → SMARTR-OC A (Achievable) = ✗ automatically.
 
-🔴 **CHECKPOINT** — 每条 VC 生成后、进入下一条之前：向用户展示该 VC 及其 SMARTR-OC 自检结果。若用户不满意，当场修订后再继续。
+🔴 **CHECKPOINT** — 每条 VC 生成后：向用户展示该 VC 及其 SMARTR-OC 自检结果。若用户不满意，当场修订后再继续。
 
 🔴 **CHECKPOINT** — Workflow 最终输出前：展示完整 VC 文档 + 覆盖率报告摘要，等用户确认后再输出最终文件。
 
 ## References
 
-Load on demand — only when the corresponding workflow step is reached.
+Load on demand — only when the corresponding workflow step is reached. Verify file exists before loading; if missing, fall back per `references/vc-exceptions.md` "引用文件缺失".
 
-| File | When to Load |
-|------|-------------|
-| `references/vc-workflow-a.md` | Workflow A selected (mode confirmed) |
-| `references/vc-workflow-b.md` | Workflow B selected (mode confirmed) |
-| `references/vc-workflow-c.md` | Workflow C selected (mode confirmed) |
-| `references/vc-smartr-oc.md` | **A.3 / B.2**: SMARTR-OC 8-point scoring rubric with operational checklist |
-| `references/vc-source-depth.md` | **A.2a / B.2**: Source Depth 5-level annotation system + threshold provenance check |
-| `assets/vc-template.md` | **A.2**: VC table template + 4 type-specific structured templates (functional, performance, safety, interface) |
-| `references/vc-safety-patterns.md` | **A.2**: requirement has ASIL level — safety margin rules, double-100 verification, test coverage matrix |
-| `assets/vc-checklist.md` | **B.2**: printable SMARTR-OC scoring form + peer review checklist (CK-01~CK-10) |
-| `references/vc-report-templates.md` | **A.4 / B.4 / C.5**: quality audit or coverage audit report templates |
-| `references/vc-handbook.md` | Deep-dive on 5-element structure, Top 10 pitfalls, or peer review checklist details |
-| `references/vc-framework.md` | User asks about VC-First methodology theory, SMARTR-OC model rationale |
-| `references/vc-anti-patterns.md` | User asks for VC examples, or a generated VC looks suspicious |
-| `references/vc-sequence-guide.md` | **A.2**: VC involves multi-scenario / causal-chain / baseline recovery — 4-question decision framework for Sequence constraints |
+- `references/vc-workflow-a.md` — Workflow A selected
+- `references/vc-workflow-b.md` — Workflow B selected
+- `references/vc-workflow-c.md` — Workflow C selected
+- `references/vc-smartr-oc.md` — **A.3 / B.2**: SMARTR-OC 8-point scoring rubric
+- `references/vc-source-depth.md` — **A.2a / B.2**: Source Depth 5-level annotation
+- `assets/vc-template.md` — **A.2**: VC table template + 4 type-specific templates
+- `references/vc-safety-patterns.md` — **A.2**: ASIL requirements → safety margins, Double-100, test matrix
+- `assets/vc-checklist.md` — **B.2**: SMARTR-OC scoring form + CK-01~CK-10 checklist
+- `references/vc-report-templates.md` — **A.4 / B.4 / C.5**: report templates
+- `references/vc-handbook.md` — Deep-dive on 5-element structure, Top 10 pitfalls
+- `references/vc-framework.md` — VC-First theory, SMARTR-OC rationale
+- `references/vc-anti-patterns.md` — VC examples, suspicious VC diagnosis
+- `references/vc-sequence-guide.md` — **A.2**: Multi-scenario/causal-chain Sequence constraints
+- `references/vc-exceptions.md` — Exception handling fallback rules
+- `references/vc-hard-gates.md` — **Parallel Dispatch**: 10 Hard Gates card inlined into subAgent prompts
 
 ## ⛔ Do Not — 反例黑名单
 
