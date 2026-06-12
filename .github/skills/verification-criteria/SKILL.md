@@ -18,7 +18,25 @@ flowchart TD
     Q1 -->|"不明确"| ASK["反问用户确认模式"]
 ```
 
-Never assume the user's intent. "review my VCs" → Mode B, not A. If ambiguous, use `vscode_askQuestions` to confirm which mode: "Which would you like me to do — generate new VCs, audit existing VC quality, or audit VC coverage?"
+**模式判定规则（按关键词匹配，优先级从高到低）**：
+
+| 用户说的关键词 | → 模式 | 理由 |
+|---------------|--------|------|
+| "生成"/"编写"/"创建" + VC/验证标准 | A | 明确是创建新内容 |
+| "审核"/"评审"/"检查质量"/"SMARTR-OC"/"评分" | B | 明确是质量评估 |
+| "覆盖率"/"追溯"/"traceability"/"覆盖矩阵"/"遗漏" | C | 明确是覆盖性审计 |
+| "review" + "VC"（无"生成"/"创建"） | B | review 在 VC 语境下默认指质量审核 |
+| "review" + "覆盖率"/"traceability" | C | 上下文指向覆盖性 |
+| 混合意图（如"生成并检查覆盖率"） | 🔴 ASK | 先 A 后 C，用 `vscode_askQuestions` 确认执行顺序 |
+
+Never assume the user's intent. If ambiguous, use `vscode_askQuestions` with this exact format:
+
+> **Header**: "vc-mode-selection"
+> **Question**: "I need to confirm what you'd like me to do. Which mode should I use?"
+> **Options**:
+> - **A — 生成 VC**: 从需求文档生成新的验证标准
+> - **B — 审核 VC 质量**: 对已有 VC 做 SMARTR-OC 评分和 CK 检查
+> - **C — 覆盖率审计**: 检查 VC 对需求的覆盖完整性
 
 🔴 **CHECKPOINT · 🛑 STOP** — 模式确认后，暂停向用户复述所选模式及下一步操作，等用户说"继续"/"OK"后再加载对应 workflow 文件。**绝不自行跳转模式。**
 
@@ -52,11 +70,11 @@ Determine mode from the flowchart above.
 
 > **Why**: The todo list gives the user real-time visibility into progress, ensures no steps are skipped, and makes the workflow resumable across long sessions. A workflow without a todo list is a protocol violation.
 
-| Mode | Workflow | Load |
-|------|----------|------|
-| A — Generate VC | VC Generation (A.0~A.4) | `references/vc-workflow-a.md` |
-| B — Audit VC Quality | SMARTR-OC + CK-01~CK-10 Audit (B.0~B.4) | `references/vc-workflow-b.md` |
-| C — Audit Coverage | Coverage completeness & orphan detection (C.0~C.5) | `references/vc-workflow-c.md` |
+| Mode | Workflow | Load | Input | Output |
+|------|----------|------|-------|--------|
+| A — Generate VC | VC Generation (A.0~A.4) | `references/vc-workflow-a.md` | 需求文档（md/xlsx/csv） | VC 表 + Source Depth 标注 + 覆盖率报告 |
+| B — Audit VC Quality | SMARTR-OC + CK-01~CK-10 Audit (B.0~B.4) | `references/vc-workflow-b.md` | VC 文档（md/xlsx/csv） | SMARTR-OC 评分表 + CK 清单 + 质量审核报告 |
+| C — Audit Coverage | Coverage completeness & orphan detection (C.0~C.5) | `references/vc-workflow-c.md` | 需求文档 + VC 文档（可同文件） | 覆盖率矩阵 + UNCOVERED/ORPHAN 清单 + 审计报告 |
 
 🔴 **CHECKPOINT · 🛑 STOP** — 加载 workflow 文件后、执行第一步之前，向用户展示 todo list，确认后再开始执行。
 
