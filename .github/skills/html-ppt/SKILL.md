@@ -19,15 +19,15 @@ One command, no build. Pure static HTML/CSS/JS with only CDN webfonts.
 
 ## What the skill gives you
 
-- **36 themes** (`assets/themes/*.css`) — minimal-white, editorial-serif, soft-pastel, sharp-mono, arctic-cool, sunset-warm, catppuccin-latte/mocha, dracula, tokyo-night, nord, solarized-light, gruvbox-dark, rose-pine, neo-brutalism, glassmorphism, bauhaus, swiss-grid, terminal-green, xiaohongshu-white, rainbow-gradient, aurora, blueprint, memphis-pop, cyberpunk-neon, y2k-chrome, retro-tv, japanese-minimal, vaporwave, midcentury, corporate-clean, academic-paper, news-broadcast, pitch-deck-vc, magazine-bold, engineering-whiteprint
-- **15 full-deck templates** (`templates/full-decks/<name>/`) — complete multi-slide decks with scoped `.tpl-<name>` CSS. 8 extracted from real-world decks (xhs-white-editorial, graphify-dark-graph, knowledge-arch-blueprint, hermes-cyber-terminal, obsidian-claude-gradient, testing-safety-alert, xhs-pastel-card, dir-key-nav-minimal), 7 scenario scaffolds (pitch-deck, product-launch, tech-sharing, weekly-report, xhs-post 3:4, course-module, **presenter-mode-reveal** — 演讲者模式专用)
-- **31 layouts** (`templates/single-page/*.html`) with realistic demo data
-- **27 CSS animations** (`assets/animations/animations.css`) via `data-anim`
-- **20 canvas FX animations** (`assets/animations/fx/*.js`) via `data-fx` — particle-burst, confetti-cannon, firework, starfield, matrix-rain, knowledge-graph (force-directed), neural-net (pulses), constellation, orbit-ring, galaxy-swirl, word-cascade, letter-explode, chain-react, magnetic-field, data-stream, gradient-blob, sparkle-trail, shockwave, typewriter-multi, counter-explosion
-- **Keyboard runtime** (`assets/runtime.js`) — arrows, T (theme), A (anim), F/O, **S (presenter mode: magnetic-card popup with CURRENT / NEXT / SCRIPT / TIMER cards)**, N (notes drawer), R (reset timer in presenter)
-- **FX runtime** (`assets/animations/fx-runtime.js`) — auto-inits `[data-fx]` on slide enter, cleans up on leave
-- **Showcase decks** for themes / layouts / animations / full-decks gallery
-- **Headless Chrome render script** for PNG export
+| Asset | Path | Highlights |
+|---|---|---|
+| 36 themes | `assets/themes/*.css` | See [references/themes.md](references/themes.md) for full catalog + when-to-use |
+| 15 full-deck templates | `templates/full-decks/<name>/` | See [references/full-decks.md](references/full-decks.md) |
+| 31 layouts | `templates/single-page/*.html` | See [references/layouts.md](references/layouts.md) |
+| 27 CSS + 20 canvas FX anims | `assets/animations/` | See [references/animations.md](references/animations.md) |
+| Keyboard runtime | `assets/runtime.js` | ← → arrows, T theme, A anim, F fullscreen, O overview, **S presenter mode**, N notes |
+| FX runtime | `assets/animations/fx-runtime.js` | Auto-inits `[data-fx]` on slide enter, cleans up on leave |
+| Showcase + render scripts | `templates/*showcase.html`, `scripts/` | `render.sh` for headless Chrome PNG export |
 
 ## When to use
 
@@ -36,29 +36,7 @@ text/notes into a presentable deck. Prefer this over building from scratch.
 
 ### 🎤 Presenter Mode (演讲者模式 + 逐字稿)
 
-If the user mentions any of: **演讲 / 分享 / 讲稿 / 逐字稿 / speaker notes / presenter view / 演讲者视图 / 提词器**, or says things like "我要去给团队讲 xxx", "要做一场技术分享", "怕讲不流畅", "想要一份带逐字稿的 PPT" — **use the `presenter-mode-reveal` full-deck template** and write 150–300 words of 逐字稿 in each slide's `<aside class="notes">`.
-
-See [references/presenter-mode.md](references/presenter-mode.md) for the full authoring guide including the 3 rules of speaker script writing:
-1. **不是讲稿，是提示信号** — 加粗核心词 + 过渡句独立成段
-2. **每页 150–300 字** — 2–3 分钟/页的节奏
-3. **用口语，不用书面语** — "因此"→"所以"，"该方案"→"这个方案"
-
-All full-deck templates support the S key presenter mode (it's built into `runtime.js`). **S opens a new popup window with 4 magnetic cards**:
-- 🔵 **CURRENT** — pixel-perfect iframe preview of the current slide
-- 🟣 **NEXT** — pixel-perfect iframe preview of the next slide
-- 🟠 **SPEAKER SCRIPT** — large-font 逐字稿 (scrollable)
-- 🟢 **TIMER** — elapsed time + slide counter + prev/next/reset buttons
-
-Each card is **draggable by its header** and **resizable by the bottom-right corner handle**. Card positions/sizes persist to `localStorage` per deck. A "Reset layout" button restores the default arrangement.
-
-**Why the previews are pixel-perfect**: each preview is an `<iframe>` that loads the actual deck HTML with a `?preview=N` query param; `runtime.js` detects this and renders only slide N with no chrome. So the preview uses the **same CSS, theme, fonts, and viewport as the audience view** — colors and layout are guaranteed identical.
-
-**Smooth navigation**: on slide change, the presenter window sends `postMessage({type:'preview-goto', idx:N})` to each iframe. The iframe just toggles `.is-active` between slides — **no reload, no flicker**. The two windows also stay in sync via `BroadcastChannel`.
-
-Only `presenter-mode-reveal` is designed from the ground up around the feature with proper example 逐字稿 on every slide.
-
-Keyboard in presenter window: `← →` navigate (syncs audience) · `R` reset timer · `Esc` close popup.
-Keyboard in audience window: `S` open presenter · `T` cycle theme · `← →` navigate (syncs presenter) · `F` fullscreen · `O` overview.
+If the user mentions any of: **演讲 / 分享 / 讲稿 / 逐字稿 / speaker notes / presenter view / 演讲者视图 / 提词器**, or says things like "我要去给团队讲 xxx", "要做一场技术分享", "怕讲不流畅" — **use the `presenter-mode-reveal` full-deck template** and write 150–300 words of 逐字稿 per slide. See [references/presenter-mode.md](references/presenter-mode.md) for the writing guide (3 rules), and the [Presenter mode](#-presenter-mode-deep-dive--decision-tree) section below for feature details + decision tree.
 
 ## Before you author anything — ALWAYS ask or recommend
 
@@ -109,6 +87,10 @@ interactive. If the slides are meant to be **viewed as standalone images**
 For static mode: strip `<script src="...runtime.js">`, do NOT add `<div
 class="notes">`, and set an explicit aspect ratio (e.g. `aspect-ratio: 3/4`
 on `.slide`) so each slide renders as a clean standalone image.
+
+**🔴 CHECKPOINT: Confirm delivery mode with the user before scaffolding.**
+If you're unsure, check: "这份是演讲用的还是静态图文？" If the user says
+both ("先讲，然后发群里"), author as interactive, export to PNG after.
 
 ## Quick start
 
@@ -204,10 +186,18 @@ has more items, prioritize in this order:
 3. **Cut**: appendix, deep-dive sub-pages, secondary metrics
 4. **Never cut**: cover and the final CTA/thanks — a deck without bookends feels unfinished
 
-## Presenter mode vs tech-sharing template (decision rule)
+## 🎤 Presenter mode: deep-dive + decision tree
 
-Both `presenter-mode-reveal` and `tech-sharing` are valid for a 技术分享.
-Use this decision tree:
+Presenter mode (`S` key) is built into `runtime.js` and works with all
+full-deck templates. It opens a separate popup with 4 draggable/resizable
+cards: 🔵 CURRENT slide preview, 🟣 NEXT preview, 🟠 SPEAKER SCRIPT (逐字稿),
+🟢 TIMER. Layout persists to `localStorage`. Previews are live `<iframe>`s
+of the actual deck (same CSS/theme/fonts — pixel-perfect). Navigation syncs
+via `BroadcastChannel`: no reload, no flicker.
+
+**🔴 CHECKPOINT · 🛑 STOP: Confirm presenter mode need before selecting template.**
+
+Use this decision tree to pick between `presenter-mode-reveal` and `tech-sharing`:
 
 ```
 Does the user need 逐字稿 / 提词器 / speaker notes?
@@ -218,14 +208,32 @@ Does the user need 逐字稿 / 提词器 / speaker notes?
 ```
 
 **Rule**: when in doubt for a live talk, default to `presenter-mode-reveal` and
-write 150-300 words of 逐字稿 per slide. The cost of extra notes is low; the
-cost of a presenter freezing mid-talk is high.
+write 150-300 words of 逐字稿 per slide.
 
-**⚠️ Effort warning**: 逐字稿 at 150-300 words/slide × N slides = significant
-output. For a 13-slide deck that's 1,950-3,900 words of script. Before writing
-all scripts, state the scope to the user: "这份 deck 有 N 页，逐字稿大概 X 千字，
-我先写前 3 页你看节奏对不对？" Write 2-3 sample slides first, confirm the tone,
-then batch the rest.
+**⚠️ Effort warning**: 150-300 words/slide × N slides = significant output.
+For a 13-slide deck that's 1,950-3,900 words. Before writing all scripts:
+"这份 deck 有 N 页，逐字稿大概 X 千字，我先写前 3 页你看节奏对不对？"
+Confirm tone with 2-3 sample slides, then batch the rest.
+
+Keyboard in presenter window: `← →` (syncs audience) · `R` reset timer · `Esc` close.
+Keyboard in audience window: `S` presenter · `T` theme · `← →` · `F` fullscreen · `O` overview.
+
+## Failure recovery (what to do when things break)
+
+| Scenario | First try | If that fails | Last resort |
+|---|---|---|---|
+| `new-deck.sh` / bash fails | Use PowerShell fallback (Quick Start §1) | Manually `Copy-Item templates/deck.html` + fix paths | Scaffold from scratch with `<section class="slide">` |
+| `render.sh` fails (Mac path) | Use headless Chrome PowerShell (Quick Start §6) | F12 → Ctrl+Shift+P → "Capture screenshot" | Browser screenshot per slide (lower quality) |
+| User rejects proposed theme | Press `T` to cycle 3-5 alternatives | Load `references/themes.md` for full catalog | Propose top-3 with one-line descriptions |
+| Full-deck template doesn't fit | Pick closest template, adapt skeleton | Compose from `single-page/` layouts manually | Start from `deck.html` (6-slide minimal) |
+| Page count vs skeleton mismatch | Use [Trimming guidelines](#trimming-skeletons-to-a-page-count) | Merge 2 items onto 1 slide | Ask user: "哪几页可以合并或删掉？" |
+| Chrome not found for render | `Get-ChildItem` search (Quick Start §6) | Install Chrome / Chromium | Skip PNG, deliver HTML only |
+| User wants both live + static | Author as interactive + runtime.js | Render to PNG for static sharing | Deliver HTML + zip of PNGs |
+| Deck looks broken in one theme | Press `T` to test other themes | Check hardcoded colors → replace with tokens | Fix `var(--*)` token usage per slide |
+
+**🔴 CHECKPOINT: Validate before render.** Walk through all slides with `O`
+(overview) + `T` (theme cycle) to catch layout clipping or token breakage
+before exporting to PNG.
 
 ## Authoring rules (important)
 
@@ -272,6 +280,8 @@ These are common mistakes that degrade deck quality or break functionality.
 | 6 | **Writing 逐字稿 in 书面语** | "因此/该方案/综上所述" sounds like reading an essay, not talking to people | Use 口语: "所以/这个方案/简单来说" — see presenter-mode.md 三铁律 |
 | 7 | **Skipping the 3-question opening** | Jumping straight into slides without confirming audience/style/length leads to rework | Always ask or propose-default the 3 questions before authoring (see "Before you author" section) |
 | 8 | **Inventing new CSS instead of using tokens** | Creates visual inconsistency, breaks across themes | Compose from `base.css` tokens + theme overrides. Only add new `single-page/*.html` if none of 31 fit |
+| 9 | **Modifying `base.css` or `runtime.js`** | These are shared infrastructure — edits break ALL decks and block upstream updates | Override tokens via theme files only. Extend behavior via `<script>` in your deck, never edit the shared files |
+| 10 | **Adding JS frameworks (React, Vue, jQuery)** | Breaks the zero-build philosophy, creates dependency conflicts with `runtime.js` | Pure vanilla JS only. Use `assets/animations/fx/*.js` pattern for canvas effects |
 
 ## Catalogs (load when needed)
 
