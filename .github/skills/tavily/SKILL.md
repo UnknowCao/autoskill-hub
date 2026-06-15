@@ -5,6 +5,10 @@ description: "Tavily web search, content extraction, and research tools. Use whe
 
 # Tavily Tools
 
+> **🖐 TL;DR** — Start simple, escalate only when needed.
+> `web_search` (quick) → `tavily_search` (filtered) → `tavily_extract` (full content).
+> See [gates](#-checkpoint-escalation-gates) before upgrading. Avoid [anti-patterns](#-anti-patterns-what-not-to-do).
+
 ## When to use which tool
 
 | Need                         | Tool             | When                                                          |
