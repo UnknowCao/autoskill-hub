@@ -11,3 +11,6 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-12T14:15	c6f5616	verification-criteria	78.3	83.6	keep	dim3	内联10条关键fallback规则（if-then三段式+严重度+escalation）	dry_run
 2026-06-12T14:20	6ac76ef	verification-criteria	83.6	85.0	keep	dim1	description追加中英文触发词（Use when: ...）	dry_run
 2026-06-12T14:25	f2a9f64	verification-criteria	85.0	86.2	keep	dim2	Workflow步骤速览（A/B/C三模式步骤骨架内联）	dry_run
+2026-06-15T20:15	darwin2-r0	verification-criteria	-	83.9	baseline	-	Darwin2.0新基线（4组full_test子Agent验证；dim8均分8.25 vs baseline 3.5）	full_test
+2026-06-15T20:28	5936b86	verification-criteria	83.9	85.5	keep	dim5	Lite Mode：≤5条内联粘贴跳过冗余CHECKPOINT，质量门控不降级	full_test
+2026-06-15T20:33	0ada9ba	verification-criteria	85.5	88.0	keep	dim5+dim7	去软化措辞(建议→directive)+混合模式交叉联动表(ORPHAN→B.2/UNCOVERED→A.2/BLOCKED→C矩阵)	full_test
