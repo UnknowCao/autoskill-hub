@@ -114,67 +114,43 @@ on `.slide`) so each slide renders as a clean standalone image.
 
 ### 1. Scaffold a new deck
 
-**macOS / Linux (bash):**
+**macOS / Linux:**
 ```bash
-./scripts/new-deck.sh my-talk
-open examples/my-talk/index.html
+./scripts/new-deck.sh my-talk && open examples/my-talk/index.html
 ```
-
-**Windows (PowerShell) — `new-deck.sh` is bash-only, use this manual fallback:**
+**Windows (PowerShell)** — `new-deck.sh` is bash-only, use manual fallback:
 ```powershell
 New-Item -ItemType Directory -Path examples\my-talk -Force
 Copy-Item templates\deck.html examples\my-talk\index.html
-# rewrite relative paths if your deck is nested deeper than one level
 Invoke-Item examples\my-talk\index.html
 ```
 
-> If `new-deck.sh` fails (non-bash shell, permission denied), the manual
-> `Copy-Item` above is the equivalent — it copies the 6-slide starter into
-> `examples/<name>/index.html`.
-
 ### 2. Pick a theme
-Open the deck and press `T` to cycle. Or hard-code it:
-```html
-<link rel="stylesheet" id="theme-link" href="../assets/themes/aurora.css">
-```
-Catalog in [references/themes.md](references/themes.md).
+Press `T` to cycle, or hard-code: `<link rel="stylesheet" id="theme-link"
+href="../assets/themes/aurora.css">`. Catalog: [references/themes.md](references/themes.md).
 
 ### 3. Pick layouts
-Copy `<section class="slide">...</section>` blocks out of files in
-`templates/single-page/` into your deck. Replace the demo data.
-Catalog in [references/layouts.md](references/layouts.md).
+Copy `<section class="slide">...</section>` blocks from
+`templates/single-page/` into your deck. Replace demo data.
+Catalog: [references/layouts.md](references/layouts.md).
 
 ### 4. Add animations
-Put `data-anim="fade-up"` (or `class="anim-fade-up"`) on any element. On
-`<ul>`/grids, use `anim-stagger-list` for sequenced reveals. For canvas FX,
-use `<div data-fx="knowledge-graph">...</div>` and include `<script
-src="../assets/animations/fx-runtime.js"></script>`.
-Catalog in [references/animations.md](references/animations.md).
+`data-anim="fade-up"` on any element. `anim-stagger-list` for grids/lists.
+Canvas FX: `<div data-fx="knowledge-graph">` + `<script
+src="../assets/animations/fx-runtime.js">`.
+Catalog: [references/animations.md](references/animations.md).
 
 ### 5. Use a full-deck template
-Copy `templates/full-decks/<name>/` into `examples/my-talk/` as a starting
-point. Each folder is self-contained with scoped CSS. Catalog in
-[references/full-decks.md](references/full-decks.md) and gallery at
-`templates/full-decks-index.html`.
+Copy `templates/full-decks/<name>/` into `examples/my-talk/`.
+Catalog: [references/full-decks.md](references/full-decks.md).
 
 ### 6. Render to PNG
-**macOS (render.sh uses Mac Chrome path):**
-```bash
-./scripts/render.sh templates/theme-showcase.html       # one shot
-./scripts/render.sh examples/my-talk/index.html 12      # 12 slides
-```
-
-**Windows (PowerShell) — `render.sh` hardcodes `/Applications/Google Chrome.app/...`, use this fallback:**
+**macOS:** `./scripts/render.sh examples/my-talk/index.html 12`
+**Windows (PowerShell)** — `render.sh` hardcodes Mac Chrome path, use:
 ```powershell
 $chrome = "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe"
-# single slide (use #/N deep-link from runtime.js)
-& $chrome --headless --screenshot="out.png" --window-size=1920,1080 "file:///$(Resolve-Path 'examples/my-talk/index.html')#/1"
-# multi-slide: loop 1..N
 1..12 | ForEach-Object { & $chrome --headless --screenshot="slide-$_.png" --window-size=1920,1080 "file:///$(Resolve-Path 'examples/my-talk/index.html')#/$_" }
 ```
-
-> If Chrome is not at the default path, find it with
-> `Get-ChildItem -Path C:\,${env:ProgramFiles(x86)} -Recurse -Filter chrome.exe -ErrorAction SilentlyContinue | Select -First 1`.
 
 ## Content skeletons (don't build hollow decks)
 
@@ -212,12 +188,21 @@ financial projections → the ask (funding amount + use of funds) → contact
 - **Text rhythm**: 标题 < 15 字, 正文每段 1-2 行, 用 emoji 做视觉分隔
 - **Aspect ratio**: set `aspect-ratio: 3/4` on `.slide` for vertical cards
 - **No runtime.js** — these are static images, not interactive decks
+- **Layout mapping**: 封面 → `cover.html` (enlarged), 痛点 → `big-quote.html` or `bullets.html`, 步骤 → `process-steps.html` or `three-column.html`, 效果对比 → `comparison.html`, 总结 → `stat-highlight.html` or `cta.html`
 
 ### Weekly report (周报, 5-8 slides)
 ```
 cover → KPI summary (kpi-grid) → accomplishments this week →
 blockers / risks → next week plan → appendix (data details)
 ```
+
+### Trimming skeletons to a page count
+When the user specifies an exact slide count (e.g. "10 页") but the skeleton
+has more items, prioritize in this order:
+1. **Keep**: cover, core problem/solution, the ask/CTA, thanks — these are non-negotiable
+2. **Merge**: combine related items (e.g. "market size" + "business model" → one slide with two halves)
+3. **Cut**: appendix, deep-dive sub-pages, secondary metrics
+4. **Never cut**: cover and the final CTA/thanks — a deck without bookends feels unfinished
 
 ## Presenter mode vs tech-sharing template (decision rule)
 
@@ -235,6 +220,12 @@ Does the user need 逐字稿 / 提词器 / speaker notes?
 **Rule**: when in doubt for a live talk, default to `presenter-mode-reveal` and
 write 150-300 words of 逐字稿 per slide. The cost of extra notes is low; the
 cost of a presenter freezing mid-talk is high.
+
+**⚠️ Effort warning**: 逐字稿 at 150-300 words/slide × N slides = significant
+output. For a 13-slide deck that's 1,950-3,900 words of script. Before writing
+all scripts, state the scope to the user: "这份 deck 有 N 页，逐字稿大概 X 千字，
+我先写前 3 页你看节奏对不对？" Write 2-3 sample slides first, confirm the tone,
+then batch the rest.
 
 ## Authoring rules (important)
 
