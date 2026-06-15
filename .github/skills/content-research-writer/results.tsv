@@ -3,3 +3,6 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-12T16:30	round1	content-research-writer	46.1	75.5	keep	D9+D4+D3+D6+D7+D2+D5+D1	runtime_warn=2→0；统一Workflow+6步fallback表+5个🔴CHECKPOINT+9条⛔反模式+references/资源+去冗余去fluff+触发词+软化措辞清理	dry_run
 2026-06-12T17:00	round2	content-research-writer	75.5	80.8	keep	D3+D5+D7	fallback表加严重度列(🟡🟠🔴)+研究加硬约束(≥2来源/≤5查询/3轮超时)+hook加硬指标(15-30词/具体细节)+反馈加最低要求(≥1条行级编辑)+声音→可执行checklist	dry_run
 2026-06-12T17:20	round3	content-research-writer	80.8	83.0	keep	D2+D4+D6+D7	工作流速查表(输入→输出映射)+Step3/4加步内🔴CHECKPOINT(共6个)+scripts/validate_skill.py(6项结构验证)+资源章节更新	dry_run
+2026-06-15T10:00	baseline	content-research-writer	-	82.5	baseline	-	独立judge重新基线：D3(7)/D7(8)/D6(7)/D5(8)为主要短板; test-prompts.json 新建	dry_run
+2026-06-15T10:30	4affb83	content-research-writer	82.5	84.3	keep	D3	Step 6 补充失败模式表(4条🟡🟠分级)；6/6步全覆盖	dry_run
+2026-06-15T10:45	d180b8a	content-research-writer	84.3	84.9	keep	D7	引用管理指引嵌入Step3；Step1/4/5加📋声音内联标记；保留写作者声音加对照说明	dry_run
