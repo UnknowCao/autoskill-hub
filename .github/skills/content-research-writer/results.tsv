@@ -1,0 +1,5 @@
+timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-06-12T16:00	baseline	content-research-writer	-	46.1	baseline	-	初始评估：D3失败模式(2)/D4检查点(2)/D6资源(1)/D9黑名单(1)严重缺失	dry_run
+2026-06-12T16:30	round1	content-research-writer	46.1	75.5	keep	D9+D4+D3+D6+D7+D2+D5+D1	runtime_warn=2→0；统一Workflow+6步fallback表+5个🔴CHECKPOINT+9条⛔反模式+references/资源+去冗余去fluff+触发词+软化措辞清理	dry_run
+2026-06-12T17:00	round2	content-research-writer	75.5	80.8	keep	D3+D5+D7	fallback表加严重度列(🟡🟠🔴)+研究加硬约束(≥2来源/≤5查询/3轮超时)+hook加硬指标(15-30词/具体细节)+反馈加最低要求(≥1条行级编辑)+声音→可执行checklist	dry_run
+2026-06-12T17:20	round3	content-research-writer	80.8	83.0	keep	D2+D4+D6+D7	工作流速查表(输入→输出映射)+Step3/4加步内🔴CHECKPOINT(共6个)+scripts/validate_skill.py(6项结构验证)+资源章节更新	dry_run
