@@ -1,0 +1,4 @@
+timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-06-15T10:00	baseline	html-ppt	-	73	baseline	-	初始评估：dim3(失败模式)0处 dim4(检查点)0标记 dim9(反例)弱 dry_run
+2026-06-15T10:30	772169f	html-ppt	73	91	keep	dim3+4+7+8+9	补平台fallback+交付模式决策树+内容骨架+反例黑名单+显性checkpoint full_test
+2026-06-15T10:45	5b995e1	html-ppt	91	93	keep	dim3+5	逐字稿effort警告+xhs layout mapping+骨架裁剪指南 full_test
