@@ -32,3 +32,30 @@
 4. Write with strong POV
 5. Add supporting evidence
 6. Craft compelling conclusion
+
+## Case Study Workflow
+1. Clarify context — company profile, industry, problem statement, key metrics
+2. Structure the narrative — timeline: before → intervention → after
+3. Identify decision points — 2-4 critical choices, alternatives considered, rationale
+4. Present data & results — quantify impact (before/after metrics), ROI if available
+5. Extract lessons learned — 3-5 actionable takeaways for the target audience
+6. Craft executive summary — one-paragraph TL;DR for time-pressed decision-makers
+7. Format citations — all data claims must have verifiable sources
+
+## Voice Preservation
+
+Regardless of workflow:
+
+- Read existing writing samples before editing
+- Offer alternatives, not directives
+- Match tone (formal, casual, technical, friendly)
+- Ask periodically: "Does this sound like you?"
+- Flag mismatches: "This feels too formal for your style"
+
+## Pro Tips
+
+- **One section at a time** — get feedback incrementally
+- **Save research separately** — keep a `research.md` file
+- **Version your drafts** — `article-v1.md`, `article-v2.md`, etc.
+- **Read aloud** — use feedback to identify clunky sentences
+- **Take breaks** — write, get feedback, pause, revise
