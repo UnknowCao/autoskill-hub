@@ -6,3 +6,4 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-15T10:00	baseline	content-research-writer	-	82.5	baseline	-	独立judge重新基线：D3(7)/D7(8)/D6(7)/D5(8)为主要短板; test-prompts.json 新建	dry_run
 2026-06-15T10:30	4affb83	content-research-writer	82.5	84.3	keep	D3	Step 6 补充失败模式表(4条🟡🟠分级)；6/6步全覆盖	dry_run
 2026-06-15T10:45	d180b8a	content-research-writer	84.3	84.9	keep	D7	引用管理指引嵌入Step3；Step1/4/5加📋声音内联标记；保留写作者声音加对照说明	dry_run
+2026-06-15T11:15	d180b8a	content-research-writer	84.9	87.2	keep	D8	Prompt1实测(with_skill vs baseline): 流程纪律显著优于baseline; Prompt2实测: 质量相当+checkpoint更优; D8从7→8(保守dry_run→实测调升)	full_test
