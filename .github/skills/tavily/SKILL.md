@@ -1,6 +1,6 @@
 ---
 name: tavily
-description: Tavily web search, content extraction, and research tools.
+description: "Tavily web search, content extraction, and research tools. Use when the user needs to search the web, find current or real-time information, extract page content from URLs, or do online research. Trigger: 搜索, 查找, 上网查, 网上搜索, search, web search, extract, 提取内容, 最新, latest, news, research, 调研, 在线搜索."
 ---
 
 # Tavily Tools
