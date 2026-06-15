@@ -130,3 +130,34 @@ These are common mistakes that waste resources or produce poor results. Avoid th
 | 8 | Skip `web_search` and jump straight to `tavily_extract` | Follow escalation: search → confirm URLs → extract | You need URLs to extract; searching finds them first |
 | 9 | Use `include_answer=true` when the user needs raw sources | Use `include_answer=false` (default) for source-backed research | AI summaries can hallucinate; raw results are verifiable |
 | 10 | Send 25 URLs in one `tavily_extract` call | Batch: max 20 per call; split into 20 + 5 | API rejects >20 URLs per request |
+
+## 🩹 Failure handling: What to do when things go wrong
+
+When a step fails, follow the three-tier escalation: **first-line fix → retry → fallback**.
+Do NOT silently accept bad results or loop indefinitely.
+
+### Search failures
+
+| Trigger | First-line fix | If still failing → Fallback |
+|---------|---------------|---------------------------|
+| Search returns **zero results** | Rephrase query with broader/fewer keywords; remove domain filters | Switch `search_depth` from `basic` → `advanced`; try `topic=news` if recency matters |
+| Results are **irrelevant** or off-topic | Add `include_domains` to restrict to trusted sources; add `exclude_domains` to cut noise | Change `topic` (e.g. `general` → `news`); if still bad, inform user and ask for refined query |
+| Query **exceeds 400 characters** | Trim to core keywords (≤5 words); split into 2-3 sub-queries and run separately | If the topic genuinely requires a long query, ask user which aspect to prioritize first |
+| API returns **rate limit / error** | Wait 3 seconds and retry once with same parameters | Reduce `max_results` to 3; if still failing, fall back to `web_search` and inform user |
+
+### Extraction failures
+
+| Trigger | First-line fix | If still failing → Fallback |
+|---------|---------------|---------------------------|
+| `tavily_extract` returns **empty or truncated** content | Retry with `extract_depth=advanced` | If still empty, the page may require login or block bots — skip this URL and try the next one |
+| Page is a **JS-heavy SPA** and `basic` misses content | Immediately retry with `extract_depth=advanced` (skip `basic` for known SPAs) | If `advanced` also fails, report the URL as inaccessible and offer to search for alternative sources |
+| URL is behind **paywall / login wall** | Skip the URL; do NOT attempt to bypass authentication | Use the next URL from search results; if none remain, inform user the content is gated |
+| **>20 URLs** in one batch | Split into batches of ≤20; run batches sequentially | If one batch fails, continue with remaining batches — don't abort the whole operation |
+| `chunks_per_source` with `query` returns **no relevant chunks** | Increase `chunks_per_source` (max 5) or broaden the `query` string | Extract the full page without `query`/`chunks_per_source` as a last resort |
+
+### General fallback rules
+
+1. **After 2 failed retries on the same step** → stop and ask the user for direction. Do NOT loop.
+2. **If `tavily_search` consistently fails** → fall back to `web_search` and inform user of the downgrade.
+3. **If `tavily_extract` fails on all URLs** → return whatever snippets `tavily_search` already provided; do not force extraction.
+4. **If user's request is ambiguous** → ask clarifying questions BEFORE running any tool, not after getting bad results.
