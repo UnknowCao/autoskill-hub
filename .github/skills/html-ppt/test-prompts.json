@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "prompt": "我要做一场技术分享，讲我们团队的微服务架构演进，大概 20 分钟，观众是工程师。帮我做一份 PPT",
+    "expected": "应该推荐技术向主题（tokyo-night/dracula 等），询问页数/风格，使用 tech-sharing full-deck 模板或 presenter-mode-reveal（因为提到演讲），给出三件事确认开场",
+    "category": "happy_path_tech_sharing"
+  },
+  {
+    "id": 2,
+    "prompt": "做一组小红书图文，介绍我的咖啡店新品，要好看的",
+    "expected": "应该推荐 xiaohongshu-white/soft-pastel 主题，xhs-post 3:4 full-deck 模板，注意不需要演讲者模式（静态展示类）",
+    "category": "happy_path_xiaohongshu"
+  },
+  {
+    "id": 3,
+    "prompt": "帮我做一份给 VC 的融资 pitch deck，10 页左右",
+    "expected": "应该推荐 pitch-deck-vc 主题和 pitch-deck full-deck 模板，自信提案而非盲目询问，注意投资者受众调性",
+    "category": "happy_path_pitch"
+  }
+]
