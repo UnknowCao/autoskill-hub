@@ -231,10 +231,11 @@ description: "写作调查研究搭档：协同大纲、研究引用、钩子优
 
 ## 资源
 
-详细示例和文体差异化工作流已移至 references/（按需加载）：
-- `references/examples.md` — 完整写作流程示例（hook 优化 / 逐节反馈 / 全文终审）
-- `references/workflows.md` — 不同文体工作流（博客 / 通讯 / 教程 / 思想领导力）
-- `scripts/validate_skill.py` — SKILL.md 结构验证脚本（frontmatter / 必需要素 / checkpoint 数量）
+| 路径 | 内容 | 何时加载 |
+|------|------|----------|
+| `references/examples.md` | 完整写作流程示例（hook 优化 / 逐节反馈 / 全文终审） | Step 4/5 — 用户要求看示例或反馈模板时 |
+| `references/workflows.md` | 不同文体工作流（博客 / 通讯 / 教程 / 思想领导力） | Step 1 — 用户指定文体后加载对应工作流 |
+| `scripts/validate_skill.py` | SKILL.md 结构验证（frontmatter / 必需要素 / checkpoint 数量） | 编辑 SKILL.md 后运行 `python scripts/validate_skill.py` |
 
 ## Runtime 适配
 
