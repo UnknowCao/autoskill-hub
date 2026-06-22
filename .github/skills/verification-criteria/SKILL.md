@@ -95,9 +95,7 @@ When a VC **cannot** be written for a requirement, the requirement is immature. 
 - 🟡 **VC-PARTIAL**: VC exists but only covers normal conditions → Add boundary (-40°C/+85°C) and abnormal (fault, overvoltage) scenarios
 - 🟠 **VC-ASSUMPTION**: VC depends on unconfirmed assumptions → Document the assumption explicitly, escalate; write provisional VC
 
-**Escalation rule**: If ≥3 requirements in a review session are flagged VC-BLOCKED, stop and reassess the requirements baseline.
-
-🔴 **CHECKPOINT · 🛑 STOP** — 若触发升级规则（≥3 VC-BLOCKED），暂停所有 VC 工作，向用户报告问题需求清单，通过 `vscode_askQuestions` 让用户选择"修订需求后继续"或"终止本次会话"后再行动。
+🔴 **CHECKPOINT · 🛑 STOP** — 累计 ≥3 VC-BLOCKED → 暂停所有 VC 工作，通过 `vscode_askQuestions` 让用户选择"修订需求后继续"或"终止本次会话"。（详细 escalation 流程见 [异常表](#异常与边界条件) SMARTR-OC 行）
 
 ## Workflows
 
@@ -231,30 +229,23 @@ Workflow A 且需求数量 > 50 → 自动启用并行子Agent模式。按功能
 
 ## Key Principles（含可执行规则）
 
+> 反例详见 [⛔ Do Not 黑名单](#-do-not--反例黑名单)。以下仅列每条原则独有的 🔴 GATE 规则。
+
 - **VC-First**: VC is written with every requirement, not after.
-  - ✅ **DO**: 每条需求写完后立即写 VC，同一会话内完成
-  - ❌ **DON'T**: 等所有需求写完后再批量补 VC
   - 🔴 **GATE**: 无法写出 VC → 立即标记需求为 VC-BLOCKED，不继续下一条
 - **VC is a design activity**, not a documentation task.
-  - ✅ **DO**: 写 VC 时主动质疑需求的可测性，必要时回推修订需求
-  - ❌ **DON'T**: 把需求原文改写成 VC 句式（零信息增量）
+  - 🔴 **GATE**: 写 VC 时主动质疑需求的可测性，必要时回推修订需求（反例见 #1）
 - **VC ownership**: Requirements engineer writes VC; test engineer reviews for testability.
-  - ✅ **DO**: VC 初稿由需求工程师编写（最理解需求意图），测试工程师审核可测性
-  - ❌ **DON'T**: 需求工程师只写需求、测试工程师独立编 VC（信息断层）
 - **One VC = one independently verifiable aspect** — don't merge unrelated checks.
-  - ✅ **DO**: 一条 VC 只验证一个可独立判定的方面（如精度、响应时间、覆盖范围各自独立成条）
-  - ❌ **DON'T**: 把多个不相关的判据塞进一条 VC（如"精度≤X 且响应≤Y 且覆盖≥Z"）
-- **Source Depth — No Unsourced Content**: Every numeric value in a VC must carry a source tag (`[R]`/`[D]`/`[S]`/`[E]`/`[A]`). Full annotation rules in `references/vc-source-depth.md`.
-  - ✅ **DO**: 每个数值标注来源标签，优先使用 `[R]`（需求直接给出）和 `[D]`（行业标准）
-  - ❌ **DON'T**: 凭经验/直觉填写数值不标注来源（看似专业实则不可验证）
-  - 🔴 **GATE**: ≥3 `[A]` in one VC → VC-BLOCKED → revise the requirement
-  - 🔴 **GATE**: Any `[A]` → SMARTR-OC A (Achievable) = ✗ automatically
+  - 🔴 **GATE**: 一条 VC 只验证一个可独立判定的方面（精度/响应时间/覆盖范围各自独立成条）
+- **Source Depth — No Unsourced Content**: Every numeric value must carry a source tag (`[R]`/`[D]`/`[S]`/`[E]`/`[A]`). Full annotation rules: `references/vc-source-depth.md`.
+  - 🔴 **GATE**: ≥3 `[A]` → VC-BLOCKED；Any `[A]` → SMARTR-OC A = ✗（反例见 #6）
+- **Engineer-Readable**: Every VC field understandable by an unfamiliar engineer within 10 seconds — no abbreviation decoding, no implicit context.
 
-🔴 **CHECKPOINT · 🛑 STOP** — ≤10 条需求 → 逐条展示 VC + SMARTR-OC 自检结果；>10 条 → 每 10 条批量展示一次。通过 `vscode_askQuestions` 确认后再继续。若用户不满意，当场修订。禁止输出执行流程概要。
-
-🔴 **CHECKPOINT · 🛑 STOP** — A.3 SMARTR-OC 自检完成后、A.4 覆盖率审计前：展示 SMARTR-OC 分数汇总（各维度 ✅/✗ 分布 + 总分分布），标注 < 6/8 的 VC 及阻塞原因。通过 `vscode_askQuestions` 让用户选择：(a) 修订不合格VC后重检 / (b) 标记 disposition 后继续 A.4 / (c) 终止并导出当前结果。不跳过此步直接进入覆盖率审计。
-
-🔴 **CHECKPOINT · 🛑 STOP** — Workflow 最终输出前：展示完整 VC 文档 + 覆盖率报告摘要，通过 `vscode_askQuestions` 请求用户确认后再输出最终文件。
+🔴 **CHECKPOINT · 🛑 STOP** — 批量展示 + SMARTR-OC 汇总 + 最终输出：
+1. ≤10 条需求 → 逐条展示 VC + SMARTR-OC；>10 条 → 每 10 条批量展示，`vscode_askQuestions` 确认后继续
+2. A.3 完成后 → 展示 SMARTR-OC 分数汇总（各维度 ✅/✗ + 总分分布），标注 <6/8 的 VC 及原因。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
+3. 最终输出前 → 展示完整 VC 文档 + 覆盖率摘要，`vscode_askQuestions` 确认后输出
 
 ## References
 
