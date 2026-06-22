@@ -63,6 +63,22 @@ flowchart TD
 
 **触发升级**：Lite Mode 执行中发现 ≥3 VC-BLOCKED 或覆盖率 <100% → 暂停 Lite Mode，提示用户切换 Full Mode 做完整处理。
 
+**Lite Mode 信息不完整处理**（需求缺少边界条件/来源时）：
+
+| 缺失信息 | 处理方式 | 标记 |
+|---------|---------|------|
+| 需求未给工作温度范围 | 常温 + 标注 `⚠️ 需求未指定温度边界，仅按常温 (25°C) 验证` | 🟡 VC-PARTIAL |
+| 需求未给故障条件 | 正常工况下验证 + 标注 `⚠️ 未覆盖故障/异常工况` | 🟡 VC-PARTIAL |
+| 数值缺少来源（无标准/行业规范引用） | 标注 `[A: Lite Mode 推断，需确认]` + 提示用户补充来源 | 🟠 VC-ASSUMPTION |
+| 需求使用主观形容词（良好/快速/稳定） | 🔴 标记 VC-BLOCKED，建议用户提供量化指标 | 🔴 VC-BLOCKED |
+
+> 累积 ≥3 🟡/🟠 → 不触发升级（与 ≥3 🔴 VC-BLOCKED 不同）。但需在输出摘要中明确标注信息缺口，提示用户"补充信息后可获得更完整的 VC"。
+
+**Lite Mode VC-BLOCKED 定义**（与 Full Mode B.3 的区别）：
+- Lite Mode 无 B.3 改进循环 → 首次 SMARTR-OC < 6/8 即直接判定为 BLOCKED（不重试）
+- 仅 🔴 级（反例#3 主观形容词 / 反例#6 全部 `[A]` 来源 / SMARTR-OC M=✗）触发 VC-BLOCKED
+- 🟡/🟠 级不作为 BLOCKED，仅在质量标记中注明
+
 ## VC-First Methodology
 
 **Core Principle**: Write the VC simultaneously with every requirement, not after. VC is the requirement's "other half" — the requirement says "what"; the VC says "how we prove it."
@@ -115,6 +131,19 @@ Determine mode from the flowchart above.
 | A.4 覆盖率审计 | 全部 VC + 需求列表 | 正向追溯（需求→VC）+ 反向追溯（VC→需求）+ 孤儿检测 | 覆盖率矩阵 + UNCOVERED 清单 | 必须 100% 覆盖；未覆盖 → 回退补齐；≥3轮仍 UNCOVERED → 🛑（异常表#覆盖率审计≥3轮） |
 
 **VC-First 7步循环**（每条需求执行）：理解意图 → 选择方法 → 定义标准 → Source Depth 标注 → 设定条件 → 编写VC → SMARTR-OC 自检
+
+**验证方法决策树**（Step 2 — 选择方法，按需求类型自动匹配）：
+
+| 需求类型 | 识别特征 | 验证方法 | 典型示例 |
+|---------|---------|---------|---------|
+| 物理量 | 可量化测量值（电压/电流/温度/压力/绝缘电阻） | **Test** — 校准设备在受控条件下实测 | 电压精度 ≤±0.5%FSR、绝缘电阻 ≥100MΩ |
+| 逻辑/算法 | 计算/判断/状态转换，输入→输出可定义 | **Analysis** — 理论推导 + 边界值注入验证 | SOC 估算精度 ≤5%、故障诊断决策树 |
+| 安全/保护 | 故障响应时间、安全状态进入条件 | **Test + Analysis** — 故障注入 + 时序测量 + 安全分析 | 过压 100ms 内断开继电器、绝缘监测响应 |
+| 时序 | 时间约束（响应/启动/关断 ≤ X ms） | **Test** — 示波器/逻辑分析仪精确计时 | 上电自检 ≤5s、CAN 消息周期 ±10% |
+| 操作/功能 | 人机交互/功能流程/状态展示 | **Demonstration** — 操作演练 + 功能走查 | HMI 显示正确性、诊断菜单导航 |
+| 文档/布局 | 设计输出物/物理布置/标识 | **Inspection** — 审查/尺寸测量/目视检查 | 丝印可读性、爬电距离、线束走向 |
+
+> **红线**：所有需求统一用 "Test" → 违反反例#5。详见 `references/vc-handbook.md` 第4章。
 
 #### Workflow B — VC Quality Audit（B.0~B.4）
 
@@ -191,6 +220,14 @@ Workflow A 且需求数量 > 50 → 自动启用并行子Agent模式。按功能
 - C.3 发现 ORPHAN VC → 在 B.2 报告中标注该 VC `⚠️ cross-flagged: ORPHAN，质量评分降权`
 - C.2 发现 UNCOVERED 需求 → 提示用户回退到 A.2 补齐
 - B.2 发现 VC-BLOCKED → 在 C 覆盖率矩阵中标注该需求 `⚠️ VC-BLOCKED，覆盖率待定`
+
+**A→C 复用快速通道**（A+C 混合模式专用，A.4 完成后进入 C 时执行）：
+1. **跳过 C.0** — 需求文档和 VC 文档已在 A 流程中定位，无需重新确认
+2. **跳过 C.1** — 需求 ID 和 VC ID 已在 A.1/A.2 中提取，直接复用双索引
+3. **C.2 完整性检查** — 使用 A.4 的覆盖率矩阵结果，仅增量检查：A.4 的 UNCOVERED 是否已补齐？未补齐的标注原因
+4. **C.3 孤儿检测** — 扫描 A 输出的 VC 列表，标记任何未关联有效需求 ID 的 VC 为 ORPHAN
+5. **C.4 覆盖率矩阵** — 基于 A.4 结果构建正式矩阵，添加 disposition 列（COVERED/UNCOVERED/PARTIAL/VC-BLOCKED）
+6. **C.5 输出报告** — 使用 `references/vc-report-templates.md` 模板输出覆盖率审计报告
 
 ## Key Principles（含可执行规则）
 
