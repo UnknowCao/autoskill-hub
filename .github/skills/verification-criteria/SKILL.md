@@ -117,16 +117,18 @@ Determine mode from the flowchart above.
 
 #### Workflow A — VC Generation（A.0~A.4）
 
+> ⚡ **一句话**：为每条需求生成可独立验证的测试标准（方法+条件+数值判据+来源标注）
+>
 > 🚀 A.0 确认源 → A.1 解析需求 → A.2 生成VC(模板+5元素) → A.2a Source Depth标注 → A.3 SMARTR-OC自检(≥6/8) → A.4 覆盖率审计(100%)
 
-| 步骤 | 输入 | 动作 | 输出 | 关键规则（失败→异常表条目） |
-|------|------|------|------|---------------------------|
+| 步骤 | 输入 | 动作 | 输出 | 失败处理 |
+|------|------|------|------|---------|
 | A.0 确认需求文档 | 用户提供的文件路径 | 扫描已有VC文档；发现已有VC → `vscode_askQuestions` 询问增量/覆盖/切换模式 | 需求文档已定位 | 无源/格式错误 → 🛑 STOP（异常表#需求文档无法解析） |
-| A.1 解析需求 | 需求文档（md/xlsx/csv） | 提取 ID、描述、约束；按类型分类（物理量/逻辑/安全/时序/操作） | 需求列表 + 类型标签 | 需求 > 50 → 触发并行子Agent模式；>200 顺序模式 → 要求分批（异常表#输入文件过大） |
-| A.2 逐条生成VC | 需求列表 + `assets/vc-template.md` | 按需求类型选择模板（Test/Analysis/Inspection/Demonstration）→ 填写5元素 | VC 初稿（每条） | 方法选择用决策树，非统一 "Test"（反例#5）；模板缺失 → 降级（异常表#引用文件缺失） |
-| A.2a Source Depth 标注 | VC 初稿 + `references/vc-source-depth.md` | 每个数值标注 `[R]/[D]/[S]/[E]/[A]` 来源 | 带 Source Depth 的 VC | ≥3个 `[A]` → 🔴 VC-BLOCKED（异常表#SMARTR-OC连续3次） |
-| A.3 SMARTR-OC 自检 | VC + `references/vc-smartr-oc.md` | 8 维评分（S/M/A/R/T/R/O/C），逐项 ✅/✗ | 每条 VC 的 SMARTR-OC 分数 | < 6/8 → 修订3次 → 仍不合格 → VC-BLOCKED（异常表#SMARTR-OC连续3次）；累计≥3 VC-BLOCKED → 🛑 升级 |
-| A.4 覆盖率审计 | 全部 VC + 需求列表 | 正向追溯（需求→VC）+ 反向追溯（VC→需求）+ 孤儿检测 | 覆盖率矩阵 + UNCOVERED 清单 | 必须 100% 覆盖；未覆盖 → 回退补齐；≥3轮仍 UNCOVERED → 🛑（异常表#覆盖率审计≥3轮） |
+| A.1 解析需求 | 需求文档（md/xlsx/csv） | 提取 ID、描述、约束；按类型分类（物理量/逻辑/安全/时序/操作） | 需求列表 + 类型标签 | >50条 → 并行子Agent；>200条 → 要求分批 |
+| A.2 逐条生成VC | 需求列表 + `assets/vc-template.md` | 按类型匹配验证方法（见下方决策树）→ 填写5元素 | VC 初稿（每条） | 方法统一"Test" → 违反反例#5；模板缺失 → 降级 |
+| A.2a Source Depth 标注 | VC 初稿 + `references/vc-source-depth.md` | 每个数值标注 `[R]/[D]/[S]/[E]/[A]` 来源 | 带 Source Depth 的 VC | ≥3个 `[A]` → 🔴 VC-BLOCKED |
+| A.3 SMARTR-OC 自检 | VC + `references/vc-smartr-oc.md` | 8 维评分（S/M/A/R/T/R/O/C），逐项 ✅/✗ | 每条 VC 的 SMARTR-OC 分数 | <6/8 → 修订≤3次 → 仍不合格 → VC-BLOCKED；累计≥3 → 🛑 升级 |
+| A.4 覆盖率审计 | 全部 VC + 需求列表 | 正向追溯（需求→VC）+ 反向追溯（VC→需求）+ 孤儿检测 | 覆盖率矩阵 + UNCOVERED 清单 | 必须 100%；≥3轮仍 UNCOVERED → 🛑 |
 
 **VC-First 7步循环**（每条需求执行）：理解意图 → 选择方法 → 定义标准 → Source Depth 标注 → 设定条件 → 编写VC → SMARTR-OC 自检
 
@@ -145,28 +147,32 @@ Determine mode from the flowchart above.
 
 #### Workflow B — VC Quality Audit（B.0~B.4）
 
+> ⚡ **一句话**：对已有 VC 做 SMARTR-OC 8维评分 + CK-01~CK-10 清单审查，给出 Pass/Revise/Blocked 处置
+
 > 🚀 B.0 确认源 → B.1 解析VC → B.2 SMARTR-OC+CK审核 → B.3 改进→重评循环 → B.4 输出报告
 
-| 步骤 | 输入 | 动作 | 输出 | 关键规则（失败→异常表条目） |
-|------|------|------|------|---------------------------|
-| B.0 确认VC文件 | 用户提供的VC文件路径 | 读取/解析VC文档，确认格式和数量 | VC 文档已定位 | 无源/格式错误 → 🛑 STOP（异常表#需求文档无法解析） |
-| B.1 解析VC | VC 文档 | 提取 VC ID、关联需求ID、方法、条件、判据 | 结构化VC列表 | 缺少关联需求 → 🟠 MISSING-LINK；格式混乱 → 报告具体问题行/字段 |
-| B.2 质量审核 | VC 列表 + `references/vc-smartr-oc.md` + `assets/vc-checklist.md` | SMARTR-OC 8维评分 + CK-01~CK-10 checklist | 每条VC的分数 + CK标记 | SMARTR-OC < 6/8 或 🔴 Critical CK ❌ → 需修订（异常表#SMARTR-OC连续3次） |
-| B.3 改进建议 | 不达标VC清单 | 逐条修复 → 重新评分 → 循环直到通过 | 修订后VC | 修订后仍不达标 → 标记 disposition；3轮仍不达标 → VC-BLOCKED |
-| B.4 输出报告 | 全部评分结果 | 汇总 disposition（Pass/Conditional Pass/Revise/Blocked） | 质量审核报告 | 使用 `references/vc-report-templates.md` 模板；模板缺失 → 降级输出（异常表#引用文件缺失） |
+| 步骤 | 输入 | 动作 | 输出 | 失败处理 |
+|------|------|------|------|---------|
+| B.0 确认VC文件 | 用户提供的VC文件路径 | 读取/解析VC文档，确认格式和数量 | VC 文档已定位 | 无源/格式错误 → 🛑 STOP |
+| B.1 解析VC | VC 文档 | 提取 VC ID、关联需求ID、方法、条件、判据 | 结构化VC列表 | 缺少关联需求 → 🟠 MISSING-LINK；格式混乱 → 报告具体行/字段 |
+| B.2 质量审核 | VC 列表 + `references/vc-smartr-oc.md` + `assets/vc-checklist.md` | SMARTR-OC 8维评分 + CK-01~CK-10 checklist | 每条VC的分数 + CK标记 | <6/8 或 🔴 Critical CK ❌ → 需修订 |
+| B.3 改进建议 | 不达标VC清单 | 逐条修复 → 重新评分 → 循环直到通过 | 修订后VC | 3轮仍不达标 → VC-BLOCKED |
+| B.4 输出报告 | 全部评分结果 | 汇总 disposition（Pass/Conditional Pass/Revise/Blocked） | 质量审核报告 | 模板缺失 → 降级输出 |
 
 #### Workflow C — Coverage Audit（C.0~C.5）
 
+> ⚡ **一句话**：检查需求↔VC的双向覆盖完整性，输出 UNCOVERED/ORPHAN 清单 + 覆盖率矩阵
+
 > 🚀 C.0 确认双源 → C.1 解析ID → C.2 完整性检查 → C.3 孤儿检测 → C.4 覆盖率矩阵 → C.5 输出报告
 
-| 步骤 | 输入 | 动作 | 输出 | 关键规则（失败→异常表条目） |
-|------|------|------|------|---------------------------|
-| C.0 确认来源 | 需求文件 + VC 文件 | 用 `vscode_askQuestions` 确认两个输入源 | 双源已定位 | 缺任一 → 🛑 STOP（异常表#需求文档无法解析） |
+| 步骤 | 输入 | 动作 | 输出 | 失败处理 |
+|------|------|------|------|---------|
+| C.0 确认来源 | 需求文件 + VC 文件 | 用 `vscode_askQuestions` 确认两个输入源 | 双源已定位 | 缺任一 → 🛑 STOP |
 | C.1 解析ID | 需求文档 + VC 文档 | 提取需求ID列表 + VC关联的需求ID | 双索引 | ID格式不统一 → 报告差异，请求用户统一 |
-| C.2 完整性检查 | 双索引 | 每条需求 ≥ 1 VC | UNCOVERED/PARTIAL 清单 | 零VC → 🔴 UNCOVERED；大量 UNCOVERED(>30%) → **暂停 C，切换到 Workflow A 补齐后再回到 C** |
-| C.3 孤儿检测 | 双索引 | 每条VC必须关联已存在的需求 | ORPHAN/UNLINKED 清单 | 指向不存在需求 → 🔴 ORPHAN；大量 ORPHAN(>20%) → **暂停 C，先用 `vscode_askQuestions` 让用户修正需求ID命名后重跑** |
+| C.2 完整性检查 | 双索引 | 每条需求 ≥ 1 VC | UNCOVERED/PARTIAL 清单 | 零VC → 🔴 UNCOVERED；>30%未覆盖 → 暂停C，先补齐A |
+| C.3 孤儿检测 | 双索引 | 每条VC必须关联已存在的需求 | ORPHAN/UNLINKED 清单 | 指向不存在需求 → 🔴 ORPHAN；>20%孤儿 → 先修正需求ID命名 |
 | C.4 覆盖率矩阵 | 检查结果 | 构建追溯矩阵（需求↔VC状态） | 覆盖率矩阵表 | — |
-| C.5 输出报告 | 矩阵 + 清单 | 覆盖率百分比 + 未覆盖清单 + 改进建议 | 覆盖率审计报告 | 使用 `references/vc-report-templates.md` 模板；模板缺失 → 降级输出（异常表#引用文件缺失） |
+| C.5 输出报告 | 矩阵 + 清单 | 覆盖率百分比 + 未覆盖清单 + 改进建议 | 覆盖率审计报告 | 模板缺失 → 降级输出 |
 
 **Token优化** — 将 Todo List 确认合并到源文档确认步骤（A.0/B.0/C.0）中，在同一个 `vscode_askQuestions` 中展示 todo list 并请求确认。不单独发起一轮确认。
 
