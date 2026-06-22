@@ -13,5 +13,20 @@
     "id": 3,
     "prompt": "这是我的需求列表[REQ-001~REQ-010]和VC列表[VC-001~VC-008]，帮我检查哪些需求还没写VC、哪些VC对不上需求",
     "expected": "应进入 Workflow C: 构建覆盖率矩阵，输出 UNCOVERED 需求清单 + ORPHAN VC 清单，给出覆盖率百分比"
+  },
+  {
+    "id": 4,
+    "prompt": "帮我为这几条需求快速生成VC：\n1. 绝缘电阻≥100MΩ（500VDC）\n2. SOC估算精度≤5%\n3. 均衡电流≥2A",
+    "expected": "应触发 Lite Mode（≤5条对话内粘贴）：跳过 CHECKPOINT，一次性输出结果；仍执行 SMARTR-OC 自检 + Source Depth 标注 + 覆盖率内联展示"
+  },
+  {
+    "id": 5,
+    "prompt": "帮我生成BMS需求的VC，同时检查一下覆盖率是否完整。这是需求文件：c:\\AI\\BMS_System_Requirements_100.md",
+    "expected": "应识别混合意图（A+C），通过 vscode_askQuestions 确认执行顺序；默认先 A 后 C；展示 todo list 后再执行"
+  },
+  {
+    "id": 6,
+    "prompt": "帮我为这条需求生成VC：REQ-X01: 电池管理系统应提供卓越的用户体验",
+    "expected": "应触发 Requirement Maturity Gate — 识别主观形容词"卓越"无法量化，标记 🔴 VC-BLOCKED，建议重写需求为可验证形式（如具体响应时间、操作步骤数、满意度评分阈值等）"
   }
 ]
