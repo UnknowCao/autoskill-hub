@@ -16,3 +16,4 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-15T20:33	0ada9ba	verification-criteria	85.5	88.0	keep	dim5+dim7	去软化措辞(建议→directive)+混合模式交叉联动表(ORPHAN→B.2/UNCOVERED→A.2/BLOCKED→C矩阵)	full_test
 2026-06-22T11:00	baseline	verification-criteria	-	80.6	baseline	-	Darwin2.0新基线(6子Agent full_test;结构62.7+实测17.9)	full_test
 2026-06-22T11:15	92b2064	verification-criteria	80.6	82.9	keep	dim5	决策树内联(6类型×方法表)+A→C复用快速通道(6步清单)+Lite Mode信息不完整处理(4场景+VC-BLOCKED定义)	full_test
+2026-06-22T11:30	907fbcc	verification-criteria	82.9	85.5	keep	dim7	精简Key Principles(去DO/DON'T冗余→GATE-only+反例交叉引用)+合并3CHECKPOINT为编号清单+去重复escalation	full_test
