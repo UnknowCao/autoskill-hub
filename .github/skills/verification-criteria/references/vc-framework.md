@@ -20,13 +20,7 @@ VC:  "Under normal supply voltage (9V~16V), send CAN network wake-up frame via C
       ↑ What              ↑ How                         ↑ Criterion
 ```
 
-### Why VC Exists
-
-| Level | Value |
-|-------|-------|
-| **Engineering** | Makes requirements verifiable — eliminates "translation loss" between requirements and testing |
-| **Quality** | Prevents requirement drift — VC is the "anchor point" for requirements |
-| **Process** | Enables bidirectional traceability: Stakeholder Req → System Req → VC → Test Case → Test Result |
+> VC enables bidirectional traceability: Stakeholder Req → System Req → VC → Test Case → Test Result.
 
 ### When — VC Timing
 
@@ -47,56 +41,28 @@ VC:  "Under normal supply voltage (9V~16V), send CAN network wake-up frame via C
 
 ### By Verification Method (4-Type Method)
 
-| Method | Definition | Typical Application |
-|--------|-----------|-------------------|
-| **Analysis** | Verify via mathematical models, simulation, calculation | Thermal analysis, EMC simulation, WCA, reliability prediction |
-| **Inspection** | Verify via visual review, document review | Connector selection check, PCB layout review, wiring check |
-| **Test** | Verify by running system/component under controlled conditions | Functional test, performance test, durability test, HIL/SIL |
-| **Demostration** | Verify via actual operation demonstration | UI workflow, maintenance accessibility, assembly feasibility |
+- **Analysis** — mathematical models, simulation, calculation: thermal analysis, EMC simulation, WCA, reliability prediction
+- **Inspection** — visual review, document review: connector selection, PCB layout, wiring check
+- **Test** — running system/component under controlled conditions: functional, performance, durability, HIL/SIL
+- **Demonstration** — actual operation walkthrough: UI workflow, maintenance accessibility, assembly feasibility
 
 ### By Requirement Type
 
-| Requirement Type | VC Core Elements | Example |
-|-----------------|-----------------|---------|
-| **Functional** | Input-output behavior, state transitions | "Press SPORT button → VehModeSt signal changes to 0x02 within 200ms, repeat 10 times, 0 failures" |
-| **Performance** | Quantified metric + measurement conditions + statistical method | "CAN bus load ≤ 50%, measured at 500kbps for 1 hour average" |
-| **Reliability** | Confidence level + sample size + failure criterion | "95% confidence, 80% reliability, 1000 cycles without failure" |
-| **Timing** | Start/end event definition + time window | "From KL15 ON to HMI first screen rendered ≤ 2.5s" |
-| **Safety (ASIL)** | Safety goal + FTTI + safe state | "Overvoltage protection must disconnect main circuit within 50ms of detection" |
-| **Interface** | Signal monitoring + timing + data integrity | "CAN-FD message ID 0x3A1: period 20ms ±1ms avg, max interval ≤25ms, frame loss = 0" |
+- **Functional**: input-output behavior, state transitions — e.g. "Press SPORT → VehModeSt = 0x02 within 200ms, 10 reps, 0 failures"
+- **Performance**: quantified metric + conditions + statistical method — e.g. "CAN load ≤ 50% at 500kbps, 1h avg"
+- **Reliability**: confidence + sample size + failure criterion — e.g. "95% confidence, 80% reliability, 1000 cycles"
+- **Timing**: start/end event + time window — e.g. "KL15 ON → HMI rendered ≤ 2.5s"
+- **Safety (ASIL)**: safety goal + FTTI + safe state — e.g. "overvoltage → disconnect ≤ 50ms"
+- **Interface**: signal + timing + data integrity — e.g. "CAN-FD 0x3A1: 20ms ±1ms avg, max ≤25ms, loss=0"
 
-## SMARTR-OC Extended Quality Model
-
-| Attribute | Definition | Anti-Example |
-|-----------|-----------|--------------|
-| **S**pecific | VC points to specific requirement and verification object unambiguously | "Verify system functionality is normal" |
-| **M**easurable | Criterion includes quantifiable numeric or boolean condition | "Response speed is fast enough" |
-| **A**chievable | Executable within project constraints (cost, equipment, time) | Requires 1M km real-vehicle verification |
-| **R**elevant | VC directly corresponds to requirement, no irrelevant verification | Verifying connector appearance for communication rate requirement |
-| **T**raceable | VC uniquely traces to requirement and can be referenced by test cases | Multiple requirements share one vague VC |
-| **R**epeatable | Same conditions → same conclusion across different engineers | "Expert judges whether qualified" |
-| **O**bjective | Criterion excludes subjective interpretation | "Interface is beautiful and elegant" |
-| **C**omplete | Covers all key aspects: normal, boundary, abnormal conditions | Only verifies 25°C normal condition |
+> SMARTR-OC 8-point scoring rubric → `references/vc-smartr-oc.md`
 
 ## VC-First Methodology — Four Layers
 
-```
-L1: Mindset
-    "Every requirement is a hypothesis awaiting verification"
-    VC is not a post-annotation; it's synchronous evidence of the requirement
+> L1 Mindset + L2 Principles → `../SKILL.md` §VC-First Methodology + §Key Principles
 
-L2: Principles
-    P1: Synchronization — VC and requirement created/reviewed/changed together
-    P2: Concretization — Abstract requirements transformed into concrete verification via VC
-    P3: Boundary — VC must cover normal, boundary, and abnormal conditions
-    P4: Traceability — Each VC bidirectionally linked to requirement and test case
-
-L3: Process
-    Understand intent → Select method → Define criterion → Set conditions → Write VC → Self-check (SMARTR-OC) → Peer review
-
-L4: Tools & Methods
-    VC template library, quality checklist, verification method decision tree, classification reference
-```
+- **L3 Process**: Understand intent → Select method → Define criterion → Set conditions → Write VC → Self-check (SMARTR-OC) → Peer review
+- **L4 Tools**: VC template library, quality checklist, verification method decision tree, classification reference
 
 ### Key Cognitive Shifts
 
@@ -108,32 +74,7 @@ L4: Tools & Methods
 | VC as documentation appendix | VC as integral part of requirement |
 | Quality found in testing phase | Quality built-in at requirement definition phase |
 
-### VC-First Operating Process
-
-```
-1. Understand Intent    2. Select Method     3. Define Criterion
-   • Who needs it?         • Analysis?           • Pass threshold
-   • Why needed?           • Inspection?         • Measurement precision
-   • Core objective?       • Test?               • Statistical method
-   • Failure consequence?  • Demonstration?      • Sample size
-         │                                             │
-         └────────── Iterative Calibration ────────────┘
-              If VC can't be defined, revise the requirement
-
-4. Set Test Conditions  5. Write VC Statement  6. Quality Check
-   • Environment           • Template-based       • SMARTR-OC self-check
-   • Preconditions         • Structured           • Peer review
-   • Equipment/Rig         • Traceable            • Test confirmation
-```
-
-### Adoption Resistance & Counter-Strategies
-
-| Resistance | Counter-Strategy |
-|------------|-----------------|
-| "Too time-consuming" | Data shows VC investment reduces rework (typical ROI 1:4) |
-| "I don't know how" | Provide VC template library and training |
-| "Requirements still changing" | VC should also be lightweight and iterative |
-| "Tools don't support it" | Build Excel side-table first, then push tooling upgrade |
+> VC-First 7-step operating loop with mermaid diagram → `references/vc-workflow-a.md` §VC-First Operating Loop
 
 ## Traceability Chain
 

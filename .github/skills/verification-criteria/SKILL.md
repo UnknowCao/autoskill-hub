@@ -31,18 +31,11 @@ flowchart TD
 
 **⚠️ 强制使用 `vscode_askQuestions`**：Never assume the user's intent. 每当需要确认模式或等待用户决策时，**必须**调用 `vscode_askQuestions` 工具，而非输出文字后等待用户手动回复。
 
-**🚀 快速通道（Token优化）**：当关键词命中 **唯一** 模式（无混合意图）时，跳过 `vc-mode-selection` 确认，直接进入源文档确认（A.0/B.0/C.0），在文档确认的 `vscode_askQuestions` 中附加模式说明即可。仅在匹配到多个模式或匹配置信度不足时才进行模式确认。
+**🚀 快速通道**：关键词命中 **唯一** 模式（无混合意图）→ 跳过独立的模式选择确认，合并到源文档确认步骤（A.0/B.0/C.0）的 `vscode_askQuestions` 中附带模式说明。仅在匹配到多个模式或置信度不足时才单独进行模式确认。
 
-模式确认提问格式（仅在必要时通过 `vscode_askQuestions` 调用）：
+> 模式确认提问格式（仅在多模式/低置信度时通过 `vscode_askQuestions` 调用）: Header `vc-mode-selection`，Options: **A 生成 VC** / **B 审核 VC 质量** / **C 覆盖率审计**。
 
-- **Header**: `vc-mode-selection`
-- **Question**: "I need to confirm what you'd like me to do. Which mode should I use?"
-- **Options**:
-  - **A — 生成 VC**: 从需求文档生成新的验证标准
-  - **B — 审核 VC 质量**: 对已有 VC 做 SMARTR-OC 评分和 CK 检查
-  - **C — 覆盖率审计**: 检查 VC 对需求的覆盖完整性
-
-🔴 **CHECKPOINT · 🛑 STOP** — 模式确认后，暂停向用户复述所选模式及下一步操作，调用 `vscode_askQuestions` 让用户确认后再加载对应 workflow 文件。**绝不自行跳转模式。绝不输出执行流程概要。**
+🔴 **CHECKPOINT · 🛑 STOP** — 无论快速通道还是标准流程，必须在源文档确认步骤中明确告知用户当前模式。**绝不静默跳转模式。绝不输出执行流程概要。**
 
 ## ⚡ Lite Mode — 快速内联处理（≤5条）
 
@@ -65,12 +58,10 @@ flowchart TD
 
 **Lite Mode 信息不完整处理**（需求缺少边界条件/来源时）：
 
-| 缺失信息 | 处理方式 | 标记 |
-|---------|---------|------|
-| 需求未给工作温度范围 | 常温 + 标注 `⚠️ 需求未指定温度边界，仅按常温 (25°C) 验证` | 🟡 VC-PARTIAL |
-| 需求未给故障条件 | 正常工况下验证 + 标注 `⚠️ 未覆盖故障/异常工况` | 🟡 VC-PARTIAL |
-| 数值缺少来源（无标准/行业规范引用） | 标注 `[A: Lite Mode 推断，需确认]` + 提示用户补充来源 | 🟠 VC-ASSUMPTION |
-| 需求使用主观形容词（良好/快速/稳定） | 🔴 标记 VC-BLOCKED，建议用户提供量化指标 | 🔴 VC-BLOCKED |
+- 缺工作温度范围 → 常温 + `⚠️ 需求未指定温度边界，仅按常温(25°C)验证` → 🟡 VC-PARTIAL
+- 缺故障条件 → 正常工况 + `⚠️ 未覆盖故障/异常工况` → 🟡 VC-PARTIAL
+- 数值无来源 → `[A: Lite Mode推断，需确认]` + 提示补充 → 🟠 VC-ASSUMPTION
+- 主观形容词（良好/快速/稳定） → 🔴 VC-BLOCKED，建议量化 → 🔴 VC-BLOCKED
 
 > 累积 ≥3 🟡/🟠 → 不触发升级（与 ≥3 🔴 VC-BLOCKED 不同）。但需在输出摘要中明确标注信息缺口，提示用户"补充信息后可获得更完整的 VC"。
 
@@ -105,7 +96,7 @@ Determine mode from the flowchart above.
 
 **Before executing any workflow step**, you MUST call `manage_todo_list` to create a todo list. Each workflow file defines its own todo items — copy them from the workflow file's "## Todo List Template" section. Mark each item `in-progress` before starting it and `completed` immediately after.
 
-> **Why**: The todo list gives the user real-time visibility into progress, ensures no steps are skipped, and makes the workflow resumable across long sessions. A workflow without a todo list is a protocol violation.
+> 无 todo list = 协议违规。每条 item 完成后立即标记 `completed`。
 
 | Mode | Workflow | Load | Input | Output |
 |------|----------|------|-------|--------|
@@ -119,16 +110,17 @@ Determine mode from the flowchart above.
 
 > ⚡ **一句话**：为每条需求生成可独立验证的测试标准（方法+条件+数值判据+来源标注）
 >
-> 🚀 A.0 确认源 → A.1 解析需求 → A.2 生成VC(模板+5元素) → A.2a Source Depth标注 → A.3 SMARTR-OC自检(≥6/8) → A.4 覆盖率审计(100%)
+> 🚀 A.0 确认源 → A.1 解析需求 → **A.1a 拆分需求文件（>50条时）** → A.2 生成VC(模板+5元素) → A.2a Source Depth标注 → A.3 SMARTR-OC自检(≥6/8) → A.4 覆盖率审计(100%)
 
-| 步骤 | 输入 | 动作 | 输出 | 失败处理 |
-|------|------|------|------|---------|
-| A.0 确认需求文档 | 用户提供的文件路径 | 扫描已有VC文档；发现已有VC → `vscode_askQuestions` 询问增量/覆盖/切换模式 | 需求文档已定位 | 无源/格式错误 → 🛑 STOP（异常表#需求文档无法解析） |
-| A.1 解析需求 | 需求文档（md/xlsx/csv） | 提取 ID、描述、约束；按类型分类（物理量/逻辑/安全/时序/操作） | 需求列表 + 类型标签 | >50条 → 并行子Agent；>200条 → 要求分批 |
-| A.2 逐条生成VC | 需求列表 + `assets/vc-template.md` | 按类型匹配验证方法（见下方决策树）→ 填写5元素 | VC 初稿（每条） | 方法统一"Test" → 违反反例#5；模板缺失 → 降级 |
-| A.2a Source Depth 标注 | VC 初稿 + `references/vc-source-depth.md` | 每个数值标注 `[R]/[D]/[S]/[E]/[A]` 来源 | 带 Source Depth 的 VC | ≥3个 `[A]` → 🔴 VC-BLOCKED |
-| A.3 SMARTR-OC 自检 | VC + `references/vc-smartr-oc.md` | 8 维评分（S/M/A/R/T/R/O/C），逐项 ✅/✗ | 每条 VC 的 SMARTR-OC 分数 | <6/8 → 修订≤3次 → 仍不合格 → VC-BLOCKED；累计≥3 → 🛑 升级 |
-| A.4 覆盖率审计 | 全部 VC + 需求列表 | 正向追溯（需求→VC）+ 反向追溯（VC→需求）+ 孤儿检测 | 覆盖率矩阵 + UNCOVERED 清单 | 必须 100%；≥3轮仍 UNCOVERED → 🛑 |
+| 步骤 | 动作 | 失败处理 |
+|------|------|---------|
+| A.0 确认需求文档 | 扫描已有VC；发现已有→`vscode_askQuestions`询问增量/覆盖/切换 | 无源/格式错误→🛑 |
+| A.1 解析需求 | 提取ID/描述/约束/功能域；按类型分类 | >50条→并行Agent；>200条→分批 |
+| **A.1a 拆分需求文件** | **（仅 >50条）** 运行 `scripts/split_req.py` 按功能域拆分为独立文件→核对ID完整性→构造分派映射 | 拆分不一致→🛑 |
+| A.2 逐条生成VC | 匹配验证方法(决策树)→填写5元素（加载`vc-template.md`） | 统一"Test"→反例#5 |
+| A.2a Source Depth | 逐值标注`[R]/[D]/[S]/[E]/[A]`（加载`vc-source-depth.md`） | ≥3[A]→🔴VC-BLOCKED |
+| A.3 SMARTR-OC自检 | 8维评分S/M/A/R/T/R/O/C（加载`vc-smartr-oc.md`） | <6/8→修订≤3次→仍不合格→VC-BLOCKED |
+| A.4 覆盖率审计 | 正向+反向追溯+孤儿检测 | 必须100%；≥3轮仍UNCOVERED→🛑 |
 
 **VC-First 7步循环**（每条需求执行）：理解意图 → 选择方法 → 定义标准 → Source Depth 标注 → 设定条件 → 编写VC → SMARTR-OC 自检
 
@@ -143,7 +135,7 @@ Determine mode from the flowchart above.
 | 操作/功能 | 人机交互/功能流程/状态展示 | **Demonstration** — 操作演练 + 功能走查 | HMI 显示正确性、诊断菜单导航 |
 | 文档/布局 | 设计输出物/物理布置/标识 | **Inspection** — 审查/尺寸测量/目视检查 | 丝印可读性、爬电距离、线束走向 |
 
-> **红线**：所有需求统一用 "Test" → 违反反例#5。详见 `references/vc-handbook.md` 第4章。
+> **红线**：所有需求统一用 "Test" → 违反反例#5。详见 `references/vc-anti-patterns.md`。
 
 #### Workflow B — VC Quality Audit（B.0~B.4）
 
@@ -151,13 +143,13 @@ Determine mode from the flowchart above.
 
 > 🚀 B.0 确认源 → B.1 解析VC → B.2 SMARTR-OC+CK审核 → B.3 改进→重评循环 → B.4 输出报告
 
-| 步骤 | 输入 | 动作 | 输出 | 失败处理 |
-|------|------|------|------|---------|
-| B.0 确认VC文件 | 用户提供的VC文件路径 | 读取/解析VC文档，确认格式和数量 | VC 文档已定位 | 无源/格式错误 → 🛑 STOP |
-| B.1 解析VC | VC 文档 | 提取 VC ID、关联需求ID、方法、条件、判据 | 结构化VC列表 | 缺少关联需求 → 🟠 MISSING-LINK；格式混乱 → 报告具体行/字段 |
-| B.2 质量审核 | VC 列表 + `references/vc-smartr-oc.md` + `assets/vc-checklist.md` | SMARTR-OC 8维评分 + CK-01~CK-10 checklist | 每条VC的分数 + CK标记 | <6/8 或 🔴 Critical CK ❌ → 需修订 |
-| B.3 改进建议 | 不达标VC清单 | 逐条修复 → 重新评分 → 循环直到通过 | 修订后VC | 3轮仍不达标 → VC-BLOCKED |
-| B.4 输出报告 | 全部评分结果 | 汇总 disposition（Pass/Conditional Pass/Revise/Blocked） | 质量审核报告 | 模板缺失 → 降级输出 |
+| 步骤 | 动作 | 失败处理 |
+|------|------|---------|
+| B.0 确认VC文件 | 读取/解析VC文档 | 无源/格式错误→🛑 |
+| B.1 解析VC | 提取VC ID/关联需求/方法/条件/判据 | 缺关联需求→🟠MISSING-LINK |
+| B.2 质量审核 | SMARTR-OC 8维+CK-01~10（加载`vc-smartr-oc.md`+`vc-checklist.md`） | <6/8或🔴Critical→需修订 |
+| B.3 改进建议 | 逐条修复→重评→循环 | 3轮不达标→VC-BLOCKED |
+| B.4 输出报告 | 汇总Pass/Conditional/Revise/Blocked | 模板缺失→降级 |
 
 #### Workflow C — Coverage Audit（C.0~C.5）
 
@@ -165,30 +157,31 @@ Determine mode from the flowchart above.
 
 > 🚀 C.0 确认双源 → C.1 解析ID → C.2 完整性检查 → C.3 孤儿检测 → C.4 覆盖率矩阵 → C.5 输出报告
 
-| 步骤 | 输入 | 动作 | 输出 | 失败处理 |
-|------|------|------|------|---------|
-| C.0 确认来源 | 需求文件 + VC 文件 | 用 `vscode_askQuestions` 确认两个输入源 | 双源已定位 | 缺任一 → 🛑 STOP |
-| C.1 解析ID | 需求文档 + VC 文档 | 提取需求ID列表 + VC关联的需求ID | 双索引 | ID格式不统一 → 报告差异，请求用户统一 |
-| C.2 完整性检查 | 双索引 | 每条需求 ≥ 1 VC | UNCOVERED/PARTIAL 清单 | 零VC → 🔴 UNCOVERED；>30%未覆盖 → 暂停C，先补齐A |
-| C.3 孤儿检测 | 双索引 | 每条VC必须关联已存在的需求 | ORPHAN/UNLINKED 清单 | 指向不存在需求 → 🔴 ORPHAN；>20%孤儿 → 先修正需求ID命名 |
-| C.4 覆盖率矩阵 | 检查结果 | 构建追溯矩阵（需求↔VC状态） | 覆盖率矩阵表 | — |
-| C.5 输出报告 | 矩阵 + 清单 | 覆盖率百分比 + 未覆盖清单 + 改进建议 | 覆盖率审计报告 | 模板缺失 → 降级输出 |
+| 步骤 | 动作 | 失败处理 |
+|------|------|---------|
+| C.0 确认来源 | `vscode_askQuestions`确认需求+VC双源 | 缺任一→🛑 |
+| C.1 解析ID | 提取需求ID+VC关联ID | ID不统一→报告差异 |
+| C.2 完整性检查 | 每条需求≥1VC | 零VC→🔴UNCOVERED；>30%→暂停C补A |
+| C.3 孤儿检测 | 每条VC关联已存在需求 | 不存在→🔴ORPHAN；>20%→修正ID |
+| C.4 覆盖率矩阵 | 构建需求↔VC追溯矩阵 | — |
+| C.5 输出报告 | 覆盖率%+未覆盖清单+建议 | 模板缺失→降级 |
 
 **Token优化** — 将 Todo List 确认合并到源文档确认步骤（A.0/B.0/C.0）中，在同一个 `vscode_askQuestions` 中展示 todo list 并请求确认。不单独发起一轮确认。
 
 ## 并行子Agent调度 (Parallel Dispatch)
 
-Workflow A 且需求数量 > 50 → 自动启用并行子Agent模式。按功能域拆分（≤30条/Agent，域不跨Agent），并行调用 `runSubagent`。
+Workflow A 且需求数量 > 50 → 自动启用并行子Agent模式。**先用 `scripts/split_req.py` 按功能域把需求文件拆分为独立 `.md` 文件**（≤30条/文件，域不跨文件），再并行调用 `runSubagent`，**每个子Agent的 prompt 只携带拆分后的文件路径**（不内联需求全文），子Agent自行 `read_file` 加载。
 
 | 要素 | 规则 | 详见 |
 |------|------|------|
 | 触发 | 需求 > 50，仅 Workflow A（B/C 不走并行） | — |
-| 拆分 | 按功能域，≤30条/Agent，域不跨Agent（通常 3~5 个Agent） | — |
-| 调度 | 同时并行 `runSubagent`（不串行）；prompt 必须自包含（需求子集+上下文+输出路径+行为约束）；不传 `agentName` | `references/vc-subagent-prompt.md` |
+| **拆分** | **A.1a 步骤**：`scripts/split_req.py` 按功能域物理拆分为独立文件，≤30条/文件，域不跨文件；产出 `_index.json` 清单 | `scripts/split_req.py`、`references/vc-workflow-a.md §A.1a` |
+| 分派 | 单次并行不超过 5 个Agent，超限则分轮次（每轮 ≤5 个Agent）；每个Agent对应一个拆分文件 | — |
+| 调度 | 同时并行 `runSubagent`（不串行）；prompt **只填 `{requirements_file_path}`（拆分文件路径）**，需求全文不内联；不传 `agentName` | `references/vc-subagent-prompt.md` |
 | 合并 | 收集输出→**`scripts/merge_vc.py`** 自动合并+统计+覆盖率验证→分层复核（SMARTR-OC 抽样审计：8/8跳过/6-7抽样20%/ <6全量/均分偏离>1.0全量）→ A.4 覆盖率审计 → CHECKPOINT 展示 | `references/vc-subagent-prompt.md`、`scripts/merge_vc.py` |
 | 失败 | 单失败→重试1次→降级顺序；≥2失败→全局降级；输出格式不兼容→主Agent修复/重做 | `references/vc-exceptions.md` |
 
-🔴 **CHECKPOINT · 🛑 STOP** — 需求 > 50 触发并行分派前：展示功能域拆分方案（每个Agent负责的需求ID范围+数量），通过 `vscode_askQuestions` 让用户确认拆分合理性后再 spawn 子Agent。禁止跳过确认直接并行执行。
+🔴 **CHECKPOINT · 🛑 STOP** — A.1a 拆分完成后、spawn 子Agent前：展示拆分方案（每个拆分文件的 domain + ID 范围 + 条数 + 对应子Agent输出路径），通过 `vscode_askQuestions` 让用户确认后再并行执行。禁止跳过确认直接并行执行。单次并行不超过 5 个Agent，超限则先执行第一轮再确认第二轮。
 
 ## 异常与边界条件
 
@@ -196,21 +189,15 @@ Workflow A 且需求数量 > 50 → 自动启用并行子Agent模式。按功能
 
 ### 关键 Fallback 规则（内联）
 
-以下为最常见异常的即时处理规则。完整 13 条规则见 `references/vc-exceptions.md`。
+以下为最常触发的工作流阻断异常。完整规则（含 🟡 级降级处理、文件过大、askQuestions 超时等）见 `references/vc-exceptions.md`。
 
 | 触发条件 | 严重度 | 处理动作 | 仍失败则 |
 |---------|--------|---------|---------|
 | 需求文档无法解析（非 md/xlsx/csv，或结构混乱） | 🔴 | 向用户报告具体问题行/字段，请求提供结构化格式；**不静默跳过，不自行猜测** | 终止当前 Workflow，等用户提供有效输入 |
-| SMARTR-OC 连续 3 次修订仍 < 6/8 | 🔴 | 标记该需求为 VC-BLOCKED，记录阻塞原因，继续下一条；**不无限循环** | 累计 ≥3 VC-BLOCKED → 触发升级规则，暂停全部 VC 工作 |
-| VC 缺少关联需求 ID（🟠 MISSING-LINK） | 🟡 | 标记 MISSING-LINK；CK-01/CK-09 自动 ❌；其余 CK 按实际内容评分（不因缺链全盘否定）；B.2 报告中注明"追溯链断裂" | 全部 VC 均为 MISSING-LINK → 暂停 B，请求用户提供需求文档或统一 ID 命名后重跑 |
+| SMARTR-OC 连续 3 次修订仍 < 6/8 | 🔴 | 标记该需求为 VC-BLOCKED，记录阻塞原因，继续下一条；**不无限循环** | 累计 ≥3 VC-BLOCKED → 触发升级，暂停全部 VC 工作 |
 | 覆盖率审计 ≥3 轮回退仍有 UNCOVERED | 🔴 | 暂停，展示未覆盖需求清单 + 阻塞原因；用 `vscode_askQuestions` 让用户决定：接受部分覆盖 / 修订需求 / 终止 | 用户不回复 → 采用"接受部分覆盖"，标注 ⚠️ |
-| 用户发出混合模式指令（≥2 Workflow 同时触发） | 🔴 | 用 `vscode_askQuestions` 确认执行顺序（见下表），不自行决定 | 用户不回复 → 按默认顺序执行，明确告知 |
+| 用户发出混合模式指令（≥2 Workflow 同时触发） | 🔴 | 用 `vscode_askQuestions` 确认执行顺序（见 [混合模式表](#混合模式执行顺序与交叉联动)），不自行决定 | 用户不回复 → 按默认顺序执行，明确告知 |
 | ≥2 个子Agent同时失败（空输出/超时/异常） | 🔴 | 终止并行模式，报告失败子批次+原因，全局降级为顺序模式 | 顺序模式也失败 → 标记批次为 error，继续下一批 |
-| 引用文件缺失（`references/` 或 `assets/` 文件不存在） | 🟡 | 报告缺失文件清单，用内置知识降级处理，标注 `⚠️ degraded: 缺少 {filename}`；不中断整体流程 | 关键文件缺失（如 workflow 文件）→ 终止当前模式，告知用户检查安装 |
-| 输入文件过大（>200 条需求顺序模式） | 🟡 | 提示用户总量，要求分批（≤50 条/批）；>50 条自动触发并行子Agent模式 | 用户坚持全量 → 顺序执行，每 50 条暂停确认 |
-| `vscode_askQuestions` 无响应（超时/工具失败） | 🟡 | 采用默认安全选项（优先"增量补充"而非"覆盖"，优先"仅评估"而非"自动修改"），明确告知用户所采用的默认值及后果 | — |
-| 用户中途要求切换模式 | 🟡 | 保存当前进度（列出已完成 VC ID 清单），切换后告知用户可从中断点继续；不丢失已完成工作 | — |
-| 输出目录不存在 | 🟡 | 自动创建目录（`create_directory`），告知用户 | — |
 
 ### 混合模式执行顺序与交叉联动
 
@@ -267,13 +254,13 @@ Load on demand — only when the corresponding workflow step is reached. Verify 
 - `references/vc-safety-patterns.md` — **A.2**: ASIL requirements → safety margins, Double-100, test matrix
 - `assets/vc-checklist.md` — **B.2**: SMARTR-OC scoring form + CK-01~CK-10 checklist
 - `references/vc-report-templates.md` — **A.4 / B.4 / C.5**: report templates
-- `references/vc-handbook.md` — Deep-dive on 5-element structure, Top 10 pitfalls
 - `references/vc-framework.md` — VC-First theory, SMARTR-OC rationale
 - `references/vc-anti-patterns.md` — VC examples, suspicious VC diagnosis
 - `references/vc-sequence-guide.md` — **A.2**: Multi-scenario/causal-chain Sequence constraints
 - `references/vc-exceptions.md` — Exception handling fallback rules
-- `references/vc-hard-gates.md` — **Parallel Dispatch**: 10 Hard Gates card inlined into subAgent prompts
-- `references/vc-subagent-prompt.md` — **Parallel Dispatch**: 完整 runSubagent prompt 模板 + 变量清单
+- `references/vc-hard-gates.md` — **Parallel Dispatch**: 11 Hard Gates card inlined into subAgent prompts
+- `references/vc-subagent-prompt.md` — **Parallel Dispatch**: 完整 runSubagent prompt 模板 + 变量清单（**prompt 只传 `{requirements_file_path}`，需求全文不内联**）
+- `scripts/split_req.py` — **A.1a / Parallel Dispatch → Split**: 按功能域将单份需求文件拆分为多个独立 `.md` 文件（≤30条/文件），产出 `_index.json` 清单；子Agent prompt 据此只传文件路径。支持 `--heading-level auto`（默认，自动探测标题层级）或显式指定；`--id-pattern` 可适配不同 ID 前缀
 - `scripts/merge_vc.py` — **Parallel Dispatch → Merge**: 合并子Agent VC 输出文件为主文档；自动统计 SMARTR-OC 分布、覆盖率验证、分层复核建议
 
 ## ⛔ Do Not — 反例黑名单
