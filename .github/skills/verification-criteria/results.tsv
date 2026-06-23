@@ -23,3 +23,7 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-22T11:30	907fbcc	verification-criteria	82.9	85.5	keep	dim7	精简Key Principles(去DO/DON'T冗余→GATE-only+反例交叉引用)+合并3CHECKPOINT为编号清单+去重复escalation	full_test
 2026-06-22T11:40	108b045	verification-criteria	85.5	86.0	keep	dim2	Workflow速览表可读性提升(⚡一句话概要+列头'失败处理'+语言紧凑化)	full_test
 2026-06-22T11:50	c6362e7	verification-criteria	86.0	86.3	keep	dim3	异常表新增MISSING-LINK处理规则(CK部分❌评分/全MISSING→暂停B+请求需求文档)	full_test
+2026-06-23T14:00	baseline	verification-criteria	-	90.1	baseline	-	Darwin2.0盲评基线(独立judge;dim7=8硬伤:Hard Gates计数错配subagent-prompt写10条实为11条+反例#N与AP-SD-N无映射)	full_test
+2026-06-23T14:20	d252e1d	verification-criteria	90.1	89.7	keep	dim7	R1:统一Hard Gates计数(10→11)3处(subagent-prompt/workflow-a摘要/anti-patterns映射);dim7一致性修复但重评暴露dim8缺口	full_test
+2026-06-23T14:50	d951c95	verification-criteria	89.7	91.2	keep	dim8	R2:merge_vc.py tiered_review加Gate11格式抽查(_gate11_violation检测`;`误用;8/8候选命中降级sample;3用例冒烟测试通过);弥补8/8信任跳过漏洞	full_test
+2026-06-23T15:10	6615ab3	verification-criteria	91.2	91.8	keep	dim7+dim8	R3:文档同步代码(SKILL.md+subagent-prompt分层复核叙述改为两阶段门控;消除code-vs-doc drift)	full_test
