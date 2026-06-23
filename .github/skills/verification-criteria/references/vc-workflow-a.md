@@ -156,13 +156,13 @@ After parsing you should know: total count, ID list, and the set of `## ` functi
 ```bash
 python {skill_base_path}/scripts/split_req.py <input_requirements.md> \
   --out-dir <workspace>/_vc_batches/req-split/ \
-  --max-per-file 30 \
+  --max-per-file 100 \
   --heading-level auto \
   --id-pattern "BMS-\d+"   # 按实际 ID 前缀调整
 ```
 
-- `--max-per-file 30`：每个拆分文件 ≤ 30 条需求（与 `../SKILL.md §并行子Agent调度`
-  的 ≤30 条/Agent 上限对齐）。单个功能域超限时脚本自动生成 `-partN` 后缀的兄弟文件。
+- `--max-per-file 100`：每个拆分文件 ≤ 100 条需求（与 `../SKILL.md §并行子Agent调度`
+  的 ≤100 条/Agent 上限对齐）。单个功能域超限时脚本自动生成 `-partN` 后缀的兄弟文件。
 - `--heading-level auto`（默认）：自动探测需求文档用哪种标题层级（`#` / `##` / …）
   划分功能域。文档用 `# 01 · 域名` 风格时探测为 1；用 `## 1. 域名` 风格时探测为 2。
   探测失败可显式指定（如 `--heading-level 2`）。
@@ -202,7 +202,7 @@ python {skill_base_path}/scripts/split_req.py <input_requirements.md> \
 
 **If requirements count > 50** → skip sequential A.2/A.2a/A.3, enter parallel dispatch. **A.1a must have run first** and produced the split files + dispatch map.
 
-1. **Split**: 已由 A.1a 完成（`scripts/split_req.py`）。本步骤不再切分，直接复用 A.1a.3 的分派映射。每个拆分文件对应一个子Agent，域不跨Agent；单次并行 ≤ 5 个Agent，超限分轮次。
+1. **Split**: 已由 A.1a 完成（`scripts/split_req.py`）。本步骤不再切分，直接复用 A.1a.3 的分派映射。每个拆分文件对应一个子Agent，域不跨Agent；单次并行 ≤ 3 个Agent，超限分轮次。
 2. **Launch**: 对分派映射中的每条记录，调用 `runSubagent`，prompt 使用 `references/vc-subagent-prompt.md` 模板。**关键变化**：prompt 中**只填 `{requirements_file_path}`（拆分文件路径）**，不再内联 `{requirement_subset_with_full_text_and_cross_references}` 全文。子Agent自行 `read_file` 该路径加载需求。所有子Agent并行启动。
 3. **Collect**: Gather all subAgent outputs; each subAgent writes its VCs to `{workspace}/BMS_VC_Sub_{domain}.md`.
 4. **Merge**: Concatenate all subAgent outputs into the master VC document.
