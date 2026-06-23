@@ -1,6 +1,6 @@
 # VC Hard Gates Card
 
-> 子Agent Prompt 内联组件。10 条硬性门控，违反任一即不合格。子Agent 必须逐条对照执行。
+> 子Agent Prompt 内联组件。11 条硬性门控，违反任一即不合格。子Agent 必须逐条对照执行。
 > 由 `../SKILL.md §并行子Agent调度` 引用。
 
 ---
@@ -99,3 +99,24 @@ VC 中禁止写 "详见 TC-001"。VC 是 TC 的上游输入，不能循环引用
 - 8/8 → ✅
 - 6-7/8 → ⚠️（标注弱项）
 - <6/8 → ❌（修订 VC 或标记 VC-BLOCKED）
+
+> 输出格式 + Gate Compliance Checklist 格式 → `references/vc-subagent-prompt.md`
+
+---
+
+## Gate 11: 表格单元格换行 — 必须用 `<br>`
+
+VC 表格的 `Test Conditions` 和 `Pass/Fail Criterion` 列**必须**使用 `<br>` 分隔独立条件项，每行一个条件。
+禁止使用 `; ` 或空格把多个条件拼在同一行。
+
+✅ 正确：
+```
+| ... | Rig: HIL + 电池模拟器<br>Temp: -40°C, +25°C, +85°C<br>Precondition: BMS 上电自检通过 |
+```
+
+❌ 错误：
+```
+| ... | Rig: HIL; Temp: -40°C, +25°C, +85°C; Precondition: BMS 上电自检通过 |
+```
+
+违反 → 整体格式不合格，需重写该 VC 的表格行。详见 `assets/vc-template.md`。

@@ -28,10 +28,11 @@ Follow VC-First methodology: VC is written simultaneously with each requirement,
 | # | Title | Status |
 |---|-------|--------|
 | 1 | A.0 确认需求文档来源 | not-started |
-| 2 | A.1 解析需求 + 按功能域拆分 | not-started |
-| 3 | A.2 并行分派子Agent（按功能域） | not-started |
-| 4 | 合并子Agent输出 + 分层复核 | not-started |
-| 5 | A.4 覆盖率审计 + 汇总报告 | not-started |
+| 2 | A.1 解析需求（提取 ID/域/数量） | not-started |
+| 3 | A.1a 运行 split_req.py 拆分需求文件 + 核对 + 构造分派映射 | not-started |
+| 4 | A.2 并行分派子Agent（每个子Agent只传文件路径） | not-started |
+| 5 | 合并子Agent输出 + 分层复核 | not-started |
+| 6 | A.4 覆盖率审计 + 汇总报告 | not-started |
 ```
 
 > **Important**: If a step is iterative (e.g., A.2 → A.2a → A.3 → A.4 loop-back), keep the todo item `in-progress` until the loop converges. Do NOT mark `completed` prematurely.
@@ -136,16 +137,73 @@ Parse the identified system requirements (table, list, markdown, or free text). 
 - Functional description
 - Any implicit constraints, conditions, or performance targets
 
+After parsing you should know: total count, ID list, and the set of `## ` functional domains present. **This domain map drives the next step (A.1a).**
+
+---
+
+### A.1a Split Requirements File (Parallel Dispatch ONLY)
+
+> ⚡ **何时执行**：仅当 A.1 解析出的需求数量 **> 50** 且即将进入并行分派（A.2.0）时执行。
+> 顺序模式（≤ 50 条）**跳过** A.1a——直接把需求内联给主Agent自己处理。
+
+**目的**：把单份大需求文件按功能域**物理拆分**为多个独立 `.md` 文件，让子Agent
+的 prompt 只携带**文件路径**而非全文——缩短 prompt、节省 token、子Agent按需 `read_file`。
+
+#### A.1a.1 执行拆分脚本
+
+运行 `scripts/split_req.py`（确定性脚本，主Agent不手动切分）：
+
+```bash
+python {skill_base_path}/scripts/split_req.py <input_requirements.md> \
+  --out-dir <workspace>/_vc_batches/req-split/ \
+  --max-per-file 30 \
+  --heading-level auto \
+  --id-pattern "BMS-\d+"   # 按实际 ID 前缀调整
+```
+
+- `--max-per-file 30`：每个拆分文件 ≤ 30 条需求（与 `../SKILL.md §并行子Agent调度`
+  的 ≤30 条/Agent 上限对齐）。单个功能域超限时脚本自动生成 `-partN` 后缀的兄弟文件。
+- `--heading-level auto`（默认）：自动探测需求文档用哪种标题层级（`#` / `##` / …）
+  划分功能域。文档用 `# 01 · 域名` 风格时探测为 1；用 `## 1. 域名` 风格时探测为 2。
+  探测失败可显式指定（如 `--heading-level 2`）。
+- `--id-pattern`：默认 `BMS-\d+`，适配其他需求编号前缀（如 `REQ-\d+`、`UR-\d+`）。
+- 输出目录默认 `<workspace>/_vc_batches/req-split/`（保留供复查，不自动清理）。
+- 脚本同时写出 `_index.json` 清单（file → domain → ids[] → count → heading_level）。
+
+#### A.1a.2 核对拆分结果
+
+读取 `_index.json`，校验：
+- 文件数 = ceil(总功能域数, 考虑 part 拆分)
+- 所有文件 ID 的并集 = A.1 解析出的全量 ID（**无遗漏、无重复**）
+- 任一文件 ID 数 ≤ `--max-per-file`
+
+校验失败 → 不继续，按 `references/vc-exceptions.md` "拆分不一致" 报错给用户。
+
+#### A.1a.3 构造分派映射
+
+主Agent为每个拆分文件构造一条记录，供 A.2.0 使用：
+
+| split_file | domain | ids | count | output_file |
+|------------|--------|-----|-------|-------------|
+| `.../req-split-02-电池保护功能-...md` | 电池保护 | BMS-016..030 | 15 | `.../BMS_VC_Sub_电池保护.md` |
+
+🔴 **CHECKPOINT · 🛑 STOP** — A.1a 完成后、进入 A.2.0 之前：
+用 `vscode_askQuestions` 向用户展示拆分方案（每个文件的 domain + ID 范围 + 条数 +
+对应的子Agent输出路径），确认拆分合理性后再 spawn 子Agent。
+
+> 此 CHECKPOINT 与 A.2.0 的并行确认 CHECKPOINT 合并为一次提问，避免多轮打断
+> （Token 优化原则）。提问 Header: `split-plan-confirm`。
+
 ---
 
 ### A.2 VC Generation
 
 #### A.2.0 Dispatch Gate
 
-**If requirements count > 50** → skip sequential A.2/A.2a/A.3, enter parallel dispatch:
+**If requirements count > 50** → skip sequential A.2/A.2a/A.3, enter parallel dispatch. **A.1a must have run first** and produced the split files + dispatch map.
 
-1. **Split**: Group requirements by functional domain (see `../SKILL.md §并行子Agent调度`). Each sub-batch ≤ 30 requirements, domains not split across agents.
-2. **Launch**: For each sub-batch, call `runSubagent` with the prompt template below. Launch all subAgents in parallel.
+1. **Split**: 已由 A.1a 完成（`scripts/split_req.py`）。本步骤不再切分，直接复用 A.1a.3 的分派映射。每个拆分文件对应一个子Agent，域不跨Agent；单次并行 ≤ 5 个Agent，超限分轮次。
+2. **Launch**: 对分派映射中的每条记录，调用 `runSubagent`，prompt 使用 `references/vc-subagent-prompt.md` 模板。**关键变化**：prompt 中**只填 `{requirements_file_path}`（拆分文件路径）**，不再内联 `{requirement_subset_with_full_text_and_cross_references}` 全文。子Agent自行 `read_file` 该路径加载需求。所有子Agent并行启动。
 3. **Collect**: Gather all subAgent outputs; each subAgent writes its VCs to `{workspace}/BMS_VC_Sub_{domain}.md`.
 4. **Merge**: Concatenate all subAgent outputs into the master VC document.
 5. **Review** (layered SMARTR-OC audit, per `../SKILL.md §主Agent职责`):
@@ -157,24 +215,28 @@ Parse the identified system requirements (table, list, markdown, or free text). 
 
 ##### SubAgent Prompt Template
 
-Each subAgent receives this self-contained prompt. **Bold** sections are inlined; paths are for the subAgent to `read_file` on demand.
+Each subAgent receives this self-contained prompt. **Paths** are for the subAgent to `read_file` on demand — **requirements are never inlined**; the subAgent loads them from the split file produced in A.1a. The authoritative, full template is `references/vc-subagent-prompt.md`; the snippet below is a quick reference.
 
 ````markdown
 You are generating Verification Criteria (VC) for a subset of system requirements.
 
-## Requirements
+## Step 0 — Load your requirements (MANDATORY)
 
-{requirement_subset_with_full_text_and_cross_references}
+`read_file {requirements_file_path}` ← this file contains your assigned requirements
+(top of file carries `> Source:` / `> Domain:` / `> IDs:` / `> ID range:` metadata).
+Verify the ID range matches the overview below; if not, flag `⚠️ degraded` and trust the file.
 
-## Domain Context
+## Requirements Overview (full text is in the file above — do NOT expect it inline)
 
+- Requirements file: `{requirements_file_path}`
 - Domain: {functional_domain_name} (e.g., Battery Protection, Thermal Management)
+- Count: {N}  |  ID range: {id_range} (e.g. BMS-016..BMS-030)
 - Industry: Automotive BMS (Battery Management System)
 - Conventions: Three-temperature testing (-40°C, +25°C, +85°C); N=100 for safety functions; HIL as primary test rig
 
 ## Hard Gates (MANDATORY — read first)
 
-Load `references/vc-hard-gates.md` now. These 10 gates are non-negotiable:
+Load `references/vc-hard-gates.md` now. These 11 gates are non-negotiable:
 - Gate 1: No subjective words in Pass/Fail
 - Gate 2: Domain-boundary coverage (3 temp points for physical quantities)
 - Gate 3: Source Depth ≥3[A] → VC-BLOCKED; any [A] → A=✗
@@ -213,16 +275,25 @@ Load `references/vc-hard-gates.md` now. These 10 gates are non-negotiable:
    |-------|-------------------|---------------------|-----------------|--------------------|---------------------|
    | VC-{REQ-ID} | ... | ... | ... | ... | ... |
    
-   **SMARTR-OC**:
-   | S | M | A | R | T | R | O | C | Score |
-   |---|---|---|---|---|---|---|---|---|
-   | ✅/✗ | ... | ... | ... | ... | ... | ... | ... | **X/8** |
+   **SMARTR-OC**: **X/8**
+   > ✗ {dim}: {1-line reason}   ← 仅当 <8/8 时出现；8/8 时不输出维度行
    
    **Source Depth**: {value1} [R:REQ-ID] | {value2} [E:convention] | ...
    
    > ⚠️ {issues if any}
    
    ---
+   ```
+   
+   文件末尾追加 Gate Compliance Checklist（仅列出 ⚠️/✗）：
+   ```markdown
+   ## 🔍 Gate Compliance Checklist
+   
+   | Gate | Status | Issue |
+   |------|--------|-------|
+   | Gate X | ⚠️ | {1-line reason} |
+   
+   > 若全部通过：`All 11 Gates: ✅ PASS`
    ```
    
    For any `[A]` assumption, append an Assumption Log entry at end of file:
