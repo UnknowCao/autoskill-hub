@@ -119,7 +119,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | 合并 | `scripts/merge_vc.py` 自动合并+统计+覆盖率验证→分层复核→A.4 覆盖率→CHECKPOINT | `references/vc-subagent-prompt.md` |
 | 失败 | 单失败→重试1次→降级顺序；≥2失败→全局降级 | `references/vc-exceptions.md` |
 
-**分层复核**（SMARTR-OC 抽样审计）：8/8 跳过 / 6-7 抽样 20%（1条不一致→全量）/ <6 全量 / 均分偏离全局 >1.0 全量。
+**分层复核**（两阶段门控）：阶段一 SMARTR-OC 抽样（8/8 → 进入阶段二 / 6-7 抽样 20%（1条不一致→全量）/ <6 全量 / 均分偏离全局 >1.0 全量）；阶段二 Gate 11 格式抽查（仅对 8/8 候选：检测 Test Conditions/Pass-Fail 列 `; ` 误用，命中则降级到 6-7 抽样桶，不依赖子Agent 自报告）。由 `scripts/merge_vc.py` 自动执行。
 
 🔴 **CHECKPOINT · 🛑 STOP** — A.1a 拆分完成后、spawn 子Agent前：展示拆分方案（domain + ID 范围 + 条数 + 输出路径），`vscode_askQuestions` 确认后并行执行。禁止跳过。
 
