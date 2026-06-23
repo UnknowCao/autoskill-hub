@@ -52,7 +52,7 @@ prompt 里内联需求全文**——prompt 只携带文件路径。
 1. `{skill_base_path}/references/vc-smartr-oc.md` — SMARTR-OC 8维评分标准（强制）
 2. `{skill_base_path}/references/vc-source-depth.md` — Source Depth 标注规则（强制）
 3. `{skill_base_path}/assets/vc-template.md` — VC 表格模板 + 4种类型模板（强制）
-4. `{skill_base_path}/references/vc-hard-gates.md` — 10条硬门控 + 全部规则（强制，**Gates 不在此 prompt 中内联，需从文件完整加载**）
+4. `{skill_base_path}/references/vc-hard-gates.md` — 11条硬门控 + 全部规则（强制，**Gates 不在此 prompt 中内联，需从文件完整加载**）
 5. `{skill_base_path}/references/vc-safety-patterns.md` — **仅当本批次含 ASIL/安全需求时加载**（主Agent会在下方标注 `📌 REQUIRED: vc-safety-patterns.md` 或 `⏭️ SKIP: vc-safety-patterns.md — 本批次无ASIL需求`）
 6. `{skill_base_path}/references/vc-sequence-guide.md` — **仅当本批次含多场景/因果链需求时加载**（主Agent标注）
 7. `{skill_base_path}/references/vc-exceptions.md` — 遇异常时加载

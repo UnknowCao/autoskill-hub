@@ -242,6 +242,7 @@ Load `references/vc-hard-gates.md` now. These 11 gates are non-negotiable:
 - Gate 3: Source Depth ≥3[A] → VC-BLOCKED; any [A] → A=✗
 - Gate 4: Double-100 for safety functions
 - Gate 5-10: Anti-patterns #1-#9 (see file)
+- Gate 11: Table cells must use `<br>` line breaks (see file)
 
 ## Workflow
 
