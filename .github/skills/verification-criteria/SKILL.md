@@ -57,7 +57,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | 步骤 | 动作 | 失败处理 |
 |------|------|---------|
 | A.0 确认需求文档 | 扫描已有VC；发现已有→`vscode_askQuestions`询问增量/覆盖/切换 | 无源/格式错误→🛑 |
-| A.1 解析需求 | 提取ID/描述/约束/功能域；按类型分类 | >50条→并行Agent；>200条→分批 |
+| A.1 解析需求 | 提取ID/描述/约束/功能域；按类型分类 | >50条→并行Agent；>300条→分批（单轮 ≤3 Agent × 100 条） |
 | **A.1a 拆分需求文件** | **（仅 >50条）** 运行 `scripts/split_req.py` 按功能域拆分→核对ID完整性→构造分派映射 | 拆分不一致→🛑 |
 | A.2 逐条生成VC | 匹配验证方法(决策树)→填写5元素（加载`vc-template.md`） | 统一"Test"→反例#5 |
 | A.2a Source Depth | 逐值标注`[R]/[D]/[S]/[E]/[A]`（加载`vc-source-depth.md`） | ≥3[A]→🔴VC-BLOCKED |
@@ -108,13 +108,13 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 
 ## Parallel Dispatch（仅 Mode A，需求 > 50）
 
-> **先用 `scripts/split_req.py` 按功能域拆分为独立 `.md` 文件**（≤30条/文件，域不跨文件），再并行 `runSubagent`，每个子Agent prompt **只传 `{requirements_file_path}`**（不内联全文），子Agent自行 `read_file` 加载。
+> **先用 `scripts/split_req.py` 按功能域拆分为独立 `.md` 文件**（≤100条/文件，域不跨文件），再并行 `runSubagent`，每个子Agent prompt **只传 `{requirements_file_path}`**（不内联全文），子Agent自行 `read_file` 加载。
 
 | 要素 | 规则 | 详见 |
 |------|------|------|
 | 触发 | 需求 > 50，仅 Mode A | — |
-| 拆分 | `scripts/split_req.py` → ≤30条/文件，产出 `_index.json` | `references/vc-workflow-a.md §A.1a` |
-| 分派 | 单次并行 ≤5 Agent，超限分轮；每个Agent对应一个拆分文件 | — |
+| 拆分 | `scripts/split_req.py` → ≤100条/文件，产出 `_index.json` | `references/vc-workflow-a.md §A.1a` |
+| 分派 | 单次并行 ≤3 Agent，超限分轮；每个Agent对应一个拆分文件 | — |
 | 调度 | 同时并行 `runSubagent`；prompt 只填 `{requirements_file_path}`；不传 `agentName` | `references/vc-subagent-prompt.md` |
 | 合并 | `scripts/merge_vc.py` 自动合并+统计+覆盖率验证→分层复核→A.4 覆盖率→CHECKPOINT | `references/vc-subagent-prompt.md` |
 | 失败 | 单失败→重试1次→降级顺序；≥2失败→全局降级 | `references/vc-exceptions.md` |
@@ -219,7 +219,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | `references/vc-exceptions.md` | 异常处理 fallback 规则 |
 | `references/vc-hard-gates.md` | **Parallel Dispatch** — 11 Hard Gates 内联到子Agent prompt |
 | `references/vc-subagent-prompt.md` | **Parallel Dispatch** — runSubagent prompt 模板（只传 `{requirements_file_path}`） |
-| `scripts/split_req.py` | **A.1a** — 按功能域拆分需求文件（≤30条/文件，产出 `_index.json`） |
+| `scripts/split_req.py` | **A.1a** — 按功能域拆分需求文件（≤100条/文件，产出 `_index.json`） |
 | `scripts/merge_vc.py` | **Parallel Dispatch → Merge** — 合并子Agent输出+SMARTR-OC统计+覆盖率验证+分层复核建议 |
 
 ## ⛔ Do Not — 反例黑名单

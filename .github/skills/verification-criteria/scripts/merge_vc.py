@@ -263,10 +263,19 @@ def cross_check_coverage(
     if index_path and index_path.is_file():
         try:
             idx = json.loads(index_path.read_text(encoding="utf-8"))
-            # _index.json shape: {"file": {"domain": ..., "ids": [...], "count": N}}
-            for entry in idx.values():
-                if isinstance(entry, dict):
-                    expected_reqs.update(entry.get("ids", []))
+            # split_req.py _index.json schema:
+            #   {"source":..., "heading_level":N, "file_count":N, "total_ids":N,
+            #    "files": [{"file":..., "domain":..., "ids":[...], "count":N}]}
+            files = idx.get("files", [])
+            if isinstance(files, list):
+                for entry in files:
+                    if isinstance(entry, dict):
+                        expected_reqs.update(entry.get("ids", []))
+            else:
+                # Backward-compat: legacy {file: {ids}} dict shape.
+                for entry in idx.values():
+                    if isinstance(entry, dict):
+                        expected_reqs.update(entry.get("ids", []))
         except (json.JSONDecodeError, OSError):
             pass  # Index unreadable — report only what we parsed.
 

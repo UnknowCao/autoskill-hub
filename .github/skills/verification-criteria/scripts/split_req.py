@@ -31,7 +31,7 @@ to `read_file` this path — no full text inlined in the prompt.
 
 Usage
 -----
-    python split_req.py <input.md> --out-dir <dir> [--max-per-file 30]
+    python split_req.py <input.md> --out-dir <dir> [--max-per-file 100]
                       [--id-pattern "BMS-\\d+"] [--encoding utf-8]
 
 Exit codes
@@ -64,8 +64,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--max-per-file",
         type=int,
-        default=30,
-        help="Hard cap on requirement IDs per output file (default: 30).",
+        default=100,
+        help="Hard cap on requirement IDs per output file (default: 100).",
     )
     p.add_argument(
         "--id-pattern",

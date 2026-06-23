@@ -1,4 +1,8 @@
 timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-06-23T10:00	baseline	verification-criteria	-	87.0	baseline	-	Darwin2.0新基线(2子Agent full_test;dim6硬伤merge_vc.py缺失;结构60.3+实测20.7+meta6.0)	full_test
+2026-06-23T10:30	02ad508	verification-criteria	87.0	88.6	keep	dim6	创建scripts/merge_vc.py(修复3处引用但文件缺失的硬伤;与split_req.py配套;端到端冒烟测试4VC全通过)	full_test
+2026-06-23T11:15	4a43ea0	verification-criteria	88.6	92.6	keep	dim5+dim8	vc-source-depth.md强化[D]vs[A]判定边界(Quick Decision Flow加红线+[D]/[A]4判据表);R2专项测试3个模糊值全部正确降级[A]零误标,消除R1子Agent自疑模式	full_test
+2026-06-23T12:00	34c5a4f	verification-criteria	92.6	93.8	keep	dim2+dim7	Phase2.5探索性重写:Route-first架构(3步路由+三模式入口卡+共享规则收敛);284→261行(-8%);dim8路由实测3/3全✅含混合模式强制vc-mode-selection;无功能回归	full_test
 2026-06-12T10:00	277a59f	verification-criteria	-	66.9	baseline	-	初始评估	dry_run
 2026-06-12T10:15	1590c47	verification-criteria	66.9	69.3	keep	dim4	添加5个🔴CHECKPOINT标记	dry_run
 2026-06-12T10:20	f2a4201	verification-criteria	69.3	71.7	keep	dim9	添加9条Do Not黑名单	dry_run
