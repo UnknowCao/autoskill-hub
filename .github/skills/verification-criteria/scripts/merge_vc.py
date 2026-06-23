@@ -300,6 +300,17 @@ def cross_check_coverage(
 def tiered_review(parsed: List[dict]) -> Dict:
     """
     Apply the main agent's SMARTR-OC sampling policy to suggest review actions.
+
+    Two-stage gating:
+      1. SMARTR-OC score → full / sample / skip bucket.
+      2. Gate 11 format spot-check on the skip bucket: a VC table row using
+         ``; `` (semicolon+space) to separate conditions in the Test Conditions
+         or Pass/Fail Criterion columns (instead of ``<br>``) is demoted from
+         skip → sample, so the main agent re-inspects it. This closes the
+         defense-in-depth gap where an 8/8 batch with a Gate 11 violation would
+         otherwise be trusted-and-skipped (the sub-agent self-report is the
+         sole enforcer otherwise). Mechanical, deterministic, no false negatives
+         on the exact ``; `` separator pattern mandated by Gate 11.
     """
     scored = [b for b in parsed if b["smartr_score"] is not None]
     if not scored:
@@ -314,26 +325,68 @@ def tiered_review(parsed: List[dict]) -> Dict:
     full_review: List[str] = []
     sample_review: List[str] = []
     skip_review: List[str] = []
+    gate11_flags: List[Dict[str, str]] = []
 
     for b in scored:
         s = b["smartr_score"]
+        vc_id = b["vc_id"]
         if s < 6:
-            full_review.append(b["vc_id"])
+            full_review.append(vc_id)
         elif s <= 7:
-            sample_review.append(b["vc_id"])
+            sample_review.append(vc_id)
         else:
-            skip_review.append(b["vc_id"])
+            # 8/8 candidate for skip — run Gate 11 spot-check before trusting.
+            if _gate11_violation(b.get("raw", "")):
+                sample_review.append(vc_id)
+                gate11_flags.append({
+                    "vc_id": vc_id,
+                    "gate": "Gate 11",
+                    "issue": "table cell uses '; ' separator instead of '<br>'",
+                })
+            else:
+                skip_review.append(vc_id)
 
-    return {
+    result = {
         "global_mean": round(global_mean, 2),
         "skip_review_8_8": skip_review,
         "sample_review_6_7": sample_review,
         "full_review_lt_6": full_review,
         "policy": (
-            "8/8 → skip; 6-7/8 → sample 20%; <6/8 → full review; "
+            "8/8 → skip (unless Gate 11 spot-check fails → sample); "
+            "6-7/8 → sample 20%; <6/8 → full review; "
             "batch mean deviation >1.0 → full review"
         ),
     }
+    if gate11_flags:
+        result["gate11_spot_check_flags"] = gate11_flags
+    return result
+
+
+_GATE11_TABLE_ROW_RE = re.compile(
+    r"^\|\s*VC-\S+\s*\|[^|]*\|[^|]*\|([^|]*)\|([^|]*)\|([^|]*)\|",
+    re.MULTILINE,
+)
+
+
+def _gate11_violation(raw_vc_block: str) -> bool:
+    """
+    Detect Gate 11 violations in a parsed VC block's table rows.
+
+    Gate 11 mandates ``<br>`` as the cell separator in the Test Conditions
+    (4th col) and Pass/Fail Criterion (6th col). Returns True if any table
+    row uses ``; `` (semicolon+space) to join ≥2 distinct conditions in those
+    columns — the most common mechanical mistake that a ``<br>``-unaware
+    sub-agent makes.
+    """
+    for m in _GATE11_TABLE_ROW_RE.finditer(raw_vc_block):
+        test_cond, _meas_target, pass_fail = m.group(1), m.group(2), m.group(3)
+        for cell in (test_cond, pass_fail):
+            # Only flag when '; ' joins 2+ phrases (heuristic for stacked
+            # conditions); a single '; ' inside one value is tolerated.
+            parts = [p for p in cell.split("; ") if p.strip()]
+            if len(parts) >= 2 and "<br>" not in cell:
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
