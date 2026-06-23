@@ -7,6 +7,17 @@ description: "Generate, audit, and trace verification criteria (VC) for function
 
 Generate, audit, and trace VCs for functional system requirements. ASPICE SYS.2 BP5 / ISO/IEC 29148 / VC-First.
 
+### Quick Mode Selector
+
+| 你想做什么 | 模式 | 关键词 | 输入 → 输出 |
+|-----------|------|--------|------------|
+| 为需求写验证标准 | **A — VC Generation** | 生成/编写/创建 VC | 需求文档 → VC 表 + Source Depth + 覆盖率 |
+| 审核已有 VC 的质量 | **B — VC Quality Audit** | 审核/评审/SMARTR-OC/评分 | VC 文档 → SMARTR-OC 评分 + CK 清单 + 质量报告 |
+| 检查需求↔VC 覆盖完整性 | **C — Coverage Audit** | 覆盖率/追溯/traceability/遗漏 | 需求 + VC 文档 → 覆盖率矩阵 + UNCOVERED/ORPHAN 清单 |
+| 生成 + 覆盖一起做 | **A → C** | "生成"+"覆盖率"同现 | 同上，先 A 后 C（A→C 复用快速通道） |
+
+> **≤5 条粘贴到对话** → 自动走 ⚡ Lite Mode（跳过 CHECKPOINT）。**文件路径 / >5 条** → Full Mode。
+
 ## Route — 3 步定模式（入口）
 
 ```mermaid
