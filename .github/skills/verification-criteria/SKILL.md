@@ -77,6 +77,19 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | 操作/功能 | 人机交互/功能流程 | **Demonstration** — 操作演练+功能走查 | HMI 显示正确性 |
 | 文档/布局 | 设计输出物/物理布置 | **Inspection** — 审查/尺寸测量/目视 | 丝印可读性、爬电距离 |
 
+> **Hybrid 方法**：复杂需求可组合多种方法。示例：SOC 估算精度 → **Analysis**（模型仿真+边界值注入）+ **Test**（HIL 对标精密 SOC 仪表）。安全/保护类已内置 Test+Analysis 组合。选择原则：先定主方法（决策树），再判断是否需要第二方法交叉验证。
+
+### Speed Tier（快速通道 · 用户显式请求"快速/quick/简要"时触发）
+
+| 优化项 | 标准模式 | Speed Tier |
+|--------|---------|------------|
+| SMARTR-OC 展示 | 逐维度 ✅/✗ 表 | 仅总分 + 不达标维度摘要 |
+| 中间 CHECKPOINT | 每 10 条批量确认 | **跳过**（仅保留最终输出确认） |
+| 覆盖率报告 | 完整矩阵 + UNCOVERED/ORPHAN 清单 | 覆盖率% + TOP 3 缺口 |
+| 质量门控 | 不变（SMARTR-OC ≥6/8 / Source Depth / 反例扫描 全部强制执行） |
+
+> Speed Tier **只减展示不降质量**：SMARTR-OC / Source Depth / 反例扫描 / 覆盖率仍 100% 执行，仅跳过中间展示环节。
+
 ## Mode B — VC Quality Audit（加载 `references/vc-workflow-b.md`）
 
 > ⚡ **一句话**：对已有 VC 做 SMARTR-OC 8维评分 + CK-01~CK-10 清单，给 Pass/Revise/Blocked 处置
@@ -153,9 +166,12 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 ### 批量展示 + 最终输出 CHECKPOINT
 
 🔴 **CHECKPOINT · 🛑 STOP**：
-1. ≤10 条需求 → 逐条展示 VC + SMARTR-OC；>10 条 → 每 10 条批量展示，`vscode_askQuestions` 确认后继续
-2. A.3 完成后 → 展示 SMARTR-OC 汇总（各维度 ✅/✗ + 总分分布），标注 <6/8 的 VC。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
-3. 最终输出前 → 展示完整 VC 文档 + 覆盖率摘要，`vscode_askQuestions` 确认后输出
+1. **≤3 条（Lite Mode）**：跳过中间 CHECKPOINT，SMARTR-OC + 覆盖率内联展示，仅在最终输出前一次 `vscode_askQuestions` 确认
+2. ≤10 条需求 → 逐条展示 VC + SMARTR-OC；>10 条 → 每 10 条批量展示，`vscode_askQuestions` 确认后继续
+3. A.3 完成后 → 展示 SMARTR-OC 汇总（各维度 ✅/✗ + 总分分布），标注 <6/8 的 VC。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
+4. 最终输出前 → 展示完整 VC 文档 + 覆盖率摘要，`vscode_askQuestions` 确认后输出
+
+> **Speed Tier 覆盖**：用户显式请求"快速/quick"→ 跳过 CHECKPOINT #2/#3，仅保留 #4（最终确认）。
 
 ## 异常与边界条件
 
@@ -196,7 +212,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 
 > 累积 ≥3 🟡/🟠 → 不触发升级（与 ≥3 🔴 VC-BLOCKED 不同）。但需在输出摘要标注信息缺口。
 
-**Lite Mode VC-BLOCKED 定义**（与 Full Mode B.3 区别）：无 B.3 改进循环 → 首次 SMARTR-OC < 6/8 即直接判 BLOCKED（不重试）。仅 🔴 级（反例#3 主观词 / 反例#6 全 `[A]` / SMARTR-OC M=✗）触发。🟡/🟠 不作为 BLOCKED，仅质量标记注明。
+**Lite Mode VC-BLOCKED 定义**（与 Full Mode B.3 区别）：精简改进循环 → 首次 SMARTR-OC < 6/8 **给一次修订机会**（仅修正不达标维度，不重跑全流程）→ 修订后仍 <6/8 → 直接判 BLOCKED。仅 🔴 级（反例#3 主观词 / 反例#6 全 `[A]` / SMARTR-OC M=✗）触发。🟡/🟠 不作为 BLOCKED，仅质量标记注明。
 
 **触发升级**：Lite Mode 发现 ≥3 VC-BLOCKED 或覆盖率 <100% → 暂停，提示切换 Full Mode。
 
