@@ -48,8 +48,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 
 🔴 **CHECKPOINT · 🛑 STOP** — 必须在源文档确认中明确告知当前模式。**绝不静默跳转模式。绝不输出执行流程概要**（反例 #10）。
 
----
-
 ## Mode A — VC Generation（加载 `references/vc-workflow-a.md`）
 
 > ⚡ **一句话**：为每条需求生成可独立验证的测试标准（方法+条件+数值判据+来源标注）
@@ -79,8 +77,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | 操作/功能 | 人机交互/功能流程 | **Demonstration** — 操作演练+功能走查 | HMI 显示正确性 |
 | 文档/布局 | 设计输出物/物理布置 | **Inspection** — 审查/尺寸测量/目视 | 丝印可读性、爬电距离 |
 
----
-
 ## Mode B — VC Quality Audit（加载 `references/vc-workflow-b.md`）
 
 > ⚡ **一句话**：对已有 VC 做 SMARTR-OC 8维评分 + CK-01~CK-10 清单，给 Pass/Revise/Blocked 处置
@@ -94,8 +90,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | B.2 质量审核 | SMARTR-OC 8维+CK-01~10（加载`vc-smartr-oc.md`+`vc-checklist.md`） | <6/8或🔴Critical→需修订 |
 | B.3 改进建议 | 逐条修复→重评→循环 | 3轮不达标→VC-BLOCKED |
 | B.4 输出报告 | 汇总Pass/Conditional/Revise/Blocked | 模板缺失→降级 |
-
----
 
 ## Mode C — Coverage Audit（加载 `references/vc-workflow-c.md`）
 
@@ -111,8 +105,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | C.3 孤儿检测 | 每条VC关联已存在需求 | 不存在→🔴ORPHAN；>20%→修正ID |
 | C.4 覆盖率矩阵 | 构建需求↔VC追溯矩阵 | — |
 | C.5 输出报告 | 覆盖率%+未覆盖清单+建议 | 模板缺失→降级 |
-
----
 
 ## Parallel Dispatch（仅 Mode A，需求 > 50）
 
@@ -130,8 +122,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 **分层复核**（SMARTR-OC 抽样审计）：8/8 跳过 / 6-7 抽样 20%（1条不一致→全量）/ <6 全量 / 均分偏离全局 >1.0 全量。
 
 🔴 **CHECKPOINT · 🛑 STOP** — A.1a 拆分完成后、spawn 子Agent前：展示拆分方案（domain + ID 范围 + 条数 + 输出路径），`vscode_askQuestions` 确认后并行执行。禁止跳过。
-
----
 
 ## 共享规则（三模式通用）
 
@@ -151,9 +141,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 
 🔴 **CHECKPOINT · 🛑 STOP** — 累计 ≥3 VC-BLOCKED → 暂停所有 VC 工作，`vscode_askQuestions` 让用户选择"修订需求后继续"或"终止"。
 
-### Key Principles（每条独有的 🔴 GATE）
-
-> 反例详见 [⛔ Do Not 黑名单](#⛔-do-not--反例黑名单)。
+### Key Principles（每条独有的 🔴 GATE；反例详见 [⛔ Do Not 黑名单](#⛔-do-not--反例黑名单)）
 
 - **VC-First** — 🔴 GATE：无法写出 VC → 立即标记 VC-BLOCKED，不继续下一条
 - **VC is a design activity** — 🔴 GATE：写 VC 时主动质疑需求可测性，必要时回推修订需求
@@ -169,11 +157,9 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 2. A.3 完成后 → 展示 SMARTR-OC 汇总（各维度 ✅/✗ + 总分分布），标注 <6/8 的 VC。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
 3. 最终输出前 → 展示完整 VC 文档 + 覆盖率摘要，`vscode_askQuestions` 确认后输出
 
----
-
 ## 异常与边界条件
 
-核心原则：异常先告知用户，再按规则处理；**绝不静默跳过或静默失败**（反例 #8）。
+**绝不静默跳过或静默失败**（反例 #8）：异常先告知用户，再按规则处理。
 
 ### 关键 Fallback（最常触发；完整规则见 `references/vc-exceptions.md`）
 
@@ -214,8 +200,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 
 **触发升级**：Lite Mode 发现 ≥3 VC-BLOCKED 或覆盖率 <100% → 暂停，提示切换 Full Mode。
 
----
-
 ## References（按需加载）
 
 加载对应 workflow 步骤前验证文件存在；缺失按 `references/vc-exceptions.md` "引用文件缺失" fallback。
@@ -237,8 +221,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | `references/vc-subagent-prompt.md` | **Parallel Dispatch** — runSubagent prompt 模板（只传 `{requirements_file_path}`） |
 | `scripts/split_req.py` | **A.1a** — 按功能域拆分需求文件（≤30条/文件，产出 `_index.json`） |
 | `scripts/merge_vc.py` | **Parallel Dispatch → Merge** — 合并子Agent输出+SMARTR-OC统计+覆盖率验证+分层复核建议 |
-
----
 
 ## ⛔ Do Not — 反例黑名单
 
