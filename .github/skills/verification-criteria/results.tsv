@@ -27,3 +27,5 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-23T14:20	d252e1d	verification-criteria	90.1	89.7	keep	dim7	R1:统一Hard Gates计数(10→11)3处(subagent-prompt/workflow-a摘要/anti-patterns映射);dim7一致性修复但重评暴露dim8缺口	full_test
 2026-06-23T14:50	d951c95	verification-criteria	89.7	91.2	keep	dim8	R2:merge_vc.py tiered_review加Gate11格式抽查(_gate11_violation检测`;`误用;8/8候选命中降级sample;3用例冒烟测试通过);弥补8/8信任跳过漏洞	full_test
 2026-06-23T15:10	6615ab3	verification-criteria	91.2	91.8	keep	dim7+dim8	R3:文档同步代码(SKILL.md+subagent-prompt分层复核叙述改为两阶段门控;消除code-vs-doc drift)	full_test
+2026-06-23T16:00	baseline	verification-criteria	-	87.3	baseline	-	Darwin2.0新基线(3独立judge盲评;dim5=8/10最弱:缺hybrid方法+快速通道+LiteMode过激;结构68.3+实测19.0)	full_test
+2026-06-23T16:30	2e8ad00	verification-criteria	87.3	90.2	keep	dim5+dim4	R4:决策树hybrid方法+SpeedTier+LiteMode一次修订+≤3条免CHECKPOINT;dim8=8.5(Judge确认无回归;Δ+2.9)
