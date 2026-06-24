@@ -162,7 +162,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 
 **覆盖率公式**：`Coverage% = Covered Reqs / Total Reqs`（UNCOVERED + PARTIAL 均不计入分子）。**目标 100%**；< 100% 不允许直接结束（反例#4）。
 
-> **A→C 快速通道**（A+C 混合）：A.4 完成后跳过 C.0/C.1 → C.2 用 A.4 矩阵增量检查 → C.3 扫 A 输出标 ORPHAN → C.4 加 disposition 列 → C.5 输出。
+> 🔒 **A→C 快速通道**（A+C 混合，**single source of truth**）：A.4 完成后跳过 C.0/C.1 → C.2 用 A.4 矩阵增量检查 → C.3 扫 A 输出标 ORPHAN → C.4 加 disposition 列 → C.5 输出。异常章节的混合模式表仅引用本定义，不重复。
 
 ## Parallel Dispatch（仅 Mode A，需求 > 50）
 
@@ -236,7 +236,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 
 | 混合模式 | 默认顺序 | 交叉联动 |
 |---------|---------|---------|
-| A + C | 先 A 后 C | A.4 完成后 C.0~C.5 复用 A 输出（A→C 复用快速通道见下） |
+| A + C | 先 A 后 C | A.4 完成后 C.0~C.5 复用 A 输出（走 [Mode C 的 A→C 快速通道](#mode-c--coverage-audit加载-referencesvc-workflow-cmd)） |
 | B + C | 先 B 后 C | B.3 disposition 后，未 Pass 的 VC **暂不计入 C 覆盖率**（避免虚高） |
 | A + B | 先 A 后 B | — |
 | A + B + C | A → B → C | 同上联动 |
@@ -245,8 +245,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 - C.3 发现 ORPHAN VC → B.2 报告标注 `⚠️ cross-flagged: ORPHAN，质量评分降权`
 - C.2 发现 UNCOVERED → 提示回退 A.2 补齐
 - B.2 发现 VC-BLOCKED → C 覆盖率矩阵标注 `⚠️ VC-BLOCKED，覆盖率待定`
-
-**A→C 复用快速通道**（A+C 混合，A.4 完成后进入 C）：跳过 C.0/C.1 → C.2 用 A.4 矩阵增量检查 → C.3 扫 A 输出标 ORPHAN → C.4 基于 A.4 加 disposition 列 → C.5 输出报告。
 
 ### Lite Mode 信息不完整处理
 
