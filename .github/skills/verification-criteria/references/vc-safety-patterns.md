@@ -10,12 +10,10 @@ Safety-critical VC must include explicit margins. A VC without margin is a VC th
 
 ### Four Margin Dimensions
 
-| Dimension | Definition | BMS Example |
-|-----------|-----------|-------------|
-| **FTTI Margin** | Required response time minus actual design target | FTTI = 50ms → VC requires ≤ 45ms (10% margin) |
-| **Threshold Margin** | Detection threshold vs. true danger threshold | Overvoltage threshold = 4.25V vs. thermal runaway critical ≈ 4.50V |
-| **Tolerance Analysis** | Account for sensor accuracy, sampling jitter, ADC noise | VC includes ±50mV allowable tolerance on 4.25V threshold |
-| **Robustness Verification** | Verify not only "triggers when it should" but also "does NOT trigger when it shouldn't" | 100 cycles at normal voltage (4.20V) → 0 false triggers; 100 cycles at fault voltage (4.30V) → 100% trigger rate |
+- **FTTI Margin**: response time must be below FTTI — e.g. FTTI=50ms → VC ≤45ms (10% margin)
+- **Threshold Margin**: detection threshold vs. true danger threshold — e.g. 4.25V overvoltage vs. 4.50V thermal runaway
+- **Tolerance Analysis**: account for sensor accuracy, jitter, ADC noise — e.g. ±50mV tolerance on 4.25V threshold
+- **Robustness Verification**: must trigger when fault exists AND not trigger when no fault — e.g. 100 cycles at 4.20V→0 false triggers, 100 at 4.30V→100% trigger
 
 ### Margin Design Rule
 
@@ -41,10 +39,8 @@ Safety-critical VCs must satisfy two symmetrical conditions simultaneously. Veri
 
 ### Formal Rule
 
-| Condition | Requirement | Typical Sample Size |
-|-----------|------------|-------------------|
-| **Missed trigger** | Fault condition exists → protection MUST activate | N ≥ 100 trials, trigger rate = 100% |
-| **False trigger** | Normal condition → protection MUST NOT activate | N ≥ 100 trials, trigger rate = 0% |
+- **Missed trigger**: fault exists → protection MUST activate — N≥100, trigger rate=100%
+- **False trigger**: normal condition → protection MUST NOT activate — N≥100, trigger rate=0%
 
 > **Why 100?** For ASIL C/D, a sample of 100 with 0 failures gives ~95% confidence that the true failure rate is < 3% (per binomial confidence interval). Adjust N upward for higher confidence or lower acceptable failure rate.
 

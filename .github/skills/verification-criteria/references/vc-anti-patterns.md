@@ -2,17 +2,17 @@
 
 ## VC-First Anti-Patterns
 
-Avoid these process-level mistakes when adopting VC-First methodology.
-
-| ❌ Anti-Pattern | ✅ VC-First Approach |
-|----------------|---------------------|
-| "We'll figure out testing later" | Define VC immediately; if unclear, the requirement isn't clear either |
-| "The test team writes VCs" | Requirements engineer owns VC; test engineer reviews for testability |
-| "The requirement is frozen, just add a VC" | If the requirement can't support a VC, it must be reopened |
-| "One VC can cover 10 requirements" | One VC = one independently verifiable aspect of one requirement |
-| Batch-filling VCs after the entire spec is written | VC written per-requirement, synchronously |
+- ❌ "We'll figure out testing later" → ✅ Define VC immediately; if unclear, the requirement isn't clear
+- ❌ "The test team writes VCs" → ✅ Requirements engineer owns VC; test engineer reviews for testability
+- ❌ "The requirement is frozen, just add a VC" → ✅ If requirement can't support a VC, reopen it
+- ❌ "One VC can cover 10 requirements" → ✅ One VC = one independently verifiable aspect
+- ❌ Batch-filling VCs after spec is written → ✅ VC written per-requirement, synchronously
 
 ## VC Writing Anti-Patterns
+
+> **编号映射**：SKILL.md「⛔ Do Not 反例黑名单」用 `#1-#11`（执行禁令，按反例#N引用）；
+> 本文件「Source Depth Anti-Patterns」用 `AP-SD-1..6`（数值溯源子集，按AP-SD-N引用）。
+> 两套编号**不重叠**——`#N` 是"做什么时禁止的行为"，`AP-SD-N` 是"标注数值来源时的反模式"。检索时按上下文选用。
 
 Avoid these content-level mistakes when writing individual VCs.
 
@@ -26,7 +26,7 @@ Avoid these content-level mistakes when writing individual VCs.
 
 ## Source Depth Anti-Patterns — "Invented Content"
 
-Avoid introducing values into a VC that have no traceable source. These are the most insidious VC errors because they **look** professional (numbers are present, format is correct) but are fundamentally unverifiable (the criterion is arbitrary).
+无源数值 = 不可验证。数值格式正确 ≠ VC 可靠。
 
 > **Core principle**: Every value in a VC must answer "where does this number come from?" If the answer is "I thought it seemed reasonable," the VC is defective. See `vc-source-depth.md` for the 5-level annotation system.
 

@@ -1,4 +1,8 @@
 timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-06-23T10:00	baseline	verification-criteria	-	87.0	baseline	-	Darwin2.0新基线(2子Agent full_test;dim6硬伤merge_vc.py缺失;结构60.3+实测20.7+meta6.0)	full_test
+2026-06-23T10:30	02ad508	verification-criteria	87.0	88.6	keep	dim6	创建scripts/merge_vc.py(修复3处引用但文件缺失的硬伤;与split_req.py配套;端到端冒烟测试4VC全通过)	full_test
+2026-06-23T11:15	4a43ea0	verification-criteria	88.6	92.6	keep	dim5+dim8	vc-source-depth.md强化[D]vs[A]判定边界(Quick Decision Flow加红线+[D]/[A]4判据表);R2专项测试3个模糊值全部正确降级[A]零误标,消除R1子Agent自疑模式	full_test
+2026-06-23T12:00	34c5a4f	verification-criteria	92.6	93.8	keep	dim2+dim7	Phase2.5探索性重写:Route-first架构(3步路由+三模式入口卡+共享规则收敛);284→261行(-8%);dim8路由实测3/3全✅含混合模式强制vc-mode-selection;无功能回归	full_test
 2026-06-12T10:00	277a59f	verification-criteria	-	66.9	baseline	-	初始评估	dry_run
 2026-06-12T10:15	1590c47	verification-criteria	66.9	69.3	keep	dim4	添加5个🔴CHECKPOINT标记	dry_run
 2026-06-12T10:20	f2a4201	verification-criteria	69.3	71.7	keep	dim9	添加9条Do Not黑名单	dry_run
@@ -14,3 +18,15 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-15T20:15	darwin2-r0	verification-criteria	-	83.9	baseline	-	Darwin2.0新基线（4组full_test子Agent验证；dim8均分8.25 vs baseline 3.5）	full_test
 2026-06-15T20:28	5936b86	verification-criteria	83.9	85.5	keep	dim5	Lite Mode：≤5条内联粘贴跳过冗余CHECKPOINT，质量门控不降级	full_test
 2026-06-15T20:33	0ada9ba	verification-criteria	85.5	88.0	keep	dim5+dim7	去软化措辞(建议→directive)+混合模式交叉联动表(ORPHAN→B.2/UNCOVERED→A.2/BLOCKED→C矩阵)	full_test
+2026-06-22T11:00	baseline	verification-criteria	-	80.6	baseline	-	Darwin2.0新基线(6子Agent full_test;结构62.7+实测17.9)	full_test
+2026-06-22T11:15	92b2064	verification-criteria	80.6	82.9	keep	dim5	决策树内联(6类型×方法表)+A→C复用快速通道(6步清单)+Lite Mode信息不完整处理(4场景+VC-BLOCKED定义)	full_test
+2026-06-22T11:30	907fbcc	verification-criteria	82.9	85.5	keep	dim7	精简Key Principles(去DO/DON'T冗余→GATE-only+反例交叉引用)+合并3CHECKPOINT为编号清单+去重复escalation	full_test
+2026-06-22T11:40	108b045	verification-criteria	85.5	86.0	keep	dim2	Workflow速览表可读性提升(⚡一句话概要+列头'失败处理'+语言紧凑化)	full_test
+2026-06-22T11:50	c6362e7	verification-criteria	86.0	86.3	keep	dim3	异常表新增MISSING-LINK处理规则(CK部分❌评分/全MISSING→暂停B+请求需求文档)	full_test
+2026-06-23T14:00	baseline	verification-criteria	-	90.1	baseline	-	Darwin2.0盲评基线(独立judge;dim7=8硬伤:Hard Gates计数错配subagent-prompt写10条实为11条+反例#N与AP-SD-N无映射)	full_test
+2026-06-23T14:20	d252e1d	verification-criteria	90.1	89.7	keep	dim7	R1:统一Hard Gates计数(10→11)3处(subagent-prompt/workflow-a摘要/anti-patterns映射);dim7一致性修复但重评暴露dim8缺口	full_test
+2026-06-23T14:50	d951c95	verification-criteria	89.7	91.2	keep	dim8	R2:merge_vc.py tiered_review加Gate11格式抽查(_gate11_violation检测`;`误用;8/8候选命中降级sample;3用例冒烟测试通过);弥补8/8信任跳过漏洞	full_test
+2026-06-23T15:10	6615ab3	verification-criteria	91.2	91.8	keep	dim7+dim8	R3:文档同步代码(SKILL.md+subagent-prompt分层复核叙述改为两阶段门控;消除code-vs-doc drift)	full_test
+2026-06-23T16:00	baseline	verification-criteria	-	87.3	baseline	-	Darwin2.0新基线(3独立judge盲评;dim5=8/10最弱:缺hybrid方法+快速通道+LiteMode过激;结构68.3+实测19.0)	full_test
+2026-06-23T16:30	2e8ad00	verification-criteria	87.3	90.2	keep	dim5+dim4	R4:决策树hybrid方法+SpeedTier+LiteMode一次修订+≤3条免CHECKPOINT;dim8=8.5(Judge确认无回归;Δ+2.9)
+2026-06-23T17:00	d251b93	verification-criteria	90.2	91.4	keep	dim2	R5:Quick Mode Selector卡(O(1)模式发现+A→C联合模式首现行;dim8=8.5;Δ+1.2)
