@@ -213,103 +213,14 @@ python {skill_base_path}/scripts/split_req.py <input_requirements.md> \
    - Anomaly: any subAgent's mean score deviates >1.0 from global → full audit
 6. **Proceed to A.4** (coverage audit, main agent executes).
 
-##### SubAgent Prompt Template
+##### SubAgent Prompt
 
-Each subAgent receives this self-contained prompt. **Paths** are for the subAgent to `read_file` on demand — **requirements are never inlined**; the subAgent loads them from the split file produced in A.1a. The authoritative, full template is `references/vc-subagent-prompt.md`; the snippet below is a quick reference.
+主Agent调用 `runSubagent` 时，prompt 由 `references/vc-subagent-prompt.md` 的
+§1 骨架 + §2 变量机械替换得到（**不做语义改写**）。输出格式契约外置在
+`references/vc-output-format.md`，由子Agent直接 `read_file` 加载。
 
-````markdown
-You are generating Verification Criteria (VC) for a subset of system requirements.
-
-## Step 0 — Load your requirements (MANDATORY)
-
-`read_file {requirements_file_path}` ← this file contains your assigned requirements
-(top of file carries `> Source:` / `> Domain:` / `> IDs:` / `> ID range:` metadata).
-Verify the ID range matches the overview below; if not, flag `⚠️ degraded` and trust the file.
-
-## Requirements Overview (full text is in the file above — do NOT expect it inline)
-
-- Requirements file: `{requirements_file_path}`
-- Domain: {functional_domain_name} (e.g., Battery Protection, Thermal Management)
-- Count: {N}  |  ID range: {id_range} (e.g. BMS-016..BMS-030)
-- Industry: Automotive BMS (Battery Management System)
-- Conventions: Three-temperature testing (-40°C, +25°C, +85°C); N=100 for safety functions; HIL as primary test rig
-
-## Hard Gates (MANDATORY — read first)
-
-Load `references/vc-hard-gates.md` now. These 11 gates are non-negotiable:
-- Gate 1: No subjective words in Pass/Fail
-- Gate 2: Domain-boundary coverage (3 temp points for physical quantities)
-- Gate 3: Source Depth ≥3[A] → VC-BLOCKED; any [A] → A=✗
-- Gate 4: Double-100 for safety functions
-- Gate 5-10: Anti-patterns #1-#9 (see file)
-- Gate 11: Table cells must use `<br>` line breaks (see file)
-
-## Workflow
-
-1. **Load references** (use `read_file`):
-   - `references/vc-smartr-oc.md` — SMARTR-OC 8-point rubric (always needed)
-   - `references/vc-source-depth.md` — Source Depth annotation rules (always needed)
-   - `assets/vc-template.md` — VC table + type-specific templates (always needed)
-   - `references/vc-safety-patterns.md` — IF any requirement has ASIL or safety implications
-   - `references/vc-sequence-guide.md` — IF any VC involves multi-scenario/causal-chain
-   - `references/vc-exceptions.md` — IF you encounter an anomaly
-
-2. **For each requirement** in your subset:
-   a. Determine requirement type → select template (see `assets/vc-template.md`):
-      - ASIL level → Template C (Safety)
-      - Timing/rate/accuracy → Template B (Performance)
-      - Bus/protocol/signal → Template D (Interface)
-      - Other → Template A (Functional)
-   b. Choose verification method via decision tree (Gate 7 in hard-gates)
-   c. Fill 5-element VC structure
-   d. Annotate Source Depth for every numeric value (Gate 3)
-   e. Run SMARTR-OC self-check; score ≥ 6/8 to pass
-   f. If SMARTR-OC < 6/8 after 3 revisions → mark VC-BLOCKED, record reason, move to next
-
-3. **Output format** (write to file `{workspace}/BMS_VC_Sub_{domain}.md`):
-   ```markdown
-   ## {domain_name}
-   
-   ### VC-{REQ-ID} — {brief_title}
-   
-   | VC ID | Linked Requirement | Verification Method | Test Conditions | Measurement Target | Pass/Fail Criterion |
-   |-------|-------------------|---------------------|-----------------|--------------------|---------------------|
-   | VC-{REQ-ID} | ... | ... | ... | ... | ... |
-   
-   **SMARTR-OC**: **X/8**
-   > ✗ {dim}: {1-line reason}   ← 仅当 <8/8 时出现；8/8 时不输出维度行
-   
-   **Source Depth**: {value1} [R:REQ-ID] | {value2} [E:convention] | ...
-   
-   > ⚠️ {issues if any}
-   
-   ---
-   ```
-   
-   文件末尾追加 Gate Compliance Checklist（仅列出 ⚠️/✗）：
-   ```markdown
-   ## 🔍 Gate Compliance Checklist
-   
-   | Gate | Status | Issue |
-   |------|--------|-------|
-   | Gate X | ⚠️ | {1-line reason} |
-   
-   > 若全部通过：`All 11 Gates: ✅ PASS`
-   ```
-   
-   For any `[A]` assumption, append an Assumption Log entry at end of file:
-   ```markdown
-   | VC ID | Field | Assumed Value | Rationale | Resolution Owner |
-   |-------|-------|---------------|-----------|------------------|
-   ```
-
-## Behavior Constraints
-
-- ⛔ **DO NOT wait for user confirmation** — produce complete output, no checkpoints
-- VC-BLOCKED → mark 🔴 with blocking reason, continue to next requirement
-- Anomaly → mark `⚠️ degraded: {reason}`, continue
-- Do not fabricate values; when unknown, mark `[A]` and document assumption
-````
+> ⚠️ 本节不再内联 prompt 模板。唯一权威来源是 `references/vc-subagent-prompt.md`。
+> 旧版的内联模板已删除（曾导致主Agent改写时格式契约丢失）。
 
 #### A.2.1 Sequential Mode (≤ 50 requirements) (per requirement)
 
@@ -340,6 +251,8 @@ Once the three questions are answered, produce a VC with these elements:
 | 5 | **Pass/Fail Criterion** | Three sub-elements:<br>• **Threshold**: Numeric pass/fail boundary (e.g. `≤ 100ms`, `≥ 95%`, `= 0`)<br>• **Statistical method**: How to conclude from multiple measurements (max/avg/Cpk)<br>• **Precision requirement**: Required accuracy of measurement equipment |
 
 #### Verification Method Decision Tree
+
+> **权威源（single source of truth）**：完整的「需求类型 → 验证方法」映射表（含典型示例 + Hybrid 方法说明）在 `../SKILL.md` 的 **Mode A "验证方法决策树"** 章节。下方的 mermaid 是该表的**抽象推理视图**（4 问决策流），两者逻辑一致——**若需更新方法映射规则，改 SKILL.md 表，不要改本 mermaid**；本 mermaid 仅用于教学说明决策路径。
 
 ```mermaid
 flowchart TD
