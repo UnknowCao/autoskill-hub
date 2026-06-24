@@ -115,6 +115,25 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | B.3 改进建议 | 逐条修复→重评→循环 | 3轮不达标→VC-BLOCKED |
 | B.4 输出报告 | 汇总Pass/Conditional/Revise/Blocked | 模板缺失→降级 |
 
+### B.2 双重审核判定矩阵（B.2 步必查 — 关键决策点）
+
+对每条 VC **单遍扫描**同时打 SMARTR-OC + CK 分，按下表给 disposition：
+
+| 条件 | Disposition | 动作 |
+|------|-------------|------|
+| SMARTR-OC ≥ 6/8 **且** 全部 CK ✅ | ✅ **Ready for Peer Review** | 进入 B.4 汇总 |
+| SMARTR-OC ≥ 6/8 **且** 仅 🟡 Minor CK ❌ | ⚠️ **Conditional Pass** | 列出 minor 问题，进入 B.4 |
+| SMARTR-OC < 6/8 **或** 任一 🔴 Critical CK ❌ | ❌ **Needs Revision** | → B.3 修复循环 |
+
+**CK-01~CK-10 严重度速查**（完整表见 `assets/vc-checklist.md`）：
+
+| 严重度 | CK 项 | 触发即 ❌ Needs Revision |
+|--------|-------|------------------------|
+| 🔴 Critical | CK-01 一对一映射无孤儿 / CK-03 方法匹配需求类型 / CK-04 测试条件完整(环境/设备/精度) / CK-05 数值量化**且有来源标签** / CK-09 双向追溯 / CK-10 语言无歧义可执行 | 任一 ❌ → Needs Revision |
+| 🟡 Minor | CK-02 ID 命名规范 / CK-06 样本量统计显著 / CK-07 边界覆盖 / CK-08 可达性(设备/人力/时间) | 仅 🟡 ❌ → Conditional Pass |
+
+> **B.3 修复原则**：SMARTR-OC 失败按 `vc-smartr-oc.md` 的"If ✗"列修；CK Critical 失败直接修对应项。必须同时清 SMARTR-OC ≥ 6/8 **和** 全部 🔴 Critical。反复失败 → 升级修订需求。
+
 ## Mode C — Coverage Audit（加载 `references/vc-workflow-c.md`）
 
 > ⚡ **一句话**：检查需求↔VC双向覆盖完整性，输出 UNCOVERED/ORPHAN 清单 + 覆盖率矩阵
@@ -129,6 +148,19 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | C.3 孤儿检测 | 每条VC关联已存在需求 | 不存在→🔴ORPHAN；>20%→修正ID |
 | C.4 覆盖率矩阵 | 构建需求↔VC追溯矩阵 | — |
 | C.5 输出报告 | 覆盖率%+未覆盖清单+建议 | 模板缺失→降级 |
+
+### C.2/C.3 缺陷判定阈值（C.2~C.3 步必查 — 关键决策点）
+
+| 缺陷类型 | 判定条件 | 标记 | 暂停阈值 |
+|---------|---------|------|---------|
+| 🔴 **UNCOVERED** | 需求零 VC 关联 | 停止统计，列缺口 | >30% 需求 UNCOVERED → 暂停 C，提示回退 Mode A 补齐 |
+| 🟡 **PARTIAL** | 需求有 VC 但未覆盖全部 aspect | 标注缺失维度 | — |
+| 🔴 **ORPHAN** | VC 关联的需求 ID 不存在（含拼写错误） | 列出错误 ID | >20% VC 为 ORPHAN → 暂停，先修正 ID 映射 |
+| 🟠 **UNLINKED** | VC 无任何关联需求 ID | 标 🟠 MISSING-LINK | — |
+
+**覆盖率公式**：`Coverage% = Covered Reqs / Total Reqs`（UNCOVERED + PARTIAL 均不计入分子）。**目标 100%**；< 100% 不允许直接结束（反例#4）。
+
+> **A→C 快速通道**（A+C 混合）：A.4 完成后跳过 C.0/C.1 → C.2 用 A.4 矩阵增量检查 → C.3 扫 A 输出标 ORPHAN → C.4 加 disposition 列 → C.5 输出。
 
 ## Parallel Dispatch（仅 Mode A，需求 > 50）
 
@@ -234,9 +266,10 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | Reference | 何时加载 |
 |-----------|---------|
 | `references/vc-workflow-a.md` / `-b.md` / `-c.md` | 对应模式选中 |
+| `references/vc-output-format.md` | **A.2** — 输出格式真理源（标题结构、SMARTR-OC 写法、Source Depth 标签格式、自检清单） |
 | `references/vc-smartr-oc.md` | **A.3 / B.2** — SMARTR-OC 8维评分 |
 | `references/vc-source-depth.md` | **A.2a / B.2** — Source Depth 5级标注（含 `[D]`/`[A]` 判定表） |
-| `assets/vc-template.md` | **A.2** — VC 表模板 + 4 类型模板 |
+| `assets/vc-template.md` | **A.2** — 4 种类型字段指南（Functional/Performance/Safety/Interface）+ 字段分解方法论 |
 | `references/vc-safety-patterns.md` | **A.2** — ASIL → 安全裕度、Double-100、测试矩阵 |
 | `assets/vc-checklist.md` | **B.2** — SMARTR-OC 评分表 + CK-01~CK-10 |
 | `references/vc-report-templates.md` | **A.4 / B.4 / C.5** — 报告模板 |

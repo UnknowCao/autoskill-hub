@@ -1,32 +1,20 @@
 [
   {
     "id": 1,
-    "prompt": "帮我为这个BMS需求生成验证标准：\nREQ-001: 电池组总电压测量精度≤±0.5%FSR，工作温度-40°C~+85°C\nREQ-002: BMS应在单体过压发生后100ms内断开主继电器\nREQ-003: 系统上电自检时间≤5秒，覆盖所有AFE通道",
-    "expected": "应进入 Workflow A: 逐条生成 VC（5-element 结构），每条标注 Source Depth [R]/[D]/[S]/[E]/[A]，做 SMARTR-OC 自检（≥6/8），覆盖常温和边界温度"
+    "scenario": "happy_path_generation",
+    "prompt": "帮我为这条 BMS 需求编写验证标准：\n\nREQ-PWR-014: 当电池单体电压低于 2.5V 时，BMS 应在 200ms 内断开主接触器并发出低电量报警。\n\n请生成 VC。",
+    "expected": "Mode A. 应识别为安全/保护+时序类，选 Test+Analysis 方法，含故障注入+时序测量；应有 Source Depth 标注、SMARTR-OC 自检、≥6/8、覆盖边界/异常、避免主观词。不应用 Test-only。"
   },
   {
     "id": 2,
-    "prompt": "评审这些VC的质量，按SMARTR-OC打分：\nVC-001: 测量精度应良好\nVC-002: 详见TC-005\nVC-003: 在25°C常温下用万用表测电压≤±0.5%FSR",
-    "expected": "应进入 Workflow B: 识别反模式（VC-001主观形容词/VC-002循环引用/VC-003仅常温），SMARTR-OC 逐条评分，CK-01~CK-10 checklist 逐项检查，输出质量审核报告"
+    "scenario": "audit_smelly_vc",
+    "prompt": "审核下面这条 VC 的质量：\n\nVC-SOC-005 | 关联 REQ-SOC-003 (SOC估算精度 ≤5%) | 方法: Test | 条件: 正常工况 | 判据: SOC估算值与实际值偏差合理，系统稳定运行，精度满足要求。\n\n请评分并指出问题。",
+    "expected": "Mode B. 应触发多个反例：主观词（合理/稳定/满足要求）、缺数值、缺来源、缺边界、缺样本量。SMARTR-OC 应打 M=✗/O=✗/C=✗。给出 CK 清单+修订建议。应判 Revise/Blocked。"
   },
   {
     "id": 3,
-    "prompt": "这是我的需求列表[REQ-001~REQ-010]和VC列表[VC-001~VC-008]，帮我检查哪些需求还没写VC、哪些VC对不上需求",
-    "expected": "应进入 Workflow C: 构建覆盖率矩阵，输出 UNCOVERED 需求清单 + ORPHAN VC 清单，给出覆盖率百分比"
-  },
-  {
-    "id": 4,
-    "prompt": "帮我为这几条需求快速生成VC：\n1. 绝缘电阻≥100MΩ（500VDC）\n2. SOC估算精度≤5%\n3. 均衡电流≥2A",
-    "expected": "应触发 Lite Mode（≤5条对话内粘贴）：跳过 CHECKPOINT，一次性输出结果；仍执行 SMARTR-OC 自检 + Source Depth 标注 + 覆盖率内联展示"
-  },
-  {
-    "id": 5,
-    "prompt": "帮我生成BMS需求的VC，同时检查一下覆盖率是否完整。这是需求文件：c:\\AI\\BMS_System_Requirements_100.md",
-    "expected": "应识别混合意图（A+C），通过 vscode_askQuestions 确认执行顺序；默认先 A 后 C；展示 todo list 后再执行"
-  },
-  {
-    "id": 6,
-    "prompt": "帮我为这条需求生成VC：REQ-X01: 电池管理系统应提供卓越的用户体验",
-    "expected": "应触发 Requirement Maturity Gate — 识别主观形容词"卓越"无法量化，标记 🔴 VC-BLOCKED，建议重写需求为可验证形式（如具体响应时间、操作步骤数、满意度评分阈值等）"
+    "scenario": "coverage_orphan_detection",
+    "prompt": "我有 5 条需求，但只写了 3 条 VC，其中 1 条 VC 关联的需求 ID 拼错了。请做覆盖率审计。",
+    "expected": "Mode C. 应识别 2 条 UNCOVERED 需求 + 1 条 ORPHAN VC。构建覆盖率矩阵，给出 60% 覆盖率+缺口清单。可能提示回退 Mode A 补齐。"
   }
 ]
