@@ -32,5 +32,6 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-06-25T14:30	ec695a4	verification-criteria	82.0	83.2	keep	dim7	R1:修vc-anti-patterns.md doc drift(#1-#11→#1-#12)+新增#12交叉引用说明(解释为何不在source-depth文件展开);dim7 8→9	dry_run
 2026-06-25T14:45	36527fa	verification-criteria	83.2	84.9	keep	dim5+dim7	R2:vc-exceptions.md parse-failure fallback软化措辞清除('建议markdown表格'→'要求重新提供结构化格式'+格式规范'每行一条需求含ID+描述两列'+终止条件);dim5 8→9;R1+R2合计+2.9	dry_run
 2026-06-25T15:10	36527fa	verification-criteria	84.9	87.2	keep	dim8	R3:dim8 full_test重跑(切换模型后runSubagent可用);2独立judge实测:test1=8/10(REQ-PWR-014:模式路由精准/SMARTR-OC 8/8/反例全避;扣分:[D]scope expansion+Analysis分量偏弱);test4=8/10(反例#12:三重防护生效/正确只列问题VC+Fully Compliant汇总;扣分:规则分散4处+Failed Attributes格式未定义);dim8 7(dry)→8(full_test);judge反馈含R4线索	full_test
+2026-06-25T15:30	1a7e6ec	verification-criteria	87.2	87.2	keep	dim7+dim5	R4:反例#12规则收敛(3文件冗余→compact cross-ref指向SKILL.md单一真理源)+Failed Attributes列格式显式定义(逗号分隔维度缩写S/M/A/R/T/R/O/C/'—'/全称映射ref);直接回应2独立judge批评;增量改进无分变但消除2处已知doc debt	full_test(dim8未重测)
 2026-06-23T16:30	2e8ad00	verification-criteria	87.3	90.2	keep	dim5+dim4	R4:决策树hybrid方法+SpeedTier+LiteMode一次修订+≤3条免CHECKPOINT;dim8=8.5(Judge确认无回归;Δ+2.9)
 2026-06-23T17:00	d251b93	verification-criteria	90.2	91.4	keep	dim2	R5:Quick Mode Selector卡(O(1)模式发现+A→C联合模式首现行;dim8=8.5;Δ+1.2)
