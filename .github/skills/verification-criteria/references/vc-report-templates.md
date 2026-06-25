@@ -21,9 +21,11 @@
 
 ### Per-VC Results（仅列 <8/8 或非 Ready 的 VC）
 
-> ⛔ **禁止输出全量汇总表**（反例#12）：8/8 全 ✅ 的 VC **不列入此表**，仅在下方
-> "Fully Compliant" 一行汇总数量。本表只列需要关注的问题 VC，省 token。
-> 违反 → 输出 `| # | VC ID | S | M | A | R | T | R | O | C | Score | Disposition |` 8 列展开表。
+> ⛔ **反例#12**（定义见 SKILL.md「⛔ Do Not」）：8/8 全 ✅ **不列入此表**，仅用下方 "Fully Compliant" 一行汇总。
+> 违反 → 输出 `| # | VC ID | S | M | A | R | T | R | O | C | Score | Disposition |` 12 列全量展开（~600+ token 浪费）。
+>
+> **Failed Attributes 列格式**：逗号分隔的 SMARTR-OC 维度缩写（`S/M/A/R/T/R/O/C`），如 `M, R, O`。
+> 无失败维度 → `—`。全称映射见 `vc-smartr-oc.md`。
 
 | VC ID | SMARTR-OC | Failed Attributes | CK Critical ❌ | CK Minor ❌ | Disposition | Recommendation |
 |-------|-----------|-------------------|---------------|------------|-------------|----------------|
