@@ -213,7 +213,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 🔴 **CHECKPOINT · 🛑 STOP**：
 1. **≤3 条（Lite Mode）**：跳过中间 CHECKPOINT，SMARTR-OC + 覆盖率内联展示，仅在最终输出前一次 `vscode_askQuestions` 确认
 2. ≤10 条需求 → 逐条展示 VC + SMARTR-OC；>10 条 → 每 10 条批量展示，`vscode_askQuestions` 确认后继续
-3. A.3 完成后 → 展示 SMARTR-OC 汇总（各维度 ✅/✗ + 总分分布），标注 <6/8 的 VC。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
+3. A.3 完成后 → 展示 SMARTR-OC 汇总（⛔ **反例#12** — 仅列出 <8/8 或非 Ready 的 VC；8/8 全 ✅ 不列入表格，一句汇总即可）。格式定义见 `vc-report-templates.md`。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
 4. 最终输出前 → 展示完整 VC 文档 + 覆盖率摘要，`vscode_askQuestions` 确认后输出
 
 > **Speed Tier 覆盖**：用户显式请求"快速/quick"→ 跳过 CHECKPOINT #2/#3，仅保留 #4（最终确认）。
@@ -299,5 +299,6 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | 9 | **跳过 SMARTR-OC 自检直接输出** | 质量无保障，可能产出不可测试的 VC | 每条 VC 必须 SMARTR-OC ≥ 6/8 才能进入下一步 |
 | 10 | **输出"执行流程概要"或冗余流程描述**（CHECKPOINT 处长篇复述 workflow） | 零信息增量，浪费 token | CHECKPOINT 处只展示 todo list + 关键决策点，`vscode_askQuestions` 等确认 |
 | 11 | **用文字输出等待用户回复**（输出"请回复继续"后 idle） | 依赖用户主动输入，容易遗漏 | 必须调用 `vscode_askQuestions` 提供结构化选项 |
+| 12 | **输出全量 SMARTR-OC 汇总表**（把每条 VC 的 8 维展开成 `S\|M\|A\|R\|T\|R\|O\|C\|Score\|Disposition` 列，逐条列出全部 VC，包括 8/8 全 ✅ 的） | 30 条 VC = 30 行 × 12 列 ≈ 600+ token 重复信息；8/8 的 VC 无需展示维度 | **只输出有问题的行**：<8/8 或非 Ready 的 VC（VC ID + 总分 + ✗ 维度摘要 + disposition）。全 8/8 时写一句 `全部 N 条 VC SMARTR-OC 8/8 ✅`，不列表 |
 
 > 完整反例库见 `references/vc-anti-patterns.md`。本表为主文件必看的最小集。

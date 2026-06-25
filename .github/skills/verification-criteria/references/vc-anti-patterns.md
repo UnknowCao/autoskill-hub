@@ -10,9 +10,11 @@
 
 ## VC Writing Anti-Patterns
 
-> **编号映射**：SKILL.md「⛔ Do Not 反例黑名单」用 `#1-#11`（执行禁令，按反例#N引用）；
+> **编号映射**：SKILL.md「⛔ Do Not 反例黑名单」用 `#1-#12`（执行禁令，按反例#N引用）；
 > 本文件「Source Depth Anti-Patterns」用 `AP-SD-1..6`（数值溯源子集，按AP-SD-N引用）。
 > 两套编号**不重叠**——`#N` 是"做什么时禁止的行为"，`AP-SD-N` 是"标注数值来源时的反模式"。检索时按上下文选用。
+>
+> #12（禁止全量 SMARTR-OC 汇总表）是输出格式禁令，不涉及 Source Depth 标注，因此本文件不展开。详见 `vc-output-format.md` §Per-VC Results 与 `vc-report-templates.md`。
 
 Avoid these content-level mistakes when writing individual VCs.
 

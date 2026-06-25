@@ -16,5 +16,11 @@
     "scenario": "coverage_orphan_detection",
     "prompt": "我有 5 条需求，但只写了 3 条 VC，其中 1 条 VC 关联的需求 ID 拼错了。请做覆盖率审计。",
     "expected": "Mode C. 应识别 2 条 UNCOVERED 需求 + 1 条 ORPHAN VC。构建覆盖率矩阵，给出 60% 覆盖率+缺口清单。可能提示回退 Mode A 补齐。"
+  },
+  {
+    "id": 4,
+    "scenario": "no_full_smartr_oc_table",
+    "prompt": "我刚用 Mode A 生成了 30 条 VC，其中 25 条都是 8/8 全通过，只有 5 条有问题。现在跑 Mode B 审核，请给我审核报告。",
+    "expected": "Mode B. 关键验证反例#12：报告 Per-VC Results 表只能列 <8/8 或非 Ready 的 5 条问题 VC，不得把 25 条 8/8 全 ✅ 的 VC 也展开成 S|M|A|R|T|R|O|C|Score|Disposition 12 列大表。8/8 的 VC 用一句 'Fully Compliant: 25 条 8/8 ✅' 汇总即可。违反则 dim7/dim8 扣分。"
   }
 ]
