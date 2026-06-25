@@ -70,6 +70,7 @@ prompt 里内联需求全文**——prompt 只携带文件路径。
 **关键规则**：
 - 表格内 Test Conditions / Pass/Fail Criterion 用 `<br>` 换行，每行一个独立条件项
 - ⛔ **SMARTR-OC 只输出总分**；禁止输出完整的 8 维表格。仅当 <8/8 时追加 `> ✗ {dim}: {reason}` 行（每行 ≤80 chars）。8/8 时只写 `**SMARTR-OC**: **8/8** ✅`，不列维度
+- ⛔ **禁止输出全量 SMARTR-OC 汇总表**（把每条 VC 的 8 维展开成 `S|M|A|R|T|R|O|C|Score|Disposition` 列，逐条列出全部 VC，包括 8/8 全 ✅ 的）。最终回复或文件末尾若需汇总，**仅列 <8/8 或非 Ready 的问题 VC**；全 8/8 时一句 `全部 N 条 8/8 ✅`，不列表（反例#12 / F10）
 - ⛔ **Gate Compliance Checklist 只列出未通过的 Gate**（⚠️ 或 ✗），通过的 Gate 不输出。若全部通过则写 `All 11 Gates: ✅ PASS` 一行即可
 - **Source Depth 列出所有带标签的数值**（含 `[R]`/`[D]`/`[S]`/`[E]`/`[A]`），每值一行 bullet。
   标签格式**必须**符合 `vc-source-depth.md` §The Five Source Depth Levels：
