@@ -213,7 +213,7 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 🔴 **CHECKPOINT · 🛑 STOP**：
 1. **≤3 条（Lite Mode）**：跳过中间 CHECKPOINT，SMARTR-OC + 覆盖率内联展示，仅在最终输出前一次 `vscode_askQuestions` 确认
 2. ≤10 条需求 → 逐条展示 VC + SMARTR-OC；>10 条 → 每 10 条批量展示，`vscode_askQuestions` 确认后继续
-3. A.3 完成后 → 展示 SMARTR-OC 汇总（**仅 <8/8 的 VC**：VC ID + 总分 + 失败维度摘要；8/8 全 ✅ 的 VC **不列入表格**，仅一句汇总 `N 条 VC 全部 8/8 ✅`）。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
+3. A.3 完成后 → 展示 SMARTR-OC 汇总（⛔ **反例#12** — 仅列出 <8/8 或非 Ready 的 VC；8/8 全 ✅ 不列入表格，一句汇总即可）。格式定义见 `vc-report-templates.md`。用户选择：(a)修订重检 / (b)标记 disposition 继续 A.4 / (c)终止导出
 4. 最终输出前 → 展示完整 VC 文档 + 覆盖率摘要，`vscode_askQuestions` 确认后输出
 
 > **Speed Tier 覆盖**：用户显式请求"快速/quick"→ 跳过 CHECKPOINT #2/#3，仅保留 #4（最终确认）。
