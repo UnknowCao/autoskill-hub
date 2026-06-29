@@ -372,33 +372,36 @@ When content is fully superseded or the domain scope changes:
 The wiki directory works as an Obsidian vault out of the box (`[[wikilinks]]`, Graph View, Dataview).
 Set Obsidian's attachment folder to `raw/assets/`. For headless server sync, see `references/obsidian-headless.md`.
 
-## Pitfalls
+## Anti-Patterns（不要做的事）
 
-- **Never modify files in `raw/`** — sources are immutable. Corrections go in wiki pages.
-- **Always orient first** — read SCHEMA + index + recent log before any operation in a new session.
-  Skipping this causes duplicates and missed cross-references.
-- **Always update index.md and log.md** — skipping this makes the wiki degrade. These are the
-  navigational backbone.
-- **Don't create pages for passing mentions** — follow the Page Thresholds in SCHEMA.md. A name
-  appearing once in a footnote doesn't warrant an entity page.
-- **Don't create pages without cross-references** — isolated pages are invisible. Every page must
-  link to at least 2 other pages.
-- **Frontmatter is required** — it enables search, filtering, and staleness detection.
-- **Tags must come from the taxonomy** — freeform tags decay into noise. Add new tags to SCHEMA.md
-  first, then use them.
-- **Keep pages scannable** — a wiki page should be readable in 30 seconds. Split pages over
-  200 lines. Move detailed analysis to dedicated deep-dive pages.
-- **Ask before mass-updating** — if an ingest would touch 10+ existing pages, confirm
-  the scope with the user first.
-- **Rotate the log** — when log.md exceeds 500 entries, rename it `log-YYYY.md` and start fresh.
-  The agent should check log size during lint.
-- **Handle contradictions explicitly** — don't silently overwrite. Note both claims with dates,
-  mark in frontmatter, flag for user review.
-- **Don't manually edit raw/ binary files** — raw/ is immutable. If a .docx needs correction,
-  fix the original and re-ingest. If a .md conversion looks wrong, flag it with `quality: low`
-  and consider re-converting with different settings.
-- **markitdown conversion is deterministic** — same input file → same output .md. If the
-  original file hasn't changed, skip re-conversion. Use `original_sha256:` to check.
-- **Reconciliation over diff** — when a source updates, do NOT mechanically diff old vs. new
-  .md. Perform fact-checking against affected wiki pages (see Reconciliation Pass). format
-  noise (pagination, renumbering) should never trigger contested flags.
+> ⚠️ Each of these degrades the wiki. Violating any of them triggers lint or data loss.
+
+| # | ❌ Don't | Why it's harmful | ✅ Do instead |
+|---|---------|-----------------|--------------|
+| A1 | **Modify files in `raw/`** | Breaks source immutability. Sha256 drift. Lost audit trail. | Corrections go in wiki pages. If the source itself is wrong, note it in the wiki page: "Source claims X, but [reason]." |
+| A2 | **Skip orientation on session start** | Creates duplicate pages. Misses cross-references. Contradicts schema conventions. | Always read SCHEMA → index → recent log before any operation. See Resuming section. |
+| A3 | **Skip updating index.md or log.md** | Wiki becomes unnavigable. Search breaks. No activity history. | Update both after every ingest, query filing, archive, or lint run. |
+| A4 | **Create pages for passing mentions** | Noise drowns signal. Index bloat. Broken wikilinks multiply. | Follow SCHEMA.md Page Thresholds. A name in a footnote ≠ an entity page. |
+| A5 | **Create pages without `[[wikilinks]]`** | Orphan pages are invisible. No graph connectivity. Unfindable. | Every page must link to ≥2 other pages. Check that existing pages link back. |
+| A6 | **Skip frontmatter on wiki pages** | No searchability. No staleness detection. No tag filtering. | Every page: `title`, `type`, `tags`, `created`, `updated`, `sources`, `confidence`. |
+| A7 | **Use freeform tags** | Tag sprawl. Inconsistent filtering. Lint check ⑫ flags unknowns. | Only use tags from SCHEMA.md taxonomy. Add new tags to SCHEMA.md first. |
+| A8 | **Silently overwrite contradictory claims** | Destroys curated knowledge. Loses provenance. User never sees the conflict. | Follow Update Policy: keep both claims with dates+ sources, set `contested: true`, flag for user. |
+| A9 | **Mechanically diff source versions** | Format noise (pagination, numbering changes) triggers false positives. Misses semantic changes. | Perform fact-checking reconciliation (see Reconciliation Pass). Compare claims, not text. |
+| A10 | **Re-convert unchanged files** | Wastes compute. Overwrites stable .md with identical output. | Compare `original_sha256:` first. If unchanged → skip conversion and ingestion entirely. |
+| A11 | **Skip asking before mass-updating (≥10 pages)** | User loses control. Accidental bulk changes without review. | 🔴 CHECKPOINT C4: present scope, wait for confirmation. |
+| A12 | **Let log.md grow unbounded** | Unreadable. Slow to parse. Hard to find recent activity. | Rotate at ≥500 entries: rename `log-YYYY.md`, start fresh. Lint check ⑬. |
+| A13 | **Create pages from single low-confidence source without marking** | Misleads future queries. Reader assumes well-supported claim. | Set `confidence: low` or `medium` for single-source, opinion, or fast-moving claims. |
+| A14 | **File every query answer as a wiki page** | Clutters queries/ and comparisons/. Trivial lookups pollute the knowledge base. | Only file answers that are substantial (comparison, deep dive, novel synthesis). Use C6 checkpoint. |
+
+## Best Practices（应该做的事）
+
+- **Orient first, every session** — SCHEMA → index → recent log. Non-negotiable.
+- **Frontmatter on every page** — `title`, `type`, `tags`, `created`, `updated`, `sources`, `confidence`.
+- **Tags from taxonomy only** — extend SCHEMA.md before using new tags.
+- **Cross-reference aggressively** — ≥2 `[[wikilinks]]` per page. Check backlinks.
+- **Provenance for synthesis** — `^[raw/...]` markers when ≥3 sources contribute to a page.
+- **Confidence for every claim** — low/medium/high based on source count and quality.
+- **Log everything** — every ingest, query filing, archive, lint run. Append-only.
+- **Keep pages under 200 lines** — split at logical boundaries. Add TOC if unsplittable.
+- **Reconciliation, not diff** — fact-check claims against new source version. Categorize impact.
+- **Rotate log at 500 entries** — rename to `log-YYYY.md`, start fresh.
