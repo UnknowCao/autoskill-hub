@@ -262,6 +262,24 @@ diff old vs. new .md. Instead, perform a **fact-checking reconciliation**:
    categories), which pages are affected, and which need manual review. 🛑 STOP and wait.
    The user decides whether to accept, revise, or re-ingest. Do NOT proceed until confirmed.
 
+### 1b. Update Policy
+
+When new information from an ingested source conflicts with existing wiki content,
+follow this policy. Never silently overwrite curated knowledge.
+
+| Scenario | Action |
+|----------|--------|
+| New claim **contradicts** existing claim | Keep both. Note each with date + source. Set `contested: true` in frontmatter. Add `<!-- ⚠️ Contradiction: [claim A] (source X, date) vs [claim B] (source Y, date). Review needed. -->` at page top. Flag for user review. |
+| New claim **refines** existing claim (more recent data, more precise) | Update the claim. Append "(updated: [date], per [source])" to the sentence. Keep the old claim as an HTML comment for audit trail. Bump `updated` date. |
+| New claim **replaces** existing claim (source explicitly retracts or supersedes) | Replace the claim. Add `<!-- Superseded: [old claim] ([old source], [old date]) -->` above the new text. Bump `updated` date. |
+| New source **adds** orthogonal information | Append to the page as a new section or paragraph. Link to source via `^[raw/...]` provenance marker. |
+| Single-source claim, fast-moving domain | Set `confidence: low` or `medium`. Never `high` for single-source claims. |
+| ≥3 sources agree on a claim | Set `confidence: high`. Add `^[raw/...]` markers for each supporting source. |
+| Source is opinion/editorial (not research/standard) | Set `confidence: low`. Note in text: "(industry opinion)" or "(vendor claim)". |
+
+**Contested pages:** When `contested: true` is set, lint reports it as Info severity.
+The user should periodically review contested pages and resolve conflicts.
+
 ### 2. Query
 
 When the user asks a question about the wiki's domain:
@@ -304,6 +322,25 @@ When the user asks to lint, health-check, or audit the wiki:
 | ⑭ | Provenance markers (3+ sources, none marked) | Info |
 
 Report findings grouped by severity. Append to log.md: `## [YYYY-MM-DD HH:MM] lint | N issues found`
+
+## Failure Modes
+
+When an operation fails, follow the if-then fallback chain. Do NOT silently skip or guess.
+
+| # | Operation | Trigger condition | First-line fix | Still fails → fallback |
+|---|-----------|-------------------|---------------|----------------------|
+| F1 | URL extraction | `web_extract` returns empty or error | Retry once after 5s. If the URL redirects, follow the redirect and retry. | Try `archive.org` snapshot of the URL. If that also fails → ask user to paste the content directly. Log failure in `log.md`. |
+| F2 | markitdown conversion | Conversion throws exception | Store original file in `raw/` with frontmatter `status: unconverted`. No `.md` companion file. | Inform user which file failed and why. Suggest alternative: manual copy-paste, OCR re-scan, or skip. Lint check ⑨ will surface unconverted files. |
+| F3 | markitdown partial output | Output is garbled, empty, or truncated | Generate `.md` but set `quality: low` in frontmatter. Prepend `<!-- ⚠️ Low-quality conversion. Review before citing. -->`. | Inform user. Suggest re-converting with different markitdown settings or manual correction. Lint check ⑩ flags low-quality conversions. |
+| F4 | _lint.py execution | Script not found or Python unavailable | Run manual checks: read `index.md`, scan `[[wikilinks]]`, check frontmatter fields individually. | Report which checks could not be automated. Perform the 5 most critical checks manually (broken links, index completeness, orphans, frontmatter, stale). |
+| F5 | index.md corruption | `index.md` missing, empty, or unparseable | Rebuild `index.md` by scanning all `.md` files in `entities/`, `concepts/`, `comparisons/`, `queries/`. Extract titles from frontmatter. | If frontmatter is also missing from pages, use first `# heading` as title. Warn user about degraded index quality. |
+| F6 | Query returns no results | No relevant pages found in index or via `search_files` | Tell the user: "No existing wiki pages cover this topic." Suggest related pages if any partial matches exist. | Offer to create a stub page from the user's question. Do NOT fabricate content. |
+| F7 | Archive target missing | Page to archive doesn't exist at expected path | Check `_archive/` — was it already archived? Check for renamed files. | Report to user: "Page X not found at expected path. Already archived or renamed?" Skip this page, continue with remaining archive candidates. |
+| F8 | Bulk ingest partial failure | ≥1 source in a batch fails (extraction, conversion, or parse) | Continue processing remaining sources. Log each failure with the specific source and error. | After batch completes, report: "N/M sources ingested successfully. K failed: [list]." Offer to retry failures individually. |
+| F9 | sha256 computation failure | `_sha256.py` missing or file unreadable | Compute inline: `hashlib.sha256(file_content.encode()).hexdigest()`. | If file too large for memory, read in chunks. If still fails, skip sha256 verification for this ingest — mark `sha256: unverified` in frontmatter. |
+| F10 | log.md rotation | `log.md` ≥500 entries or write fails | Rename `log.md` → `log-YYYY.md`. Create fresh `log.md` with header `# Log — YYYY`. | If rename fails (permissions), append `<!-- LOG ROTATION NEEDED: ≥500 entries -->` to top of log.md and continue. |
+| F11 | Page size exceeds 200 lines | Lint flags page for split | Propose split candidates to user: identify logical sub-topics within the page. | If no logical split point exists, add a "Quick Navigation" table of contents at the top instead. Lint check ⑪ reports it as P1 but does not block. |
+| F12 | Inbound wikilink update (mass archive) | Archiving a page that has ≥20 inbound `[[wikilinks]]` across the wiki | Present the full inbound-link list to user. Ask: "Update all N inbound links to '(archived)' or handle manually?" | If user chooses auto-update, replace each `[[archived-page]]` with `archived-page (archived)` in all referring pages. Log every page modified. |
 
 ## Working with the Wiki
 
