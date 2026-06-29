@@ -86,10 +86,13 @@ Never silently overwrite curated knowledge. Contradiction → keep both + `conte
 
 ## Query
 
-1. Read index.md; for 100+ page wikis also `search_files`
-2. Read relevant pages; synthesize answer citing `[[page-a]]` and `[[page-b]]`
-3. 🔴 CHECKPOINT — if answer merits filing, suggest queries/ or comparisons/ page; user approves or declines
-4. Update log.md
+1. **Scope:** Read index.md → identify candidate pages. For 100+ page wikis, also `search_files` with topic keywords.
+2. **Read (cap ≤8 pages):** Prioritize — ① exact entity/concept match → ② same-tag pages → ③ `[[wikilink]]`-connected pages → ④ comparisons/ involving the topic. If >8 candidates, read top-8 by tag overlap.
+3. **Synthesize:**
+   - **Survey** ("tell me about X"): Summarize across pages. Note `confidence` levels. Surface `contested: true` conflicts with both sides + dates + sources — do NOT pick a winner.
+   - **Specific** ("what is X's Y?"): Direct answer from best-matching page, cite `[[page]]`. If multiple pages disagree → treat as Survey.
+4. 🔴 CHECKPOINT — file-worthy? Criteria: **comparisons/** if ≥3 pages synthesized; **queries/** if novel cross-page insight; skip if simple lookup. User approves or declines.
+5. Update log.md: `## [date] query | topic | N pages consulted`
 
 ## Lint
 
