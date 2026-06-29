@@ -27,6 +27,18 @@ Set via `WIKI_PATH` env var; defaults to `~/wiki`. The wiki is a directory of ma
 
 Three layers: **raw/** (immutable sources), **wiki pages** (entities/concepts/comparisons/queries, agent-owned), **SCHEMA.md** (conventions + tag taxonomy). Run `scripts/_init.py <path>` to scaffold.
 
+## Quick Workflow Selector
+
+| User intent | Section |
+|-------------|---------|
+| Create new wiki / 新建知识库 | [Init](#init) |
+| Add source to wiki / 摄入 | [Format Conversion](#format-conversion) → [Ingest](#ingest) |
+| Add multiple sources at once / 批量摄入 | [Bulk Ingest](#bulk-ingest) |
+| Re-ingest updated source / 重新摄入 | [Reconciliation Pass](#reconciliation-pass) |
+| Ask question against wiki / 查询 | [Query](#query) |
+| Health-check wiki / 检查 | [Lint](#lint) |
+| Archive stale pages / 归档 | [Archiving](#archiving) → [Bulk Archive](#bulk-archive) |
+
 ## Checkpoints
 
 > Full catalog: `references/checkpoints.md`. 🔴 = STOP for user confirmation. 🛑 = hard stop, do not proceed.
