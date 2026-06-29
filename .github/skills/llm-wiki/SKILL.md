@@ -116,7 +116,17 @@ Never silently overwrite curated knowledge. Contradiction → keep both + `conte
 
 ## Failure Modes
 
-> Full chains: `references/failure-modes.md`. Log every failure, inform user, offer alternatives, continue batch remainder.
+> Full chains: `references/failure-modes.md` (F1–F12). Log every failure, inform user, offer alternatives, continue batch remainder.
+
+| # | When | First response |
+|---|------|---------------|
+| F1 | URL extraction fails | Retry after 5s → try archive.org → ask user to paste |
+| F2 | markitdown throws | Store original with `status: unconverted`, log, continue |
+| F3 | markitdown output garbled | Generate .md with `quality: low`, prepend ⚠️ warning |
+| F4 | `_lint.py` unavailable | Run 5 most critical checks manually |
+| F5 | `index.md` corrupt | Rebuild by scanning all page dirs, extract titles |
+| F8 | Bulk ingest partial fail | Continue remaining sources, report N/M succeeded |
+| F9 | sha256 compute fails | Compute inline with `hashlib`; skip verification if unreadable |
 
 ## Bulk Ingest
 
