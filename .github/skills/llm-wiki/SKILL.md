@@ -1,12 +1,12 @@
 ---
 name: llm-wiki
-description: "Karpathy's LLM Wiki: build/query interlinked markdown KB."
+description: "Karpathy's LLM Wiki: build and maintain a compounding interlinked markdown knowledge base. Use when: creating wikis, ingesting sources (URL/PDF/DOCX/PPTX/XLSX/HTML/audio/images), querying domain knowledge, linting wiki health, archiving stale pages. Triggers: wiki, knowledge base, ingest, 知识库, 摄入, 创建wiki, lint wiki, 知识管理, add to wiki, query wiki."
 license: MIT
 metadata:
   hermes:
-    tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative]
+    tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative, knowledge-management]
     category: research
-    related_skills: [obsidian, arxiv, markitdown]
+    related_skills: [obsidian, arxiv, markitdown, tavily]
 ---
 
 # Karpathy's LLM Wiki
