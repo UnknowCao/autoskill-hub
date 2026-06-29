@@ -75,6 +75,8 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | A.3 SMARTR-OC自检 | 8维评分（加载`vc-smartr-oc.md`） | <6/8→修订≤3次→仍不合格→VC-BLOCKED |
 | A.4 覆盖率审计 | 正向+反向追溯+孤儿检测 | 必须100%；≥3轮仍UNCOVERED→🛑 |
 
+🔴 **CHECKPOINT · 🛑 STOP** — A.0 发现已有 VC 时必须 `vscode_askQuestions`（增量/覆盖/切换），**禁止静默覆盖**。A.4 后覆盖率 < 100% 不得直接结束（反例#4）。
+
 **VC-First 7步循环**（每条需求）：理解意图 → 选择方法 → 定义标准 → Source Depth 标注 → 设定条件 → 编写VC → SMARTR-OC 自检
 
 **验证方法决策树**（A.2 步，按需求类型自动匹配 — 红线：全用 "Test" 违反反例#5）：
@@ -150,6 +152,8 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | C.3 孤儿检测 | 每条VC关联已存在需求 | 不存在→🔴ORPHAN；>20%→修正ID |
 | C.4 覆盖率矩阵 | 构建需求↔VC追溯矩阵 | — |
 | C.5 输出报告 | 覆盖率%+未覆盖清单+建议 | 模板缺失→降级 |
+
+🔴 **CHECKPOINT · 🛑 STOP** — C.0 必须 `vscode_askQuestions` 确认需求+VC 双源，**缺任一源不得继续**。C.2 >30% UNCOVERED → 暂停 C，提示回退 Mode A 补齐。
 
 ### C.2/C.3 缺陷判定阈值（C.2~C.3 步必查 — 关键决策点）
 
@@ -230,7 +234,8 @@ Full Mode 加载对应 workflow 文件后，**立即** `manage_todo_list`（从 
 | SMARTR-OC 连续 3 次修订仍 < 6/8 | 🔴 | 标记 VC-BLOCKED，记录阻塞原因，继续下一条；**不无限循环** | 累计 ≥3 VC-BLOCKED → 升级，暂停全部 |
 | 覆盖率审计 ≥3 轮回退仍有 UNCOVERED | 🔴 | 暂停，展示未覆盖清单+阻塞原因；`vscode_askQuestions` 决定：接受部分覆盖/修订/终止 | 不回复 → 接受部分覆盖，标 ⚠️ |
 | 混合模式指令（≥2 Workflow） | 🔴 | `vscode_askQuestions` 确认顺序（见下表），不自行决定 | 不回复 → 按默认顺序，明确告知 |
-| ≥2 子Agent同时失败（空输出/超时/异常） | 🔴 | 终止并行，报告失败子批次+原因，全局降级顺序 | 顺序也失败 → 标 error，继续下一批 |
+| `vscode_askQuestions` 无响应 | 🟡 | 采用默认安全选项（增量补充而非覆盖、仅评估而非自动修改），**明确告知用户默认值及后果** | 用户后续回复 → 从中断点继续，不丢失已完成工作 |
+| ≥2 子Agent同时失败（空输出/超时/异常，含 API 429 限流） | 🔴 | 终止并行，报告失败子批次+原因，全局降级顺序 | 顺序也失败 → 标 error，继续下一批 |
 
 ### 混合模式执行顺序与交叉联动
 
