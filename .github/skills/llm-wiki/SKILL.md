@@ -70,6 +70,21 @@ wiki/
 cross-referenced by the agent.
 **Layer 3 — The Schema:** `SCHEMA.md` defines structure, conventions, and tag taxonomy.
 
+## Checkpoint Summary
+
+> 🔴 = STOP and wait for user confirmation. 🛑 = hard stop, do not proceed.
+
+| # | Operation | When | What the agent must ask |
+|---|-----------|------|------------------------|
+| C1 | Init | Step 3 | Confirm domain scope before writing SCHEMA |
+| C2 | Format Conversion | L2 images | Ask before enabling AI image description (API key required) |
+| C3 | Ingest | After source analysis | Discuss key takeaways, contradictions, page-creation candidates |
+| C4 | Ingest (mass update) | ≥10 pages affected | Confirm scope before batch-creating/updating pages |
+| C5 | Reconciliation | After impact report | User decides accept / revise / re-ingest |
+| C6 | Query | Before filing answer | Confirm before creating queries/ or comparisons/ page |
+| C7 | Archiving | Before moving pages | Confirm archive candidates; user may veto individual pages |
+| C8 | Bulk Ingest | Before execution | Confirm batch scope (N sources, estimated page impact) |
+
 ## Resuming an Existing Wiki (CRITICAL — do this every session)
 
 When the user has an existing wiki, **always orient yourself before doing anything**:
@@ -101,7 +116,7 @@ When the user asks to create or start a wiki:
 
 1. Determine the wiki path (from `$WIKI_PATH` env var, or ask the user; default `~/wiki`)
 2. Create the directory structure above
-3. Ask the user what domain the wiki covers — be specific
+3. 🔴 CHECKPOINT — ask the user what domain the wiki covers. Be specific: industry, sub-discipline, key technologies, regulatory framework. Do NOT assume or auto-generate a generic schema.
 4. Write `SCHEMA.md` customized to the domain (see template below)
 5. Write initial `index.md` with sectioned header
 6. Write initial `log.md` with creation entry
@@ -147,9 +162,10 @@ same raw/ subdirectory, with the same base name. Example: `raw/presentations/bms
 - **L1 Extract (default):** Extract embedded images to `raw/assets/`, reference in
   .md via `![[image-name.png]]`. Zero additional cost, preserves visual evidence.
 - **L2 AI Description (on-demand):** Use markitdown's LLM mode (requires OpenRouter API key)
-  to generate text descriptions of images. Ask the user per ingest: "Detected N images.
-  Generate AI descriptions? (requires OpenRouter API key)". Descriptions are embedded
-  in the .md output, dramatically improving wiki page quality for diagram-heavy sources.
+  to generate text descriptions of images. 🔴 CHECKPOINT — ask the user per ingest:
+  "Detected N images. Generate AI descriptions? (requires OpenRouter API key)".
+  Descriptions are embedded in the .md output, dramatically improving wiki page quality
+  for diagram-heavy sources. Do NOT auto-enable L2 without user consent.
 
 **Conversion failure handling:**
 
@@ -180,12 +196,15 @@ When the user provides a source (URL, file, paste), integrate it into the wiki:
      If unchanged → skip conversion and ingestion. If changed → reconvert (if needed),
      then proceed to **Reconciliation Pass** (section 1a below) instead of normal ingest.
 
-② **Discuss takeaways** with the user — what's interesting, what matters for
-   the domain. (Skip this in automated/cron contexts — proceed directly.)
+② 🔴 CHECKPOINT — **Discuss takeaways** with the user: key claims, surprising findings,
+   contradictions with existing wiki content, entities/concepts that meet page-creation
+   thresholds. (Skip this checkpoint in automated/cron contexts — proceed directly.)
 
 ③ **Check what already exists** — search index.md and use `search_files` to find
    existing pages for mentioned entities/concepts. This is the difference between
    a growing wiki and a pile of duplicates.
+   🔴 CHECKPOINT — if the analysis shows ≥10 existing pages would be created or
+   updated, 🛑 STOP and confirm scope with the user before proceeding to step ④.
 
 ④ **Write or update wiki pages:**
    - **New entities/concepts:** Create pages only if they meet the Page Thresholds
@@ -239,8 +258,9 @@ diff old vs. new .md. Instead, perform a **fact-checking reconciliation**:
 ⑤ **New content from v2:** Any entities/concepts/sections that are entirely new in v2
    should trigger normal page creation (follow ingest steps ③-⑥).
 
-⑥ **Report to user:** Summarize what changed, which pages are affected, and which
-   need manual review. The user decides whether to accept, revise, or re-ingest.
+⑥ 🔴 CHECKPOINT — **Report to user:** Summarize what changed (no-change / minor / substantive
+   categories), which pages are affected, and which need manual review. 🛑 STOP and wait.
+   The user decides whether to accept, revise, or re-ingest. Do NOT proceed until confirmed.
 
 ### 2. Query
 
@@ -255,6 +275,8 @@ When the user asks a question about the wiki's domain:
 ⑤ **File valuable answers back** — if the answer is a substantial comparison,
    deep dive, or novel synthesis, create a page in `queries/` or `comparisons/`.
    Don't file trivial lookups — only answers that would be painful to re-derive.
+   🔴 CHECKPOINT — confirm with the user before creating the page. Suggest a
+   filename and section; let the user approve or decline.
 ⑥ **Update log.md** with the query and whether it was filed.
 
 ### 3. Lint
@@ -288,21 +310,25 @@ Report findings grouped by severity. Append to log.md: `## [YYYY-MM-DD HH:MM] li
 ### Bulk Ingest
 
 When ingesting multiple sources at once, batch the updates:
-1. Read all sources first
-2. Identify all entities and concepts across all sources
-3. Check existing pages for all of them (one search pass, not N)
-4. Create/update pages in one pass (avoids redundant updates)
-5. Update index.md once at the end
-6. Write a single log entry covering the batch
+1. 🔴 CHECKPOINT — present batch scope: N sources, estimated entities/concepts,
+   estimated page impact (create + update). 🛑 STOP until user confirms.
+2. Read all sources first
+3. Identify all entities and concepts across all sources
+4. Check existing pages for all of them (one search pass, not N)
+5. Create/update pages in one pass (avoids redundant updates)
+6. Update index.md once at the end
+7. Write a single log entry covering the batch
 
 ### Archiving
 
 When content is fully superseded or the domain scope changes:
-1. Create `_archive/` directory if it doesn't exist
-2. Move the page to `_archive/` with its original path (e.g., `_archive/entities/old-page.md`)
-3. Remove from `index.md`
-4. Update any pages that linked to it — replace wikilink with plain text + "(archived)"
-5. Log the archive action
+1. 🔴 CHECKPOINT — present archive candidates to the user with reasons for each.
+   User may veto individual pages. Do NOT auto-archive without confirmation.
+2. Create `_archive/` directory if it doesn't exist
+3. Move the page to `_archive/` with its original path (e.g., `_archive/entities/old-page.md`)
+4. Remove from `index.md`
+5. Update any pages that linked to it — replace wikilink with plain text + "(archived)"
+6. Log the archive action
 
 ### Obsidian Integration
 
