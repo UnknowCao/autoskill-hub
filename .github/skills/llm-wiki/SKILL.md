@@ -239,7 +239,9 @@ diff old vs. new .md. Instead, perform a **fact-checking reconciliation**:
 ① **Overwrite raw/ files:** Replace both the original file and the .md with the new versions.
 
 ② **Identify affected wiki pages:** Search all wiki pages whose `sources:` frontmatter
-   references this raw file. Read each affected page.
+   references this raw file. Also grep for the raw file path (e.g. `raw/presentations/bms-design.md`)
+   across all wiki `.md` files to catch inline `^[raw/...]` provenance markers that may not appear
+   in frontmatter. Read every affected page — including those found only via inline markers.
 
 ③ **Fact-check each assertion:** For each claim in the affected wiki pages that cites
    this source (via `^[raw/...]` provenance markers), read the corresponding section
@@ -323,6 +325,19 @@ When the user asks to lint, health-check, or audit the wiki:
 
 Report findings grouped by severity. Append to log.md: `## [YYYY-MM-DD HH:MM] lint | N issues found`
 
+**Supersession heuristics** — when lint surfaces stale pages, use these patterns to filter
+which are genuinely superseded (archive candidates) vs merely inactive:
+
+| Pattern | Detection | Example |
+|---------|-----------|---------|
+| Standard version bump | Page title or frontmatter references a numbered standard (ISO, GB/T, IEC, SAE, UN R). Search wiki for same standard prefix with higher revision year. | `GB/T 38661-2020` → search `GB/T 38661-2025` |
+| Explicit cross-reference | Page frontmatter has `superseded_by: [[newer-page]]` or body contains "replaced by / 已被...替代". | Direct pointer — follow it. |
+| Technology generation | Page title contains generation markers (Gen1/Gen2, V1/V2, 第一代/第二代). Search for higher-generation page. | `磷酸铁锂 Gen1` → search `磷酸铁锂 Gen2` |
+| Regulatory replacement | Page references a regulation number. Search for newer regulation mentioning "replaces" or "替代" in the wiki. | `UN R100.02` → `UN R100.03` |
+
+These are heuristics — they surface candidates. The 🔴 C7 checkpoint still gates final
+archive decisions. The agent proposes; the user disposes.
+
 ## Failure Modes
 
 When an operation fails, follow the if-then fallback chain. Do NOT silently skip or guess.
@@ -366,6 +381,22 @@ When content is fully superseded or the domain scope changes:
 4. Remove from `index.md`
 5. Update any pages that linked to it — replace wikilink with plain text + "(archived)"
 6. Log the archive action
+
+### Bulk Archive
+
+When archiving multiple pages at once (e.g., N standards replaced by newer versions, domain
+scope change affecting many pages), batch the operations. Mirror of Bulk Ingest symmetry.
+
+1. 🔴 CHECKPOINT — present archive candidates with reasons for each. User confirms or vetoes
+   individual pages. 🛑 STOP until confirmed.
+2. Build an inbound-link map: grep `[[wikilinks]]` across all wiki `.md` files.
+   Group by target page. Identify all pages that link to any archive candidate.
+3. Archive in one pass: move all confirmed pages to `_archive/`, preserving original paths.
+4. Rewrite wikilinks in one pass: for each referring page, replace all `[[archived-page]]`
+   → `archived-page (archived)` in a single read+edit per file. Do NOT edit file-by-link.
+5. Rebuild index.md: remove all archived pages in one batch update.
+6. Write a single log entry: `## [date] bulk-archive | N pages | reason: [summary]`.
+   List every archived page and every referring page that was modified.
 
 ### Obsidian Integration
 
