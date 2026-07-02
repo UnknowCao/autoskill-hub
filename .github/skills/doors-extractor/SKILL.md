@@ -65,7 +65,7 @@ cmd /c "python .claude/skills/doors-extractor/scripts/credential_manager.py clea
 | A7 | Any `write`/`update`/`delete`/`create`/`link`/`save` in DOORS | Refuse: "Read-Only only" | Data corruption prevention | 5 |
 | A8 | Store/pass username or password via CLI args | GUI login only | Security | 5 |
 | A9 | Modify `scripts/doors_manager.py` | Put custom logic in `scripts/library/` | Core script is LOCKED/READ-ONLY | 5 |
-| A10 | Close/restart DOORS client on COM failure | Keep session; run `diag_com.py`; follow §6.2 escalation | Restart loses state; diag informs recovery | 5, 6.2 |
+| A10 | Close/restart DOORS client on COM failure | Keep session; run `diag_com.py`; classify via §6.2 Step 0 anchors | Restart loses state; §6.2 gives objective classification + 1-retry escalation | 5, 6.2 |
 | A11 | Ask >1 question during extraction intent | At most 1 required (module location) | Credit conservation | 4.4 |
 | A12 | Use generic tools (jq/grep) for processing raw JSON | Always use a `scripts/library/` script | Schema-aware processing | 4.7 |
 
@@ -171,7 +171,23 @@ Question style requirements:
 
 **Never use generic tools (jq/grep/python one-liners) on raw JSON. Always use a dedicated `scripts/library/` script.**
 
-1.  **List Available Scripts**: List `scripts/library/` directory and present available scripts to user.
+#### Library Script Catalog (Quick-Ref)
+
+> Current scripts in `scripts/library/`. For any new query not covered here, go to OPTION B. Run `ls scripts/library/` to detect scripts added after this doc.
+
+| Script | Filters By | Output | When to use |
+|---|---|---|---|
+| `get_released_reqs.py` | `Object_Status == "Released"` | JSON | "get released requirements" / "已发布需求" |
+| `extract_nondeleted_reqs.py` | objects without deletion flags (heuristic on `id`/`text`/`deleted` keys) | Markdown | "get all non-deleted requirements as doc" / raw dump to readable form |
+| `get_swt_impact.py` | `AllocTestAuthority == "SwT"` | JSON | "get SwT-allocated requirements" / "software test authority items" |
+
+**Invocation pattern (all library scripts share this signature):**
+```bash
+cmd /c python .github/skills/doors-extractor/scripts/library/<SCRIPT_NAME> "<RAW_JSON>" "report/doors/<OUTPUT>.<EXT>"
+```
+(`<EXT>` = `json` for JSON-output scripts, `md` for `extract_nondeleted_reqs.py`)
+
+1.  **Select Script**: Match user's intent to a library script from the catalog above.
     - If no matching script exists, proceed directly to **OPTION B** without asking the user.
 
 #### OPTION A: Use Existing Library Script (Preferred)
@@ -216,7 +232,7 @@ Refer to **[references/error-handling.md](references/error-handling.md)** for th
 | Scenario | Symptom | First Response | If Still Failing |
 |---|---|---|---|
 | Config missing | DOORS launch fallback cannot find exe/data | `cmd /c "python credential_manager.py setup"` | Verify `DOORS_PATH` env var; check `~/.doors/config.json` exists |
-| DOORS already running | COM unavailable; extraction fails | Keep session; do NOT close/restart | Run `diag_com.py`; capture its output; report failure with env checks |
+| DOORS already running | COM unavailable; extraction fails | Keep session; do NOT close/restart | Run `diag_com.py`; classify output via §6.2 Step 0 anchors; follow §6.2 escalation |
 | `& cmd.exe` rejected | PowerShell restricted mode error | Use `cmd /c python ...` (no `&`) | Use PowerShell-native cmdlets directly |
 | pathlib check attempted | `python -c "import pathlib..."` | Replace with `Get-ChildItem ... \| Select Name,Length,LastWriteTime` | — (one-shot fix) |
 | Fake red "errors" | Red lines despite successful extraction | Omit `2>&1` redirection; rerun | — (artifact, not real error) |
@@ -227,10 +243,36 @@ Refer to **[references/error-handling.md](references/error-handling.md)** for th
 
 When extraction fails AND `diag_com.py` confirms COM is unrecoverable in the current session, follow this closed-loop escalation (do NOT leave the user at "capture logs and report failure" with no next step):
 
-1. **Collect** — Save `diag_com.py` stdout + the failed extraction's stderr to `report/doors/_diag_<YYYYMMDD_HHMMSS>.log`.
-2. **Summarize** — Report to user: (a) DOORS process PID, (b) whether `doors.exe` is responsive in Task Manager, (c) COM connect result string from diag output.
-3. **Decision branch**:
-   - If `doors.exe` is hung (PID exists, unresponsive): ask user to manually kill the process via Task Manager, then retry extraction (Phase 2) ONCE.
-   - If `doors.exe` not running: ask user to launch DOORS GUI and log in manually, then retry (Phase 2) ONCE.
-   - If `doors.exe` running and responsive but COM still fails: this is a DOORS licensing/server issue — escalate to user's DOORS admin with the diag log; do NOT retry.
-4. **Hard limit** — After 1 retry, if still failing, STOP and hand off the diag log. Do not enter a retry loop.
+**Step 0 — Classify failure via `diag_com.py` output (objective anchors):**
+
+Run `diag_com.py` and read its output. Classify into exactly one branch using these **string-match anchors** (not free interpretation):
+
+| diag_com.py output contains | Classification | Meaning |
+|---|---|---|
+| `GetActiveObject('DOORS.Application'): SUCCESS` AND `runStr test: 'DOORS COM OK'` | **COM_HEALTHY** | COM is fine; failure was transient — retry extraction once |
+| `Dispatch('DOORS.Application'): SUCCESS` but `runStr test FAIL` | **COM_HALF_OPEN** | DOORS GUI launched but not ready — wait 60s, retry once |
+| `No doors.exe process found!` | **NO_PROCESS** | DOORS not running — ask user to launch GUI + login, then retry once |
+| `doors.exe` in tasklist BUT all GetActiveObject/Dispatch FAIL | **PROCESS_HUNG** | DOORS hung — ask user to kill PID via Task Manager, then retry once |
+| `ERROR: pywin32 not installed` | **ENV_BROKEN** | Python env issue — stop, ask user to reinstall pywin32; do NOT retry |
+
+**Step 1 — Collect**: Save `diag_com.py` stdout + failed extraction's stderr to `report/doors/_diag_<YYYYMMDD_HHMMSS>.log`.
+
+**Step 2 — Branch action** (follow Step 0 classification, do NOT deviate):
+- `COM_HEALTHY` / `COM_HALF_OPEN` / `NO_PROCESS` / `PROCESS_HUNG`: perform the stated action, then retry extraction (Phase 2) **exactly ONCE**.
+- `ENV_BROKEN`: do NOT retry; stop and report.
+
+**Step 3 — Hard limit + hand-off message template**:
+If the single retry also fails, STOP. Do not enter a retry loop. Hand off to the user / DOORS admin using this exact template (fill in `<...>`):
+
+```
+DOORS extraction failed twice. Diagnostic classification: <CLASSIFICATION>.
+Diag log: report/doors/_diag_<TIMESTAMP>.log
+DOORS process: <PID from tasklist, or "not running">
+Requested action: <launch DOORS / kill PID / reinstall pywin32 / escalate to DOORS admin for licensing>
+```
+
+**Process check command** (use this exact form for PID lookup, not `python -c`):
+```powershell
+Get-Process doors -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, Responding
+```
+(`Responding` field gives objective hung detection: `False` = hung.)
