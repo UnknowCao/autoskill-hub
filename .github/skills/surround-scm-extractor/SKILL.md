@@ -59,6 +59,16 @@ sscm lsbranch -b"ParentMainline" -p"ParentMainline" ... | Select-String "keyword
 
 **Note**: Each project has unique name, not generic "Mainline".
 
+**Fallback if `find_project.py` unavailable** (no Python / 0 hits): iterate `lsbranch` over common parents inline:
+```powershell
+$parents = @("Preh_SSCM_TrainingProject","Preh_Root","DaimlerChrysler_Root","Preh_Development_Server","Preh_ProcessImprovement")
+foreach ($p in $parents) {
+    $hits = sscm lsbranch -b"$p" -p"$p" 2>$null | Select-String "keyword"
+    if ($hits) { Write-Host "[$p]"; $hits }
+}
+# Still 0 → parent unknown: ask user for any project fragment, broaden keyword
+```
+
 > 🔴 **CHECKPOINT · 项目确认**：发现候选项目后、执行任何 `sscm get` 之前，**必须**向用户展示命中列表并等待确认。绝不在用户未确认项目名时直接开跑提取（项目名错误会拉错整个仓库）。
 
 **Complex scenarios**: See [branch_workflows.md](references/branch_workflows.md)
