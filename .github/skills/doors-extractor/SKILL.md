@@ -50,9 +50,28 @@ cmd /c "python .github/skills/doors-extractor/scripts/credential_manager.py clea
 cmd /c "python .claude/skills/doors-extractor/scripts/credential_manager.py clear"
 ```
 
-## 3. Usage Workflow
+## 3. Anti-Patterns (RED LINES — Read First)
 
-### Terminal Execution Policy (MANDATORY)
+> Consolidated blacklist of **forbidden actions**. Every entry below is expanded with rationale in its referenced section; this table is the authoritative quick-scan checklist. Any single violation is a PROCESS VIOLATION.
+
+| # | ❌ Never do this | ✅ Do this instead | Why | See § |
+|---|---|---|---|---|
+| A1 | `run_in_terminal(mode="async")` + `get_terminal_output` loop | `mode=sync, timeout=1200000` | Async polling wastes credits on unchanged output | 4.2 |
+| A2 | `2>&1` stderr redirection | Omit redirection | stderr carries diagnostics; mixing yields false errors | 4.6 |
+| A3 | `^U` prefix on any command | Strip leading control chars before send | `^U` is copy-paste artifact that clears the shell line | 4.1 |
+| A4 | `python -c "import pathlib; ..."` for file checks | `Get-ChildItem ... \| Select-Object Name,Length,LastWriteTime` | `python -c` pathlib probe is fragile and verbose | 4.1, 6.1 |
+| A5 | File existence check BEFORE COM recovery confirmed | Wait for `"COM extraction successful (XXX MB)"` signal | Early checks during DXL processing are prohibited | 4.3 |
+| A6 | Declare success without the official signal | Treat absence of signal as NOT successful | Authoritative indicator only | 4.6 |
+| A7 | Any `write`/`update`/`delete`/`create`/`link`/`save` in DOORS | Refuse: "Read-Only only" | Data corruption prevention | 5 |
+| A8 | Store/pass username or password via CLI args | GUI login only | Security | 5 |
+| A9 | Modify `scripts/doors_manager.py` | Put custom logic in `scripts/library/` | Core script is LOCKED/READ-ONLY | 5 |
+| A10 | Close/restart DOORS client on COM failure | Keep session; run `diag_com.py`; follow §6.2 escalation | Restart loses state; diag informs recovery | 5, 6.2 |
+| A11 | Ask >1 question during extraction intent | At most 1 required (module location) | Credit conservation | 4.4 |
+| A12 | Use generic tools (jq/grep) for processing raw JSON | Always use a `scripts/library/` script | Schema-aware processing | 4.7 |
+
+## 4. Usage Workflow
+
+### 4.1 Terminal Execution Policy (MANDATORY)
 
 - All terminal commands in this workflow MUST be executed via `cmd /c`.
 - All terminal commands MUST be executed in PowerShell-compatible form.
@@ -62,7 +81,7 @@ cmd /c "python .claude/skills/doors-extractor/scripts/credential_manager.py clea
 - Mandatory replacement format for file verification:
     - `Get-ChildItem "C:\person\project\10638_AI\report\doors\*HSI*_raw.json" | Select-Object Name, Length, LastWriteTime`
 
-### run_in_terminal Mode Policy (MANDATORY — Credit Conservation)
+### 4.2 run_in_terminal Mode Policy (MANDATORY — Credit Conservation)
 
 - **ALWAYS use `mode=sync` with `timeout=1200000` for extraction commands.** DOORS extraction completes in 30s–3min; 5 minutes is a safe upper bound.
 - **NEVER use `mode=async` for extraction.** Async mode requires manual polling via `get_terminal_output`, which wastes AI credits when the output has not changed.
@@ -77,7 +96,7 @@ cmd /c "python .claude/skills/doors-extractor/scripts/credential_manager.py clea
     run_in_terminal(mode="async") → get_terminal_output → get_terminal_output → ...
     ```
 
-### ABSOLUTE ENFORCEMENT (ZERO EXCEPTIONS)
+### 4.3 ABSOLUTE ENFORCEMENT (ZERO EXCEPTIONS)
 
 - The extraction sequence is MANDATORY and NON-NEGOTIABLE.
 - Any out-of-order action is a PROCESS VIOLATION.
@@ -85,7 +104,7 @@ cmd /c "python .claude/skills/doors-extractor/scripts/credential_manager.py clea
 - NEVER declare success unless the script prints the official success indicator.
 - If uncertain, DO NOT guess; continue waiting for the script lifecycle.
 
-### User Interaction Policy (Min Questions)
+### 4.4 User Interaction Policy (Min Questions)
 
 When user intent is extraction, ask at most one required question:
 
@@ -107,19 +126,19 @@ Question style requirements:
 - fixed options when applicable (for cache/use vs re-extract)
 - allow freeform input only when asking for module location path/URL
 
-### Phase 1: Determine Target
+### 4.5 Phase 1: Determine Target
 
 1.  **Identify**: Find the DOORS Module Path (e.g., `/Project/X/Requirements`) or URL (`doors://`).
     *   If no URL/Path found: Ask only "Please provide the DOORS Module URL or Path (location)."
 2.  **Check Configuration**: Verify local configuration is set (run `credential_manager.py status`). If not configured, guide user through `setup`.
-3.  **Scan Cache**: Search the workspace with glob `**/*_raw.json` for existing raw data. Match by module name, prefer the most recent date.
-    *   If raw data exists: Ask only "Found existing raw data `X.json`. Use this or re-extract from DOORS?"
-    *   If user chooses existing data: Skip Phase 2, proceed to Phase 4.
+3.  **🔴 CHECKPOINT · Cache Scan**: Search the workspace with glob `**/*_raw.json` for existing raw data. Match by module name, prefer the most recent date.
+    *   If raw data exists: STOP and ask ONLY "Found existing raw data `X.json`. Use this or re-extract from DOORS?" (binary choice, via `vscode_askQuestions`)
+    *   If user chooses existing data: Skip Phase 2, proceed to Phase 3 (Processing).
 4.  **Extract** (only if no usable cache): Proceed to Phase 2.
 
-### Phase 2: Extraction (Infrastructure)
+### 4.6 Phase 2: Extraction (Infrastructure)
 
-**Only proceed if user requests fresh data or no raw data exists.**
+**🔴 CHECKPOINT · Pre-Extraction Gate**: Only proceed if (a) user explicitly requests fresh data OR (b) no usable cache exists. If neither, do NOT extract.
 
 1.  **Naming Convention**: Raw data file MUST include **Project Name** and **DateTime (YYYYMMDD_HHMMSS)**. The time part (HHMMSS) is **MANDATORY** — date-only filenames (e.g., `_20260605_raw.json`) are a violation. Always use the full current datetime, e.g., `VW_10638_SysRS_20260605_143052_raw.json`. The `.done` sentinel file created by DXL will automatically have the same name with `.done` appended.
 2.  **Output Location**: Default to `report/doors/` under the project root.
@@ -141,14 +160,16 @@ Question style requirements:
    - Fast path (COM available): 30 seconds
    - Slow path (GUI launch + login + extraction): 2-5 minutes for small modules, up to 25 minutes total wait window
 
-7.  **Success Verification**: The script output is the authoritative indicator.
+6.  **Success Verification**: The script output is the authoritative indicator.
     - **Success indicator**: Terminal contains `"COM extraction successful (XXX MB): <filepath>"`
     - If this exact signal is not present, treat extraction as NOT successful.
     - See **[references/extraction-protocol.md](references/extraction-protocol.md)** for fallback file-check syntax.
 
-### Phase 3: Processing (Business Logic)
+### 4.7 Phase 3: Processing (Business Logic)
 
-**Never use generic tools. Always use a dedicated script.**
+**🔴 CHECKPOINT · Post-Extraction Gate**: Only enter Phase 3 after the official success indicator (§4.6 step 6) is confirmed. If extraction failed, go to §6 Error Handling — do NOT attempt to process a missing/partial raw file.
+
+**Never use generic tools (jq/grep/python one-liners) on raw JSON. Always use a dedicated `scripts/library/` script.**
 
 1.  **List Available Scripts**: List `scripts/library/` directory and present available scripts to user.
     - If no matching script exists, proceed directly to **OPTION B** without asking the user.
@@ -168,7 +189,7 @@ Question style requirements:
 3.  **Run**: Execute it with the same pattern as OPTION A.
 4.  **Maintain**: Keep script naming stable and reusable for future requests.
 
-## 4. Security & Stability Rules
+## 5. Security & Stability Rules
 
 1.  **IMMUTABLE CORE SCRIPT**: `scripts/doors_manager.py` is **LOCKED / READ-ONLY**. No modifications, no exceptions (unless user explicitly commands "Unlock core script for maintenance").
 
@@ -186,15 +207,30 @@ Question style requirements:
 
 8.  **Diagnostics**: `scripts/diag_com.py` provides COM environment diagnostics. Run it when COM connection fails unexpectedly to gather environment details before reporting an error.
 
-## 5. Error Handling
+## 6. Error Handling
 
-Refer to **[references/error-handling.md](references/error-handling.md)** for the full troubleshooting table.
+Refer to **[references/error-handling.md](references/error-handling.md)** for the full troubleshooting table. The inline table below covers only the highest-frequency scenarios for immediate fallback without loading the reference.
 
-| Scenario | Symptom | Action |
-|----------|---------|--------|
-| Configuration missing | DOORS launch fallback cannot find executable/data settings | Guide user: `cmd /c "python credential_manager.py setup"` |
-| DOORS client already running | COM path unavailable or extraction still fails | Keep existing DOORS session. If COM reuse fails and subprocess fallback also fails, do not close/retry in this workflow; capture logs and report failure with environment checks. |
-| `& cmd.exe` syntax used | PowerShell restricted mode rejects `&` operator | Use `cmd /c python ...` (without `&`) or use PowerShell-native commands directly. |
-| Python pathlib exists/size check attempted | Command uses `python -c` with `pathlib` for file exists/size verification | Replace with: `Get-ChildItem "C:\person\project\10638_AI\report\doors\*HSI*_raw.json" | Select-Object Name, Length, LastWriteTime` |
-| Fake "errors" from redirection | Red error-like lines appear even though extraction succeeds | This is a stderr/stdout redirection artifact. Do NOT use `2>&1` in your command. Run without stderr redirection for clean output. |
-| COM recovery timeout | Script waits 10 mins polling for DOORS to recover after large file export, then fails | Normal for very large modules. Indicates DOORS is busy with I/O. Retry after DOORS becomes responsive (manual observation). |
+### 6.1 High-Frequency Failure Modes (Inline Quick-Ref)
+
+| Scenario | Symptom | First Response | If Still Failing |
+|---|---|---|---|
+| Config missing | DOORS launch fallback cannot find exe/data | `cmd /c "python credential_manager.py setup"` | Verify `DOORS_PATH` env var; check `~/.doors/config.json` exists |
+| DOORS already running | COM unavailable; extraction fails | Keep session; do NOT close/restart | Run `diag_com.py`; capture its output; report failure with env checks |
+| `& cmd.exe` rejected | PowerShell restricted mode error | Use `cmd /c python ...` (no `&`) | Use PowerShell-native cmdlets directly |
+| pathlib check attempted | `python -c "import pathlib..."` | Replace with `Get-ChildItem ... \| Select Name,Length,LastWriteTime` | — (one-shot fix) |
+| Fake red "errors" | Red lines despite successful extraction | Omit `2>&1` redirection; rerun | — (artifact, not real error) |
+| COM recovery timeout | Script polls 10 min then fails | Wait for DOORS GUI to become responsive (manual) | Retry extraction after DOORS idle confirmed |
+| JSON corrupted | `json.JSONDecodeError` in processing | Delete corrupted `*_raw.json` | Re-extract from DOORS (Phase 2) |
+
+### 6.2 P3 Escalation Path (Failure Terminal State)
+
+When extraction fails AND `diag_com.py` confirms COM is unrecoverable in the current session, follow this closed-loop escalation (do NOT leave the user at "capture logs and report failure" with no next step):
+
+1. **Collect** — Save `diag_com.py` stdout + the failed extraction's stderr to `report/doors/_diag_<YYYYMMDD_HHMMSS>.log`.
+2. **Summarize** — Report to user: (a) DOORS process PID, (b) whether `doors.exe` is responsive in Task Manager, (c) COM connect result string from diag output.
+3. **Decision branch**:
+   - If `doors.exe` is hung (PID exists, unresponsive): ask user to manually kill the process via Task Manager, then retry extraction (Phase 2) ONCE.
+   - If `doors.exe` not running: ask user to launch DOORS GUI and log in manually, then retry (Phase 2) ONCE.
+   - If `doors.exe` running and responsive but COM still fails: this is a DOORS licensing/server issue — escalate to user's DOORS admin with the diag log; do NOT retry.
+4. **Hard limit** — After 1 retry, if still failing, STOP and hand off the diag log. Do not enter a retry loop.
