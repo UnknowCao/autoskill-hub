@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "scenario": "typical_happy_path",
+    "prompt": "从 Surround SCM 项目 Ctrl_AI 提取所有 .ldf 文件到 output 目录",
+    "expected": "lsmainline 探测 → ls -r > file → 按模块分批 get → verify_extraction 验证",
+    "covers": ["mainline_discovery", "recursive_search", "modular_extraction", "verification"],
+    "dims": [2, 5, 8]
+  },
+  {
+    "id": 2,
+    "scenario": "incomplete_info_branch",
+    "prompt": "帮我把 Preh 某个 BMS 项目的源码弄下来，项目名不太记得了，可能是分支",
+    "expected": "find_project.py 模糊搜索 → lsbranch 探索 common parents → CHECKPOINT 确认项目后再提取",
+    "covers": ["fuzzy_search", "branch_hierarchy", "checkpoint_before_action"],
+    "dims": [3, 4, 8]
+  },
+  {
+    "id": 3,
+    "scenario": "silent_extraction_failure",
+    "prompt": "sscm get 跑完只 50 个文件，但 ls 显示有 200 个，怎么回事？",
+    "expected": "触发 troubleshooting silent-skip failure mode → 模块化分批 → verify --compare 对比 → CHECKPOINT",
+    "covers": ["failure_mode", "verification_diff", "troubleshooting"],
+    "dims": [3, 9]
+  },
+  {
+    "id": 4,
+    "scenario": "version_label_timestamp",
+    "prompt": "我要 RELEASE_2.0 那个版本的代码，不要最新的",
+    "expected": "先 lslabel 检查 label 是否存在（处理 no-label）→ get -l\"RELEASE_2.0\" → 若无 label 提示 timestamp -s 兜底",
+    "covers": ["label_check", "timestamp_fallback", "version_control"],
+    "dims": [2, 3]
+  },
+  {
+    "id": 5,
+    "scenario": "credentials_and_archive",
+    "prompt": "第一次用 sscm，密码我不想起，另外提取出来的文件里有 .zip",
+    "expected": "引导 GUI 配置 Windows Credential Manager（一次性）→ 提取 → 自动 Expand-Archive/7z 解压并验证",
+    "covers": ["credential_setup", "archive_decompression", "verification"],
+    "dims": [2, 5]
+  }
+]
