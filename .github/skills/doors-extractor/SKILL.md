@@ -130,7 +130,9 @@ Question style requirements:
 
 1.  **Identify**: Find the DOORS Module Path (e.g., `/Project/X/Requirements`) or URL (`doors://`).
     *   If no URL/Path found: Ask only "Please provide the DOORS Module URL or Path (location)."
-2.  **Check Configuration**: Verify local configuration is set (run `credential_manager.py status`). If not configured, guide user through `setup`.
+2.  **Check Configuration**: Verify local configuration is set (run `cmd /c python .github/skills/doors-extractor/scripts/credential_manager.py status`).
+    *   **If status reports `configured`** (both `doors_data` and `doors_path` present): proceed to step 3.
+    *   **If status reports `not configured` OR errors out** (e.g. `~/.doors/config.json` missing, `DOORS_PATH` env unset): run `cmd /c python .github/skills/doors-extractor/scripts/credential_manager.py setup`, which opens a tkinter dialog to capture `doors_data` (port@hostname) and executable path. Only non-secret fields are stored. **Do NOT proceed to extraction until `status` confirms `configured`** — running extract on a missing config causes a silent DOORS-launch fallback that wastes several minutes.
 3.  **🔴 CHECKPOINT · Cache Scan**: Search the workspace with glob `**/*_raw.json` for existing raw data. Match by module name, prefer the most recent date.
     *   If raw data exists: STOP and ask ONLY "Found existing raw data `X.json`. Use this or re-extract from DOORS?" (binary choice, via `vscode_askQuestions`)
     *   If user chooses existing data: Skip Phase 2, proceed to Phase 3 (Processing).
@@ -180,11 +182,21 @@ Question style requirements:
 
 **🔴 CHECKPOINT · Post-Extraction Gate**: Only enter Phase 3 after the official success indicator (§4.6 step 6) is confirmed. If extraction failed, go to §6 Error Handling — do NOT attempt to process a missing/partial raw file.
 
+**Entry Condition**: Phase 3 runs only when the user wants a **derived view** of the data (filtered subset, format conversion, change report). If the user's deliverable IS the raw JSON itself (e.g. "导出到本地 JSON 文件" / "export the module"), the raw file from §4.6 is already the deliverable — **skip Phase 3 entirely** and report success. Do not invent processing work that the user did not ask for.
+
 **Never use generic tools (jq/grep/python one-liners) on raw JSON. Always use a dedicated `scripts/library/` script.**
+
+#### Library Output Naming Convention (Mandatory — prevents overwriting)
+
+Library script outputs MUST follow: `<PROJECT>_<MODULE>_<FILTER>_<YYYYMMDD_HHMMSS>.<EXT>`
+- `<FILTER>` = short slug of the filter applied (e.g. `Released`, `SwT`, `NonDeleted`).
+- `<EXT>` = `json` for JSON-output scripts, `md` for `extract_nondeleted_reqs.py`.
+- The timestamp segment (`YYYYMMDD_HHMMSS`) is **MANDATORY** — never reuse a prior output filename, since library runs are not cached and silent overwrite would lose the previous result.
+- Example: `report/doors/VW_10638_SysRS_Released_20260702_153012.json`
 
 #### Library Script Catalog (Quick-Ref)
 
-> Current scripts in `scripts/library/`. For any new query not covered here, go to OPTION B. Run `ls scripts/library/` to detect scripts added after this doc.
+> Current scripts in `scripts/library/`. Run `ls .github/skills/doors-extractor/scripts/library/` to detect scripts added after this doc. **If no row matches the user's intent → go directly to OPTION B (Extend Library); do NOT ask the user to choose a script.**
 
 | Script | Filters By | Output | When to use |
 |---|---|---|---|
@@ -213,10 +225,13 @@ cmd /c python .github/skills/doors-extractor/scripts/library/<SCRIPT_NAME> "<RAW
     ```
 
 #### OPTION B: Extend Library (For Custom Queries)
-1.  **Read Schema**: Load `references/raw-data-schema.md` for JSON structure reference.
-2.  **Implement**: Add a reviewed script directly under `scripts/library/`.
-3.  **Run**: Execute it with the same pattern as OPTION A.
-4.  **Maintain**: Keep script naming stable and reusable for future requests.
+1.  **Read Schema**: Load `references/raw-data-schema.md` for JSON structure reference (attribute names, sparse-omission rule, `abs_ref` semantics).
+2.  **Implement**: Add a new script directly under `scripts/library/`. A script is considered "reviewed" (and may be committed) only when it satisfies ALL of:
+    - **Read-Only**: no `write`/`update`/`delete` on DOORS objects (consistent with §5 Rule 2); it only reads the raw JSON file.
+    - **Stable signature**: `python <script>.py "<RAW_JSON>" "<OUTPUT>"` (positional args, same shape as the existing library scripts) so future invocations work without modification.
+    - **Schema-aware**: reads attribute names from the JSON `attrs` map per `raw-data-schema.md`; never hardcodes positional indices or assumes a fixed column order.
+3.  **Run**: Execute it with the same pattern as OPTION A, using the Library Output Naming Convention above.
+4.  **Maintain**: Keep script naming stable and reusable for future requests. Add a row to the Library Script Catalog table above so the next session discovers it.
 
 ## 5. Security & Stability Rules
 
