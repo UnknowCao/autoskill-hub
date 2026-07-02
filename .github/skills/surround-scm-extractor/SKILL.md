@@ -120,6 +120,8 @@ sscm ls -b"Project" -p"Project" -r > all_files.txt
 Get-Content all_files.txt | Select-String "\.ldf" -Context 3,0
 
 # ✅ Step 2: Extract by functional module (medium granularity)
+# Granularity rule: split at depth-2 functional dirs (e.g. /03_Software/01_Doc, .../02_SW/01_Sources);
+# each module should contain ~20-100 files. Too few = too many commands; too many = silent skip risk.
 sscm get /03_Software/01_Doc -b"Project" -p"Project" -r -d"output"
 sscm get /03_Software/02_SW/07_Workspaces/CANoe -b"Project" -p"Project" -r -d"output"
 sscm get /03_Software/02_SW/01_Sources -b"Project" -p"Project" -r -d"output"
@@ -160,18 +162,24 @@ python scripts/verify_extraction.py output_dir --expected-exts .c,.h
 | # | ❌ 不要做 | 为什么 | ✅ 应该做 |
 |---|----------|--------|----------|
 | **AP1** | 在用户未确认项目名时直接 `sscm get` | 项目名错误会拉错整个仓库，浪费时间且污染 output 目录 | 🔴 先展示 `find_project`/`lsmainline` 命中列表，等用户确认 |
-| **AP2** | 对整个 root 执行 `sscm get -r`（大目录） | `-r` 会**静默跳过**部分子目录，产物不完整且无报错 | 按模块化分批提取 + 每批 verify |
-| **AP3** | flag 与值之间加空格（`-y "u:p"`） | sscm CLI 解析失败，报 `Incorrect input format` | 紧贴：`-y"u:p"`、`-b"Proj"`、`-p"Path"` |
-| **AP4** | `get` 完成后跳过验证直接进入下一步 | 静默跳过无法察觉，下游会基于不完整产物工作 | 🔴 每次 get 后立即 verify（count + 类型） |
-| **AP5** | 在命令行明文传递密码（`-y"user:pass"`） | 密码进入 shell history、进程列表，有泄露风险 | 优先 GUI 持久化凭证；次选 `sscm_config.json`；明文仅用于一次性脚本 |
-| **AP6** | 递归列出全部文件（`ls -r`）当作默认动作 | 大仓库输出截断、context bloat | 仅当用户明确要求 "show all files" / "list structure" 时才 `-r` |
-| **AP7** | 假设 label 名存在而不先 `lslabel` 检查 | label 拼错或不存在会导致 `get -l` 失败或拉到错误版本 | 先 `lslabel` 确认，无 label 则走 timestamp 兜底 |
+| **AP2** | flag 与值之间加空格（`-y "u:p"`） | sscm CLI 解析失败，报 `Incorrect input format` | 紧贴：`-y"u:p"`、`-b"Proj"`、`-p"Path"` |
+| **AP3** | `get` 完成后跳过验证直接进入下一步 | 静默跳过无法察觉，下游会基于不完整产物工作 | 🔴 每次 get 后立即 verify（count + 类型） |
+| **AP4** | 在命令行明文传递密码（`-y"user:pass"`） | 密码进入 shell history、进程列表，有泄露风险 | 优先 GUI 持久化凭证；次选 `sscm_config.json`；明文仅用于一次性脚本 |
+| **AP5** | 递归列出全部文件（`ls -r`）当作默认动作 | 大仓库输出截断、context bloat | 仅当用户明确要求 "show all files" / "list structure" 时才 `-r` |
+| **AP6** | 假设 label 名存在而不先 `lslabel` 检查 | label 拼错或不存在会导致 `get -l` 失败或拉到错误版本 | 先 `lslabel` 确认，无 label 则走 timestamp 兜底 |
 
 **Deep-dive**: See [best_practices.md](references/best_practices.md) for search strategies, granularity guidelines, and real-world examples.
 
-**Archives**: If extracted files contain .zip/.7z/.rar, decompress automatically. See [best_practices.md](references/best_practices.md) for commands.
-
-**Credentials**: Use default credentials from Windows Credential Manager (configured via GUI). Legacy support: load from `sscm_config.json` or use explicit `-y`/`-z` parameters.
+**Archives**: If extracted files contain `.zip/.7z/.rar`, decompress automatically:
+```powershell
+Get-ChildItem -Path "output" -Recurse -Include *.zip,*.7z,*.rar | ForEach-Object {
+    $dest = Join-Path $_.DirectoryName $_.BaseName
+    if ($_.Extension -eq ".zip") { Expand-Archive $_.FullName -DestinationPath $dest -Force }
+    else { & "C:\Program Files\7-Zip\7z.exe" x $_.FullName -o"$dest" -y }   # .7z/.rar needs 7-Zip
+}
+# After decompress: re-run verify_extraction.py to validate expanded contents
+```
+Nested/password-protected archives: see [best_practices.md](references/best_practices.md).
 
 **Default behavior**: Do NOT recursively list all files unless user explicitly requests "show all files" or "list structure".
 
@@ -214,28 +222,22 @@ Validates file counts/types, compares against search results to catch silent ext
 
 ## Troubleshooting
 
-**Common issues**: See [troubleshooting.md](references/troubleshooting.md) for comprehensive error handling, authentication issues, extraction problems, and debugging strategies.
-
-**Quick connection test**: `sscm lsmainline` (uses defaults) or `sscm lsmainline -y"user:pass" -z"server:port"` (explicit credentials)
+**Common issues are covered inline by [Failure Modes](#failure-modes) (F1-F6) above.** For exhaustive diagnosis, connection issues, and edge cases, see [troubleshooting.md](references/troubleshooting.md). Quick connection test: `sscm lsmainline` (defaults) or `sscm lsmainline -y"user:pass" -z"server:port"` (explicit).
 
 ## Best Practices
 
-**Core principles** for reliable extraction:
+**Core principles** for reliable extraction (most already enforced by checkpoints/Failure Modes above):
 
-1. **Output large directory listings to file** - prevents truncation, enables offline analysis
-2. **Use modular extraction by functional area** - extract Doc/SW/Test separately, not entire root
-3. **Verify extraction immediately** - compare file counts and sizes after each extraction
-4. **Use case-insensitive searches** - handles mixed extension cases (.ldf, .LDF)
-5. **Search with context** (`-Context 3,0`) - reveals parent directory structure
+1. **Output large `ls` to file** — prevents truncation, enables offline re-search
+2. **Case-insensitive search** — handles mixed extension cases (`.ldf`/`.LDF`); use `Select-String -CaseSensitive:$false`
+3. **Search with context** (`Select-String -Context 3,0`) — reveals parent directory structure
+
+> Principles #modular-extraction / #verify-after-each are already covered by 🔴 CHECKPOINT 大目录策略 + 🔴 CHECKPOINT 提取验证 above — do not duplicate.
 
 **Detailed strategies**: See [best_practices.md](references/best_practices.md) for comprehensive search patterns, extraction workflows, verification checklists, and complete real-world examples.
 
-## Progressive Disclosure Pattern
+## Progressive Disclosure
 
-This skill uses a **three-level approach** to minimize context bloat:
-
-1. **Quick check**: Top-level listing only (fast, lightweight)
-2. **Targeted search**: PowerShell pipelines for filtering
-3. **Full listing**: Recursive `-r` flag (only when explicitly requested)
+Three-level approach to minimize context bloat: (1) top-level listing only → (2) PowerShell pipeline filter → (3) recursive `-r` flag (only when explicitly requested). See "Default behavior" note above.
 
 **Key principle**: Never recursively list files unless user asks for "detailed structure" or "show all files".
