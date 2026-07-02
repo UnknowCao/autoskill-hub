@@ -136,9 +136,36 @@ sscm get /03_Software/02_SW/01_Sources -b"Project" -p"Project" -r -d"output"
 $files = Get-ChildItem -Path "output_dir" -Recurse -Filter "*.ldf" -File
 Write-Host "✅ Extracted: $($files.Count) files" -ForegroundColor Green
 
-# Or use verification script for detailed report
-python .claude/skills/surround-scm-extractor/scripts/verify_extraction.py output_dir --expected-exts .c,.h
+# Or use verification script for detailed report (path relative to this skill's scripts/ dir)
+python scripts/verify_extraction.py output_dir --expected-exts .c,.h
 ```
+
+## Failure Modes
+
+> 主文 inline 三段式表 — 不必跳转 troubleshooting.md 即可处理 80% 常见失败。完整诊断见 [troubleshooting.md](references/troubleshooting.md)。
+
+| # | 触发条件 | 一线修复 | 仍失败兜底 |
+|---|---------|---------|-----------|
+| **F1** | `sscm lsmainline` 返回空 / "Unable to find mainline" | 项目是 branch 不是 mainline → `sscm lsbranch -b"Parent" -p"Parent"` 在 common parents 下找 | 用 `find_project.py "keyword" --test-access` 模糊搜 mainline+branch |
+| **F2** | `sscm get -r` 提取数 < `ls` 显示数（**静默跳过子目录**） | 切模块化分批：`sscm get /Module/Sub -r` 按 mid-level 模块逐个提取 | 用 `verify_extraction.py --compare all_files.txt` 定位缺口 → 逐文件 `sscm get "file"` 补齐 |
+| **F3** | `security access denied` | 验证用户对该 project 有 read 权限 → 联系 SCM admin | 换已知可访问的项目测试，排除账号问题 |
+| **F4** | `Incorrect input format` / flag 报错 | 检查 flag 与值间**无空格**：`-y"u:p"` 而非 `-y "u:p"` | 查 [cli_commands.md](references/cli_commands.md) 核对精确语法 |
+| **F5** | `lslabel` 返回空（branch 无 label） | 该 branch 无版本标签 → 提取当前版本，或改用 timestamp `-s"YYYYMMDDHH:MM:SS"` | 问用户目标版本的近似日期，用 timestamp 兜底 |
+| **F6** | 提取产物含 `.zip/.7z/.rar` 但解压后内容缺失/损坏 | 重新解压：`Expand-Archive`（zip）/ `7z x`（7z/rar），检查压缩包完整性 | 原始归档可能损坏 → 重新 `sscm get` 该归档文件 |
+
+## Anti-Patterns（不要做什么）
+
+> 危险动作与反模式清单 — 出现以下行为时应立即停止并修正。
+
+| # | ❌ 不要做 | 为什么 | ✅ 应该做 |
+|---|----------|--------|----------|
+| **AP1** | 在用户未确认项目名时直接 `sscm get` | 项目名错误会拉错整个仓库，浪费时间且污染 output 目录 | 🔴 先展示 `find_project`/`lsmainline` 命中列表，等用户确认 |
+| **AP2** | 对整个 root 执行 `sscm get -r`（大目录） | `-r` 会**静默跳过**部分子目录，产物不完整且无报错 | 按模块化分批提取 + 每批 verify |
+| **AP3** | flag 与值之间加空格（`-y "u:p"`） | sscm CLI 解析失败，报 `Incorrect input format` | 紧贴：`-y"u:p"`、`-b"Proj"`、`-p"Path"` |
+| **AP4** | `get` 完成后跳过验证直接进入下一步 | 静默跳过无法察觉，下游会基于不完整产物工作 | 🔴 每次 get 后立即 verify（count + 类型） |
+| **AP5** | 在命令行明文传递密码（`-y"user:pass"`） | 密码进入 shell history、进程列表，有泄露风险 | 优先 GUI 持久化凭证；次选 `sscm_config.json`；明文仅用于一次性脚本 |
+| **AP6** | 递归列出全部文件（`ls -r`）当作默认动作 | 大仓库输出截断、context bloat | 仅当用户明确要求 "show all files" / "list structure" 时才 `-r` |
+| **AP7** | 假设 label 名存在而不先 `lslabel` 检查 | label 拼错或不存在会导致 `get -l` 失败或拉到错误版本 | 先 `lslabel` 确认，无 label 则走 timestamp 兜底 |
 
 **Deep-dive**: See [best_practices.md](references/best_practices.md) for search strategies, granularity guidelines, and real-world examples.
 
