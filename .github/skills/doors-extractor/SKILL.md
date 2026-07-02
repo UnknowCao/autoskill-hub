@@ -165,6 +165,17 @@ Question style requirements:
     - If this exact signal is not present, treat extraction as NOT successful.
     - See **[references/extraction-protocol.md](references/extraction-protocol.md)** for fallback file-check syntax.
 
+7.  **Recommended Follow-up · Change Detection Baseline**: After a successful extraction, generate the per-object SHA256 baseline so the next extraction can be diffed:
+    ```bash
+    cmd /c python .github/skills/doors-extractor/scripts/library/hash_diff.py gen "report/doors/<PROJECT>_<MODULE>_<YYYYMMDD_HHMMSS>_raw.json" --module-path /<PROJECT>/<MODULE>
+    # fallback (legacy layout)
+    cmd /c python .claude/skills/doors-extractor/scripts/library/hash_diff.py gen "report/doors/<PROJECT>_<MODULE>_<YYYYMMDD_HHMMSS>_raw.json" --module-path /<PROJECT>/<MODULE>
+    ```
+    Then to see what changed vs the previous extraction:
+    ```bash
+    cmd /c python .github/skills/doors-extractor/scripts/library/hash_diff.py diff "report/doors/<...>_raw.json"
+    ```
+
 ### 4.7 Phase 3: Processing (Business Logic)
 
 **🔴 CHECKPOINT · Post-Extraction Gate**: Only enter Phase 3 after the official success indicator (§4.6 step 6) is confirmed. If extraction failed, go to §6 Error Handling — do NOT attempt to process a missing/partial raw file.
@@ -180,6 +191,8 @@ Question style requirements:
 | `get_released_reqs.py` | `Object_Status == "Released"` | JSON | "get released requirements" / "已发布需求" |
 | `extract_nondeleted_reqs.py` | objects without deletion flags (heuristic on `id`/`text`/`deleted` keys) | Markdown | "get all non-deleted requirements as doc" / raw dump to readable form |
 | `get_swt_impact.py` | `AllocTestAuthority == "SwT"` | JSON | "get SwT-allocated requirements" / "software test authority items" |
+| `hash_diff.py gen <raw>` | —(全量 per-object SHA256) | `<raw>.sha256.json` | 抽取后跑一次，为下次 diff 建基线 / "hash the extraction" |
+| `hash_diff.py diff <raw>` | abs_ref 索引对比 vs 上次抽取 | stdout 摘要 + `<raw>.diff.json` | "上次抽取后变了哪些需求" / "what changed since last extraction" |
 
 **Invocation pattern (all library scripts share this signature):**
 ```bash
