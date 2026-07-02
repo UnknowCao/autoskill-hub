@@ -243,16 +243,16 @@ Refer to **[references/error-handling.md](references/error-handling.md)** for th
 
 When extraction fails AND `diag_com.py` confirms COM is unrecoverable in the current session, follow this closed-loop escalation (do NOT leave the user at "capture logs and report failure" with no next step):
 
-**Step 0 — Classify failure via `diag_com.py` output (objective anchors):**
+**Step 0 — Classify failure via `diag_com.py` + `Get-Process` output (objective anchors):**
 
-Run `diag_com.py` and read its output. Classify into exactly one branch using these **string-match anchors** (not free interpretation):
+Run `diag_com.py` AND `Get-Process doors` (see Step 3 command). Classify into exactly one branch using these **string-match anchors** (not free interpretation). The first two columns are inputs; the classification is the output:
 
-| diag_com.py output contains | Classification | Meaning |
+| Combined diagnostic signals | Classification | Meaning |
 |---|---|---|
 | `GetActiveObject('DOORS.Application'): SUCCESS` AND `runStr test: 'DOORS COM OK'` | **COM_HEALTHY** | COM is fine; failure was transient — retry extraction once |
 | `Dispatch('DOORS.Application'): SUCCESS` but `runStr test FAIL` | **COM_HALF_OPEN** | DOORS GUI launched but not ready — wait 60s, retry once |
-| `No doors.exe process found!` | **NO_PROCESS** | DOORS not running — ask user to launch GUI + login, then retry once |
-| `doors.exe` in tasklist BUT all GetActiveObject/Dispatch FAIL | **PROCESS_HUNG** | DOORS hung — ask user to kill PID via Task Manager, then retry once |
+| `Get-Process`: no doors process AND `No doors.exe process found!` | **NO_PROCESS** | DOORS not running — ask user to launch GUI + login, then retry once |
+| `Get-Process`: doors exists, `Responding=False`, AND all GetActiveObject/Dispatch FAIL | **PROCESS_HUNG** | DOORS hung — ask user to kill PID via Task Manager, then retry once |
 | `ERROR: pywin32 not installed` | **ENV_BROKEN** | Python env issue — stop, ask user to reinstall pywin32; do NOT retry |
 
 **Step 1 — Collect**: Save `diag_com.py` stdout + failed extraction's stderr to `report/doors/_diag_<YYYYMMDD_HHMMSS>.log`.

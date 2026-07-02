@@ -195,30 +195,11 @@ Nested/password-protected archives: see [best_practices.md](references/best_prac
 
 All scripts support `--help` for full usage.
 
-### `scripts/find_project.py` — Project Discovery
-```bash
-python scripts/find_project.py "10638"                        # Uses GUI persistent credentials
-python scripts/find_project.py "Ctrl_AI" --test-access        # Also checks permissions
-python scripts/find_project.py "Preh" --credentials config.json  # Explicit credentials
-```
-Searches mainlines + common parent branches, ranks by relevance, suggests corrections for typos.
-
-### `scripts/parse_sscm_output.py` — Search & Path Reconstruction
-```bash
-# After: sscm ls -b"Project" -p"Project" -r > all_files.txt
-python scripts/parse_sscm_output.py --input all_files.txt --filter-ext ".ldf" --context
-python scripts/parse_sscm_output.py --input all_files.txt --regex "config.*\.xml" --format json
-python scripts/parse_sscm_output.py --input all_files.txt --format summary
-```
-Parses `sscm ls -r` output, reconstructs full paths from directory headers, filters by extension/pattern/regex.
-
-### `scripts/verify_extraction.py` — Post-Extraction Verification
-```bash
-python scripts/verify_extraction.py output_dir --expected-exts .c,.h
-python scripts/verify_extraction.py output_dir --compare all_files.txt --expected-exts .ldf
-python scripts/verify_extraction.py output_dir --expected-count 200
-```
-Validates file counts/types, compares against search results to catch silent extraction failures.
+| Script | Purpose | Example |
+|--------|---------|---------|
+| `find_project.py` | Fuzzy project discovery (mainlines + common parent branches); ranks by relevance, suggests typo corrections | `python scripts/find_project.py "Ctrl_AI" --test-access` |
+| `parse_sscm_output.py` | Parses `sscm ls -r` output, reconstructs full paths, filters by ext/regex | `python scripts/parse_sscm_output.py --input all_files.txt --filter-ext ".ldf" --context` |
+| `verify_extraction.py` | Validates file counts/types, compares against search to catch silent failures | `python scripts/verify_extraction.py output_dir --compare all_files.txt --expected-exts .ldf` |
 
 ## Troubleshooting
 
