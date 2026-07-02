@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "scenario": "happy_path_extract",
+    "prompt": "帮我把 DOORS 里 /VW_10638/SysRS/HSI 模块的需求导出到本地 JSON 文件",
+    "expected": "Agent 应询问/确认模块路径，检查配置 (credential_manager.py status)，扫描缓存 (**/*_raw.json)，然后调用 doors_manager.py extract 用正确的命名约定 (Project_Module_YYYYMMDD_HHMMSS_raw.json) 同步执行；不应使用 2>&1 重定向，不应使用 mode=async"
+  },
+  {
+    "id": 2,
+    "scenario": "cached_reuse_filter",
+    "prompt": "我从 DOORS 导出过 VW_10638_SysRS 的原始数据了，现在只需要把里面状态是 Released 的需求筛选出来导出",
+    "expected": "Agent 应先扫描 **/*_raw.json 缓存，找到匹配的 raw 文件，只问一个二选一问题(用缓存/重新提取)；选缓存后用 scripts/library/get_released_reqs.py 处理，输出到 report/doors/；不应重新触发提取"
+  },
+  {
+    "id": 3,
+    "scenario": "failure_recovery",
+    "prompt": "刚才提取 DOORS 数据失败，终端显示 DOORS client already running，但提取就是没成功，怎么办",
+    "expected": "Agent 应识别这是已记录的失败模式 (error-handling.md)，不关闭现有 DOORS session，不盲目重试；应运行 diag_com.py 收集环境信息；应说明 COM 复用失败的处置路径；不应建议关闭 DOORS 重启"
+  }
+]
