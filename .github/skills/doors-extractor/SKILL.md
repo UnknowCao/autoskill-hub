@@ -194,6 +194,8 @@ Library script outputs MUST follow: `<PROJECT>_<MODULE>_<FILTER>_<YYYYMMDD_HHMMS
 - The timestamp segment (`YYYYMMDD_HHMMSS`) is **MANDATORY** — never reuse a prior output filename, since library runs are not cached and silent overwrite would lose the previous result.
 - Example: `report/doors/VW_10638_SysRS_Released_20260702_153012.json`
 
+**Sidecar exemption**: The convention above applies to **deliverable outputs** (filter/conversion results the user consumes). **Sidecar artifacts** that augment a raw file — emitted as `<raw_filename>.<suffix>.json` next to the raw file — are exempt. Examples: `hash_diff.py` emits `VW_10638_SysRS_..._raw.json.sha256.json` (per-object hash baseline) and `VW_10638_SysRS_..._raw.json.diff.json` (change report), both anchored to their raw file by sharing its full name. Sidecar naming is intentional — it ties the artifact to a specific extraction and survives renames, so it must NOT be reformatted into the deliverable pattern.
+
 #### Library Script Catalog (Quick-Ref)
 
 > Current scripts in `scripts/library/`. Run `ls .github/skills/doors-extractor/scripts/library/` to detect scripts added after this doc. **If no row matches the user's intent → go directly to OPTION B (Extend Library); do NOT ask the user to choose a script.**
@@ -228,7 +230,7 @@ cmd /c python .github/skills/doors-extractor/scripts/library/<SCRIPT_NAME> "<RAW
 1.  **Read Schema**: Load `references/raw-data-schema.md` for JSON structure reference (attribute names, sparse-omission rule, `abs_ref` semantics).
 2.  **Implement**: Add a new script directly under `scripts/library/`. A script is considered "reviewed" (and may be committed) only when it satisfies ALL of:
     - **Read-Only**: no `write`/`update`/`delete` on DOORS objects (consistent with §5 Rule 2); it only reads the raw JSON file.
-    - **Stable signature**: `python <script>.py "<RAW_JSON>" "<OUTPUT>"` (positional args, same shape as the existing library scripts) so future invocations work without modification.
+    - **Stable signature**: Either `python <script>.py "<RAW_JSON>" "<OUTPUT>"` (pure positional args, like `get_released_reqs.py`) **or** positional args plus a fixed set of flags (like `hash_diff.py gen <raw> --module-path /<P>/<M>`). The requirement is **fixed arity + stable flag names across versions** — the first positional argument MUST be the raw JSON path, and any flags MUST be optional with documented defaults. Do not introduce positional args that change meaning, or flags that rename between releases.
     - **Schema-aware**: reads attribute names from the JSON `attrs` map per `raw-data-schema.md`; never hardcodes positional indices or assumes a fixed column order.
 3.  **Run**: Execute it with the same pattern as OPTION A, using the Library Output Naming Convention above.
 4.  **Maintain**: Keep script naming stable and reusable for future requests. Add a row to the Library Script Catalog table above so the next session discovers it.
