@@ -21,9 +21,10 @@ USER: "convert this file"  →  run: _convert_core.py <file> -o <out.md>
   exit 0 (clean)      exit 1 (table errs)  encrypted file     no output / err
   → 1-line summary    → read .errors.md    → keyring lookup    → see ⛔ Do NOT
                        → AUTO-FIX silently  → if None: CredUI     (rows 5,6,7,8:
-                         (Known set only)     dialog (Win)         regex-repad /
-                       → delete sidecar      → "remember" → keyring pipeline-order /
-                       → 1-line summary      → cancel → skip file   CJK-mojibake /
+                         (Known + Unknown-  dialog (Win)         regex-repad /
+                          with-HTML; STOP                            pipeline-order /
+                          only if no HTML)   → "remember" → keyring CJK-mojibake /
+                       → delete sidecar      → cancel → skip file   sidecar-timing)
                                                                     CJK-mojibake /
                                                                     sidecar-timing)
 ```
@@ -133,7 +134,9 @@ Every conversion runs through three stages automatically:
 | 11 | **Verify a CredUI-entered password by decrypting the whole document inside the prompt loop** | msoffcrypto's ECMA376-Agile `decrypt().finalize()` hangs for a long time on large files; doing it per-retry makes the dialog look frozen / "no UI appears". | `prompt_and_get_password` returns the user's input unverified. Correctness is checked once by the real decryption in `decrypt_docx` step 4 (cancel/wrong = skip file, per row 5/Q11). |
 
 **Decision shortcut**: if an action is about to ask the user something other than an
-UNKNOWN defect or a missing credential, STOP — it's almost certainly an anti-pattern above.
+**Unknown defect with no HTML_REFERENCE** to infer from, or a missing credential,
+STOP — it's almost certainly an anti-pattern above. (A Known defect, or an Unknown
+defect that still has HTML_REFERENCE, must be fixed silently.)
 
 ## Encrypted File Handling
 
