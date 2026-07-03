@@ -1,6 +1,6 @@
 ---
 name: markitdown-enhanced
-description: "Enhanced file & document to Markdown conversion (based on markitdown 0.1.6). Supports DOCX, PDF, PPTX, XLSX, HTML, CSV, JSON, XML, images (OCR), audio, YouTube, EPubs. Enhancements: auto fix formula escaping ($...$), encrypted file detection & decryption via Windows Credential Manager, complex table structure validation with FULLY AUTOMATIC AI correction (no user prompt for known defects). Use when: 转换文件, 文档转md, docx转markdown, SOR转换, 技术文件转换, convert to markdown, file to md, document extraction, 文件提取, 格式转换, 加密文件解密转换."
+description: "Enhanced file & document to Markdown conversion (based on markitdown 0.1.6). Supports DOCX, PDF, PPTX, XLSX, HTML, CSV, JSON, XML, images (OCR), audio, YouTube, EPubs. Enhancements: auto fix formula escaping ($...$), encrypted file detection & decryption via keyring + native Windows CredUI dialog, complex table structure validation with FULLY AUTOMATIC AI correction (no user prompt for known defects). Use when: 转换文件, 文档转md, docx转markdown, SOR转换, 技术文件转换, convert to markdown, file to md, document extraction, 文件提取, 格式转换, 加密文件解密转换."
 ---
 
 # MarkItDown-Enhanced — File to Markdown Conversion
@@ -120,7 +120,7 @@ Every conversion runs through three stages automatically:
 
 | # | Do NOT | Why it breaks | Do instead |
 |---|--------|---------------|------------|
-| 1 | **Ask the user before fixing a KNOWN defect** (D1 formula, D2 column-shift, D6 degenerate-merge, nested, D3, D4) | Violates the AUTO-FIX POLICY — default is **fully automatic**. Asking per-table creates noise the user explicitly opted out of. | Fix/annotate silently, end with a **one-line summary**. Only UNKNOWN/novel defects may prompt. (See "Stage 2 — AUTO-FIX POLICY".) |
+| 1 | **Ask the user before fixing a KNOWN defect** (D1 formula, D2 column-shift, D6 degenerate-merge, nested, D3, D4) | Violates the AUTO-FIX POLICY — default is **fully automatic**. Asking per-table creates noise the user explicitly opted out of. | Fix/annotate silently, end with a **one-line summary**. Only an Unknown defect **with no HTML_REFERENCE** to infer from may prompt (see "Stage 2 — AUTO-FIX POLICY"). |
 | 2 | **Store passwords via `cmdkey` or the Credential Manager GUI** | These store *Windows Generic Credentials*, which `keyring`'s default backend cannot read → lookup returns `None` → "No credential found" even though `cmdkey /list` shows it (confirmed S06_protected, 2026-07-03). | Store via Python `keyring` only: `keyring.set_password('markitdown-enhanced', '<stem>', '<pw>')`. |
 | 3 | **Type/copy a plaintext password into chat or `vscode_askQuestions`** | Password routes through the model → ends up in chat history/logs. | Let the **CredUI dialog** collect the password (default flow). For headless/CI runs, give the user the keyring one-liner to run in their own terminal; never read it yourself. |
 | 4 | **Leave only an HTML comment for a nested table** (`<!-- ... -->`) | Downstream LLM/RAG pipelines often strip HTML comments → the flattened md table alone is semantic garbage. | Write a **body blockquote** description + keep the flattened table below + `<!-- AI-describe ... -->` comment. (See nested_table in Stage 2.) |
@@ -241,16 +241,20 @@ Detected issue types:
 **Default behavior is FULLY AUTOMATIC correction — do NOT ask the user, do NOT
 pause for confirmation.** The user has explicitly opted into auto-fix.
 
-The flow below distinguishes only two cases:
+The flow below distinguishes three cases (staying quiet unless structure is
+truly un-inferrable):
 
 | Case | Trigger | Action |
 |------|---------|--------|
 | **Known defect** (D2/D6/nested/D3/D4 — see table in Stage 1) | `Fixable by AI: YES` **or** `Fixable by AI: NO (LLM-describe ...)` | **Fix immediately, silently.** Apply the documented fix (D2 realign / D6 drop orphan) or the LLM-describe treatment (nested — write a body description), mark with the `<!-- AI-corrected ... -->` / `<!-- AI-describe ... -->` comment, delete the sidecar, report only a one-line summary at the end. Never ask. |
-| **Unknown defect** | A row whose `CAUSE` does not match any defect type in the Stage-1 table | **This is the ONLY case that may stop and ask the user.** Briefly state the unknown issue, show the CAUSE + HTML_REFERENCE, and ask whether to (a) attempt best-effort fix or (b) leave annotated. |
+| **Unknown defect, has HTML_REFERENCE** | A row whose `CAUSE` does not match the known set, but the sidecar still provides a usable `HTML_REFERENCE` block | **Best-effort fix silently, do NOT stop.** Infer the correct structure from HTML_REFERENCE, apply it, and mark with `<!-- AI-uncertain: verify — <one-line reason; no documented defect matched> -->`. Surface it only in the one-line end summary (e.g. "...plus 1 uncertain best-effort fix, please verify"). This keeps the tool quiet for the ~99% of unknowns that still have ground-truth HTML to reason from. |
+| **Unknown defect, NO HTML_REFERENCE** | The sidecar is missing or its `HTML_REFERENCE` block is empty/corrupt (the AI cannot safely infer structure) | 🔴 **STOP — ASK USER** (the ONLY stopping case): briefly state that no ground-truth HTML is available to infer from, show the `CAUSE` + `CURRENT_MD`, and ask whether to (a) leave annotated `<!-- AI-blocked: no HTML_REFERENCE -->` or (b) skip that table. |
 
 If unsure whether a defect is "known": the known set is exactly
 {D2 vertical_merge, D6 degenerate full-merge, nested_table, D3 multiline, D4 sublist}.
-Anything else → treat as Unknown and ask.
+Anything else → classify as Unknown, then apply the two-level triage in the table
+(has HTML_REFERENCE → best-effort; no HTML_REFERENCE → STOP). The tool stays quiet
+unless the ground-truth HTML is genuinely missing.
 
 #### Steps
 
@@ -287,7 +291,9 @@ Anything else → treat as Unknown and ask.
      (c) write in the source document's language (Chinese doc → Chinese description);
      (d) keep the flattened table below it (do NOT delete it — it is the raw
      extraction trace). Never ask the user before describing; this is auto-applied.
-   - **Unknown**: this is the only branch that may stop and ask the user (see table above).
+   - **Unknown**: split into two sub-branches (see table above) — if HTML_REFERENCE
+     is usable, best-effort fix silently with `<!-- AI-uncertain: verify -->`;
+     only if HTML_REFERENCE is missing/corrupt, `🔴 STOP — ASK USER`.
 4. After fixing/annotating all known errors, **delete the sidecar `.errors.md` file**
    (signals stage 2 is complete; avoids re-detection on rescan).
 5. Report a single concise summary to the user (e.g. "5 tables auto-fixed, 1 annotated,
