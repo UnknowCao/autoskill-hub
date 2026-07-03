@@ -137,6 +137,15 @@ UNKNOWN defect or a missing credential, STOP — it's almost certainly an anti-p
 
 ## Encrypted File Handling
 
+**🔴 Routing rule (read first):**
+- **Chat / agent context** (no direct desktop session on the user's machine — e.g. you
+  are an AI running `_convert_core.py` on the user's behalf): if keyring lookup returns
+  `None`, **do NOT let a dialog pop**. Instead hand the user the one-line
+  `keyring.set_password('markitdown-enhanced', '<stem>', '<pw>')` command and stop.
+  Resume after they confirm they ran it.
+- **Interactive desktop context** (the user is running the script themselves in a
+  real Windows terminal): the CredUI dialog may pop (`allow_prompt=True`).
+
 Detects password-protected `.docx` files and, when no usable credential is
 already stored, prompts the user through the **native Windows CredUI dialog**
 (`win32cred.CredUIPromptForCredentials`). The password never touches AI chat
@@ -218,7 +227,7 @@ Detected issue types:
 
 | Issue | Severity | AI action |
 |-------|----------|-----------|
-| Vertical-merge column misalignment (D2) | P1 | Realign md table columns using HTML_REFERENCE |
+| Vertical-merge column misalignment (D2) | P1 | Realign md table columns using the **deterministic pad rule**: for each flagged row, (1) pad cells to `MD_LOCATION.expected_cols`; (2) map each md cell to the HTML_REFERENCE `<tr>` by document order, using `rowspan` to carry a cell into subsequent rows and `colspan` to consume `n` md columns; (3) any md column with no HTML source → fill `\| \|` (empty). Do NOT heuristic-guess alignment (see ⛔ Do NOT row 5). |
 | Degenerate full-merge (D6) | P1 | Drop orphaned continuation row, keep single merged cell |
 | Nested table collapse | P2 | **LLM-describe**: write a natural-language description of the nesting in the md BODY (the flattened md table alone is semantic garbage for downstream LLMs). See the AUTO-FIX POLICY for the required template. |
 | Cell multiline flattening (D3) | P2 | Accepted (no semantic loss) |
