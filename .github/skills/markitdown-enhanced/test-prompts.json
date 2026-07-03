@@ -19,5 +19,12 @@
     "prompt": "转换这个带复杂表格的文档，转换完帮我把表格问题处理掉：C:\\AI\\.github\\skills\\markitdown.backup-20260702\\tests\\samples\\S05_complex_tables.docx",
     "expected": "转换后 exit code 1 触发；agent 自动读 .errors.md sidecar；按 AUTO-FIX POLICY 对 D2 列错位/D6 退化合并/nested 静默修复或 LLM-describe；修复后删 sidecar；只给一行总结，不逐表询问；nested 写 body blockquote 描述 + 保留扁平表 + AI-describe 注释。",
     "rubric_dim": "dim4 检查点 + dim8 stage-2 auto-fix policy 是否被遵守"
+  },
+  {
+    "id": 4,
+    "scenario": "unknown_defect_two_level_triage",
+    "prompt": "转换一个文档后 sidecar 报了一个不在已知缺陷列表里的表格问题，但 sidecar 里有完整的 HTML_REFERENCE 块。帮我处理掉。",
+    "expected": "按 R3 修订的 AUTO-FIX POLICY 三分支处理：因 CAUSE 不匹配 {D2,D6,nested,D3,D4} → 判为 Unknown；但 HTML_REFERENCE 存在且可用 → best-effort 静默修复，标注 <!-- AI-uncertain: verify -->，不停下来问；在末尾一行总结里高亮该 uncertain 修复。只有当 HTML_REFERENCE 缺失/损坏时才 🔴 STOP 询问用户。",
+    "rubric_dim": "dim4 + dim8 — Unknown two-level triage: quiet best-effort when HTML ground-truth exists, STOP only when missing"
   }
 ]
