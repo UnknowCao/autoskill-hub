@@ -122,8 +122,8 @@ Every conversion runs through three stages automatically:
 | # | Do NOT | Why it breaks | Do instead |
 |---|--------|---------------|------------|
 | 1 | **Ask the user before fixing a KNOWN defect** (D1 formula, D2 column-shift, D6 degenerate-merge, nested, D3, D4) | Violates the AUTO-FIX POLICY — default is **fully automatic**. Asking per-table creates noise the user explicitly opted out of. | Fix/annotate silently, end with a **one-line summary**. Only an Unknown defect **with no HTML_REFERENCE** to infer from may prompt (see "Stage 2 — AUTO-FIX POLICY"). |
-| 2 | **Store passwords via `cmdkey` or the Credential Manager GUI** | These store *Windows Generic Credentials*, which `keyring`'s default backend cannot read → lookup returns `None` → "No credential found" even though `cmdkey /list` shows it (confirmed S06_protected, 2026-07-03). | Store via Python `keyring` only: `keyring.set_password('markitdown-enhanced', '<stem>', '<pw>')`. |
-| 3 | **Type/copy a plaintext password into chat or `vscode_askQuestions`** | Password routes through the model → ends up in chat history/logs. | Let the **CredUI dialog** collect the password (default flow). For headless/CI runs, give the user the keyring one-liner to run in their own terminal; never read it yourself. |
+| 2 | **Store passwords via `cmdkey` or the Credential Manager GUI** | These store *Windows Generic Credentials*, which (a) `keyring`'s default backend cannot read → lookup returns `None` → "No credential found" even though `cmdkey /list` shows it, AND (b) CredUI silently reuses them on the next prompt → the dialog never appears. Confirmed S06_protected, 2026-07-03. | On the desktop, just let the **CredUI dialog** pop and check "remember" — it persists to keyring automatically. For CI/headless only, use the Python `keyring` one-liner (see "Headless / CI fallback"). |
+| 3 | **Type/copy a plaintext password into chat or `vscode_askQuestions`** | Password routes through the model → ends up in chat history/logs. | Let the **CredUI dialog** collect the password (default desktop flow). Only for headless/CI may you point the user at the keyring one-liner to run in their own terminal; never read the password yourself. |
 | 4 | **Leave only an HTML comment for a nested table** (`<!-- ... -->`) | Downstream LLM/RAG pipelines often strip HTML comments → the flattened md table alone is semantic garbage. | Write a **body blockquote** description + keep the flattened table below + `<!-- AI-describe ... -->` comment. (See nested_table in Stage 2.) |
 | 5 | **Naively regex-repad columns when you see a short row** | Cannot distinguish D2 vertical-merge (needs repad) from a legitimately fewer-column row or horizontal merge → silent data corruption on T9/T7-type tables. | Trust the Stage-1 sidecar (`Fixable by AI: YES/NO`) — only fix what the sidecar flags; never heuristic-guess. |
 | 6 | **Reorder pipeline: formula-fix / table-detect BEFORE the metadata header** | Sidecar absolute line numbers would no longer match the final file → AI edits the wrong lines. | Header is injected **before** table-detect by design — do not change this order. |
@@ -182,16 +182,18 @@ not a per-file prompt.
 **pywin32 is a hard dependency** for the dialog. If missing, `convert_file`
 returns an actionable error (`pip install pywin32`) instead of a raw ImportError.
 
-### Manual registration (optional, for non-interactive / CI use)
+### Headless / CI fallback (NOT for desktop use)
 
-For headless runs where no dialog can be shown, pre-register the password via
-Python `keyring` (NOT `cmdkey` / Credential Manager GUI — those store Windows
-Generic Credentials that keyring's default backend cannot read):
+CredUI cannot display a dialog in headless environments (SSH, Windows Server
+Core, Docker, CI runners, disconnected RDP sessions). For those cases only,
+pre-register the password via Python `keyring` — the next desktop conversion
+will then read it silently and skip the dialog:
 ```bash
 python -c "import keyring; keyring.set_password('markitdown-enhanced', '<stem>', '<password>')"
 # <stem> = filename without extension (e.g. 'S06_protected' for 'S06_protected.docx')
-# Fallback: store one shared password under name 'default' for multiple files.
 ```
+Do NOT use `cmdkey` / Credential Manager GUI for this — those store Windows
+Generic Credentials that keyring's default backend cannot read (see Do-NOT #2).
 
 ### Password Security
 - Passwords stored via Python `keyring` (service: `markitdown-enhanced`, name: file stem).
