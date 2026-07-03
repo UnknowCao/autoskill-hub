@@ -20,22 +20,22 @@ USER: "convert this file"  →  run: _convert_core.py <file> -o <out.md>
         ▼                    ▼                ▼                     ▼
   exit 0 (clean)      exit 1 (table errs)  encrypted file     no output / err
   → 1-line summary    → read .errors.md    → keyring lookup    → see Runtime
-                       → AUTO-FIX silently  → if None: give       Warnings table
-                         (Known set only)     keyring 1-liner     + Do NOT
-                       → delete sidecar      (NOT cmdkey)          (regex-repad /
-                       → 1-line summary      → retry                pipeline-order /
+                       → AUTO-FIX silently  → if None: CredUI     Warnings table
+                         (Known set only)     dialog (Win)         + Do NOT
+                       → delete sidecar      → "remember" → keyring (regex-repad /
+                       → 1-line summary      → cancel → skip file   pipeline-order /
                                                                     CJK-mojibake /
                                                                     sidecar-timing)
 ```
 
 **Golden rules**: (1) never ask the user before fixing a KNOWN defect;
-(2) secrets go through `keyring`, never chat; (3) end with one summary line.
+(2) secrets go through `keyring` / CredUI, never chat; (3) end with one summary line.
 Full anti-pattern list: see **⛔ Do NOT** below.
 
 ### Installation
 
 ```bash
-pip install "markitdown[all]" msoffcrypto-tool keyring mammoth
+pip install "markitdown[all]" msoffcrypto-tool keyring mammoth pywin32
 ```
 
 ### Command-Line
@@ -89,7 +89,10 @@ from _decrypt import detect_encrypted, decrypt_docx
 
 encrypted = detect_encrypted("input_dir/")
 for f in encrypted:
-    buf = decrypt_docx(f)  # reads password from Credential Manager
+    # allow_prompt=False by default: reads keyring only, never pops a dialog.
+    # Pass allow_prompt=True (e.g. from an interactive converter) to fall back
+    # to the Windows CredUI dialog when no keyring credential decrypts.
+    buf = decrypt_docx(f)
     if buf:
         result = md.convert_stream(buf, file_extension=".docx")
 
@@ -119,43 +122,74 @@ Every conversion runs through three stages automatically:
 |---|--------|---------------|------------|
 | 1 | **Ask the user before fixing a KNOWN defect** (D1 formula, D2 column-shift, D6 degenerate-merge, nested, D3, D4) | Violates the AUTO-FIX POLICY — default is **fully automatic**. Asking per-table creates noise the user explicitly opted out of. | Fix/annotate silently, end with a **one-line summary**. Only UNKNOWN/novel defects may prompt. (See "Stage 2 — AUTO-FIX POLICY".) |
 | 2 | **Store passwords via `cmdkey` or the Credential Manager GUI** | These store *Windows Generic Credentials*, which `keyring`'s default backend cannot read → lookup returns `None` → "No credential found" even though `cmdkey /list` shows it (confirmed S06_protected, 2026-07-03). | Store via Python `keyring` only: `keyring.set_password('markitdown-enhanced', '<stem>', '<pw>')`. |
-| 3 | **Type/copy a plaintext password into chat or `vscode_askQuestions`** | Password routes through the model → ends up in chat history/logs. | Never read secrets yourself. Give the user the keyring one-liner to run in their own terminal; reload after. |
+| 3 | **Type/copy a plaintext password into chat or `vscode_askQuestions`** | Password routes through the model → ends up in chat history/logs. | Let the **CredUI dialog** collect the password (default flow). For headless/CI runs, give the user the keyring one-liner to run in their own terminal; never read it yourself. |
 | 4 | **Leave only an HTML comment for a nested table** (`<!-- ... -->`) | Downstream LLM/RAG pipelines often strip HTML comments → the flattened md table alone is semantic garbage. | Write a **body blockquote** description + keep the flattened table below + `<!-- AI-describe ... -->` comment. (See nested_table in Stage 2.) |
 | 5 | **Naively regex-repad columns when you see a short row** | Cannot distinguish D2 vertical-merge (needs repad) from a legitimately fewer-column row or horizontal merge → silent data corruption on T9/T7-type tables. | Trust the Stage-1 sidecar (`Fixable by AI: YES/NO`) — only fix what the sidecar flags; never heuristic-guess. |
 | 6 | **Reorder pipeline: formula-fix / table-detect BEFORE the metadata header** | Sidecar absolute line numbers would no longer match the final file → AI edits the wrong lines. | Header is injected **before** table-detect by design — do not change this order. |
 | 7 | **Use PowerShell `Set-Content -Encoding UTF8` / `Add-Content` on the `.md` output or `.errors.md`** | Corrupts CJK → mojibake; on TSV/CSV also destroys separators (see AGENTS.md). | Edit `.md` only with `replace_string_in_file` / `multi_replace_string_in_file` / `create_file`. |
 | 8 | **Delete the sidecar `.errors.md` before fixing, or skip deleting it after** | Before-fix delete → you lose the CAUSE/HTML_REFERENCE needed to fix. After-fix skip → Stage-1 re-flags stale issues on rescan. | Read sidecar → fix all Known issues → **then** delete sidecar (signals Stage-2 complete). |
 | 9 | **Report a per-table prompt / multi-paragraph status** | User opted into silent auto-fix; per-table prompts are exactly what they disabled. | One-line summary at the end (e.g. "5 tables auto-fixed, 1 annotated, sidecar deleted"). |
+| 10 | **Call CredUI without first clearing stale Windows Generic Credentials** | A previous dialog "Save" (or `cmdkey /generic`) writes to the LegacyGeneric store, which CredUI silently reuses on the next prompt → **the dialog never appears** and the (possibly wrong) cached password is returned. This is the mirror of the keyring-vs-cmdkey pitfall. | `_delete_generic_credentials([stem, name, target])` runs before every `CredUIPromptForCredentials`. Persistence is managed via keyring, never via CredUI's own Save. |
+| 11 | **Verify a CredUI-entered password by decrypting the whole document inside the prompt loop** | msoffcrypto's ECMA376-Agile `decrypt().finalize()` hangs for a long time on large files; doing it per-retry makes the dialog look frozen / "no UI appears". | `prompt_and_get_password` returns the user's input unverified. Correctness is checked once by the real decryption in `decrypt_docx` step 4 (cancel/wrong = skip file, per row 5/Q11). |
 
 **Decision shortcut**: if an action is about to ask the user something other than an
 UNKNOWN defect or a missing credential, STOP — it's almost certainly an anti-pattern above.
 
 ## Encrypted File Handling
 
-Detects password-protected `.docx` files and attempts decryption via
-**Windows Credential Manager** (password never touches AI chat history).
+Detects password-protected `.docx` files and, when no usable credential is
+already stored, prompts the user through the **native Windows CredUI dialog**
+(`win32cred.CredUIPromptForCredentials`). The password never touches AI chat
+history, the terminal, or disk.
 
-**Setup** (one-time per file) — uses Python `keyring`, **not** cmdkey/Credential Manager GUI
-(which stores Windows Generic Credentials that keyring's default backend cannot read):
+**Runtime flow** (`decrypt_docx`, password resolution order — first that decrypts wins):
+1. explicit `password=` argument (programmatic callers only)
+2. process-in-memory cache (per file stem, then any previously-entered password)
+3. keyring — file stem, then `default` (legacy shared entry)
+4. **CredUI dialog** — *only on the interactive conversion path*
+   (`convert_file()` passes `allow_prompt=True`). The dialog shows which file
+   the password is for and a "记住 / remember" checkbox. Before each prompt,
+   any stale Windows Generic Credential (LegacyGeneric store, written by a
+   previous dialog's "Save" or by `cmdkey`) is deleted — otherwise CredUI
+   silently reuses it and **skips the dialog entirely**. Correctness of the
+   entered password is verified only by the actual decryption in step 4
+   (msoffcrypto), NOT inside the prompt loop — a full-document verify per
+   retry hangs on large ECMA376-Agile files.
+5. If the user checks "remember" → the password is persisted to keyring
+   (overwriting any stale entry). If unchecked → used once in memory and dropped.
+
+**Read-only paths never prompt.** `decrypt_docx(allow_prompt=False)` is the
+default, so `--scan-encrypted` and `scan_and_report()` simply report
+`missing_credential` instead of popping a dialog.
+
+**User cancels the dialog** → that file is skipped and the run continues with
+the rest (see batch_convert aggregation). The AI reports a one-line summary,
+not a per-file prompt.
+
+**pywin32 is a hard dependency** for the dialog. If missing, `convert_file`
+returns an actionable error (`pip install pywin32`) instead of a raw ImportError.
+
+### Manual registration (optional, for non-interactive / CI use)
+
+For headless runs where no dialog can be shown, pre-register the password via
+Python `keyring` (NOT `cmdkey` / Credential Manager GUI — those store Windows
+Generic Credentials that keyring's default backend cannot read):
 ```bash
 python -c "import keyring; keyring.set_password('markitdown-enhanced', '<stem>', '<password>')"
 # <stem> = filename without extension (e.g. 'S06_protected' for 'S06_protected.docx')
 # Fallback: store one shared password under name 'default' for multiple files.
 ```
 
-**Runtime flow**:
-1. Scan input for encrypted files
-2. For each encrypted file, query Credential Manager by filename
-3. If credential found → decrypt in-memory → convert
-4. If not found → report the file and give the user the **keyring one-liner** to run
-   in their own terminal (see "Encrypted File Handling → Setup"). Do NOT ask the user
-   to type the password into chat. (See Do-NOT row 3.)
-
 ### Password Security
 - Passwords stored via Python `keyring` (service: `markitdown-enhanced`, name: file stem).
   On Windows the default backend stores in the user's DPAPI-encrypted profile.
-- Passwords loaded directly into Python memory, never written to disk or logs
-- AI never sees plaintext passwords
+- The CredUI dialog is rendered by Windows itself (not by this skill), so its
+  input cannot be intercepted by skill/Python code beyond the returned string —
+  this is the security rationale for choosing CredUI over a self-built tkinter window.
+- Passwords live in Python memory only for the duration of decryption; the
+  process cache is in-memory and cleared when the process exits. Nothing is
+  written to the converted `.md` or logs.
+- AI never sees plaintext passwords.
 
 ## Table Structure Validation
 
