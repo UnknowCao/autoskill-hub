@@ -252,7 +252,7 @@ truly un-inferrable):
 | Case | Trigger | Action |
 |------|---------|--------|
 | **Known defect** (D2/D6/nested/D3/D4 — see table in Stage 1) | `Fixable by AI: YES` **or** `Fixable by AI: NO (LLM-describe ...)` | **Fix immediately, silently.** Apply the documented fix (D2 realign / D6 drop orphan) or the LLM-describe treatment (nested — write a body description), mark with the `<!-- AI-corrected ... -->` / `<!-- AI-describe ... -->` comment, delete the sidecar, report only a one-line summary at the end. Never ask. |
-| **Unknown defect, has HTML_REFERENCE** | A row whose `CAUSE` does not match the known set, but the sidecar still provides a usable `HTML_REFERENCE` block | **Best-effort fix silently, do NOT stop.** Infer the correct structure from HTML_REFERENCE, apply it, and mark with `<!-- AI-uncertain: verify — <one-line reason; no documented defect matched> -->`. Surface it only in the one-line end summary (e.g. "...plus 1 uncertain best-effort fix, please verify"). This keeps the tool quiet for the ~99% of unknowns that still have ground-truth HTML to reason from. |
+| **Unknown defect, has HTML_REFERENCE** | A row whose `CAUSE` does not match the known set, but the sidecar still provides a usable `HTML_REFERENCE` block | **Best-effort fix silently, do NOT stop.** Infer the correct structure from HTML_REFERENCE, apply it, and mark with `<!-- AI-uncertain: verify — <one-line reason; no documented defect matched> -->`. Surface it only in the one-line end summary (e.g. "...plus 1 uncertain best-effort fix, please verify"). This keeps the tool quiet for the ~99% of unknowns that still have ground-truth HTML to reason from. A worked example of how to best-effort is in the "Steps" section below (the **Unknown best-effort example** block). |
 | **Unknown defect, NO HTML_REFERENCE** | The sidecar is missing or its `HTML_REFERENCE` block is empty/corrupt (the AI cannot safely infer structure) | 🔴 **STOP — ASK USER** (the ONLY stopping case): briefly state that no ground-truth HTML is available to infer from, show the `CAUSE` + `CURRENT_MD`, and ask whether to (a) leave annotated `<!-- AI-blocked: no HTML_REFERENCE -->` or (b) skip that table. |
 
 If unsure whether a defect is "known": the known set is exactly
@@ -299,6 +299,26 @@ unless the ground-truth HTML is genuinely missing.
    - **Unknown**: split into two sub-branches (see table above) — if HTML_REFERENCE
      is usable, best-effort fix silently with `<!-- AI-uncertain: verify -->`;
      only if HTML_REFERENCE is missing/corrupt, `🔴 STOP — ASK USER`.
+
+   **Unknown best-effort example** (a defect NOT in the known set, but HTML is usable):
+
+   Sidecar `CAUSE` = "header row dropped, no defect id"; `HTML_REFERENCE` shows
+   `<thead><tr><th>A</th><th>B</th><th>C</th></tr></thead>` over a 3-col table;
+   `CURRENT_MD` has data rows but no header/separator. Best-effort reconstruction:
+
+   ```markdown
+   <!-- AI-uncertain: verify — header row dropped; reconstructed from HTML <thead> (no documented defect matched) -->
+   | A | B | C |
+   |---|---|---|
+   | 1 | 2 | 3 |
+   ```
+
+   Then continue to the next error block (do not stop); surface it only in the
+   end summary. If the HTML is ambiguous enough that you cannot confidently
+   reconstruct (e.g. multiple plausible layouts), prefer the **LLM-describe
+   blockquote** treatment (see nested_table above) over a guessed realignment —
+   a wrong guess silently corrupts data, whereas a description preserves the
+   source trace.
 4. After fixing/annotating all known errors, **delete the sidecar `.errors.md` file**
    (signals stage 2 is complete; avoids re-detection on rescan).
 5. Report a single concise summary to the user (e.g. "5 tables auto-fixed, 1 annotated,
