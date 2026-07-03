@@ -19,11 +19,13 @@ USER: "convert this file"  →  run: _convert_core.py <file> -o <out.md>
         ┌────────────────────┬───────┴────────┬─────────────────────┐
         ▼                    ▼                ▼                     ▼
   exit 0 (clean)      exit 1 (table errs)  encrypted file     no output / err
-  → 1-line summary    → read .errors.md    → keyring lookup    → diagnose
-                       → AUTO-FIX silently  → if None: give     (see Do NOT)
-                         (Known set only)     keyring 1-liner
-                       → delete sidecar      (NOT cmdkey)
-                       → 1-line summary      → retry
+  → 1-line summary    → read .errors.md    → keyring lookup    → see Runtime
+                       → AUTO-FIX silently  → if None: give       Warnings table
+                         (Known set only)     keyring 1-liner     + Do NOT
+                       → delete sidecar      (NOT cmdkey)          (regex-repad /
+                       → 1-line summary      → retry                pipeline-order /
+                                                                    CJK-mojibake /
+                                                                    sidecar-timing)
 ```
 
 **Golden rules**: (1) never ask the user before fixing a KNOWN defect;
