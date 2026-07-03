@@ -109,10 +109,13 @@ print(format_issues_for_ai(issues))
 
 ## Enhancement Pipeline
 
-Every conversion runs through three stages automatically:
-1. **Pre-conversion**: detect encrypted files, prompt for credentials
-2. **Conversion**: standard markitdown docx→md
-3. **Post-conversion**: formula escaping fix, table structure validation
+Every conversion runs through three stages **automatically** (no flags needed):
+
+| Stage | What happens | Details |
+|-------|--------------|---------|
+| 1. Pre-conversion | Detect encrypted files; resolve credentials | [Encrypted File Handling](#encrypted-file-handling) |
+| 2. Conversion | Standard markitdown `docx/pdf/pptx/... → md` | [Command-Line](#command-line) |
+| 3. Post-conversion | (a) prepend [Metadata Header](#metadata-header) → (b) [Formula escaping fix](#formula-escaping-fix) → (c) [Table structure validation](#table-structure-validation) | order matters: header must come **before** table-detect so sidecar line numbers stay valid (⛔ Do NOT #6) |
 
 ## ⛔ Do NOT — Anti-patterns & Red Lights
 
