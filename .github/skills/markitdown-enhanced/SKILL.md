@@ -323,17 +323,15 @@ Disable with `--no-metadata` (single-file) or `--no-metadata` (batch).
 
 ## Runtime Warnings
 
-When converting, the skill checks for these known boundaries and warns only
-when they affect semantic understanding:
+The skill auto-handles all known conditions silently — **no runtime prompts**.
+Table-structure conditions (D2/D6/nested/unknown) and their actions are fully
+specified in **Stage 1 issue table** + **Stage 2 AUTO-FIX POLICY** + **⛔ Do NOT**
+(rows 1, 5, 8, 9) — refer there, not here. The two non-table conditions are:
 
-| Condition | Action |
-|-----------|--------|
-| Vertical-merge tables found | Write sidecar `.errors.md`, exit code 1 → AI **auto-fixes** md (stage 2, no user prompt) |
-| Degenerate full-merge (D6) | Write sidecar `.errors.md`, exit code 1 → AI **auto-fixes** (drop orphan row) |
-| Nested tables found | Write sidecar `.errors.md`, exit code 1 → AI **auto-describes** the nesting in the md BODY (for LLM consumption), no user prompt |
-| Undocumented / novel table defect | AI may stop and ask the user (the ONLY asking case) |
-| Formula `\*` detected | Auto-fix silently |
-| Cell multiline/sublist flattened | No action (semantically harmless) |
+| Condition (non-table) | Action |
+|-----------------------|--------|
+| Formula `\*` / `\_` / `\^` detected | Auto-fix silently (see Formula Escaping Fix) |
+| Cell multiline/sublist flattened (D3/D4) | No action — semantically harmless |
 
 ## Scripts
 
