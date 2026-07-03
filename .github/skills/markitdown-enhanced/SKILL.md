@@ -19,11 +19,11 @@ USER: "convert this file"  →  run: _convert_core.py <file> -o <out.md>
         ┌────────────────────┬───────┴────────┬─────────────────────┐
         ▼                    ▼                ▼                     ▼
   exit 0 (clean)      exit 1 (table errs)  encrypted file     no output / err
-  → 1-line summary    → read .errors.md    → keyring lookup    → see Runtime
-                       → AUTO-FIX silently  → if None: CredUI     Warnings table
-                         (Known set only)     dialog (Win)         + Do NOT
-                       → delete sidecar      → "remember" → keyring (regex-repad /
-                       → 1-line summary      → cancel → skip file   pipeline-order /
+  → 1-line summary    → read .errors.md    → keyring lookup    → see ⛔ Do NOT
+                       → AUTO-FIX silently  → if None: CredUI     (rows 5,6,7,8:
+                         (Known set only)     dialog (Win)         regex-repad /
+                       → delete sidecar      → "remember" → keyring pipeline-order /
+                       → 1-line summary      → cancel → skip file   CJK-mojibake /
                                                                     CJK-mojibake /
                                                                     sidecar-timing)
 ```
