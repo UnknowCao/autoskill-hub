@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "scenario": "happy_path_single_docx",
+    "prompt": "把这个 docx 技术文档转成 markdown：C:\\AI\\.github\\skills\\markitdown.backup-20260702\\tests\\samples\\S08_formulas.docx",
+    "expected": "调用 markitdown-enhanced 的 _convert_core.py 转换；自动修复 $...$ 公式转义错误（D1）；输出带 Source/Format metadata 头的 .md；结束时给一行简短摘要。不询问用户是否修复公式。",
+    "rubric_dim": "dim8 happy path — covers formula fix (D1) auto pipeline"
+  },
+  {
+    "id": 2,
+    "scenario": "encrypted_file_with_missing_credential",
+    "prompt": "转换这个加密的 docx：C:\\AI\\.github\\skills\\markitdown.backup-20260702\\tests\\samples\\S06_protected.docx",
+    "expected": "识别为加密文件；通过 keyring(service='markitdown-enhanced', name='S06_protected') 取密码；若取不到，给出明确的一行 keyring.set_password 命令（而非「打开凭据管理器」），让用户自己跑后再继续；不把密码写进聊天记录。",
+    "rubric_dim": "dim3 失败模式编码 — credential-missing fallback (keyring vs cmdkey trap)"
+  },
+  {
+    "id": 3,
+    "scenario": "complex_table_auto_fix_flow",
+    "prompt": "转换这个带复杂表格的文档，转换完帮我把表格问题处理掉：C:\\AI\\.github\\skills\\markitdown.backup-20260702\\tests\\samples\\S05_complex_tables.docx",
+    "expected": "转换后 exit code 1 触发；agent 自动读 .errors.md sidecar；按 AUTO-FIX POLICY 对 D2 列错位/D6 退化合并/nested 静默修复或 LLM-describe；修复后删 sidecar；只给一行总结，不逐表询问；nested 写 body blockquote 描述 + 保留扁平表 + AI-describe 注释。",
+    "rubric_dim": "dim4 检查点 + dim8 stage-2 auto-fix policy 是否被遵守"
+  }
+]
