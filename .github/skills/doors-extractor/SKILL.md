@@ -68,6 +68,7 @@ cmd /c "python .claude/skills/doors-extractor/scripts/credential_manager.py clea
 | A10 | Close/restart DOORS client on COM failure | Keep session; run `diag_com.py`; classify via §6.2 Step 0 anchors | Restart loses state; §6.2 gives objective classification + 1-retry escalation | 5, 6.2 |
 | A11 | Ask >1 question during extraction intent | At most 1 required (module location) | Credit conservation | 4.4 |
 | A12 | Use generic tools (jq/grep) for processing raw JSON | Always use a `scripts/library/` script | Schema-aware processing | 4.7 |
+| A13 | Call `doors_manager.py extract` when DOORS is not running, without user consent | Pre-flight check COM + `Get-Process doors`; if DOORS not running, ask user via `vscode_askQuestions` before launching GUI. **Always use `--no-gui` by default** — only drop the flag after explicit user consent. | GUI launch requires manual login; auto-launching without consent disrupts user's workflow. `--no-gui` provides script-level defense-in-depth. | 4.5.1, 4.6 |
 
 ## 4. Usage Workflow
 
@@ -138,17 +139,57 @@ Question style requirements:
     *   If user chooses existing data: Skip Phase 2, proceed to Phase 3 (Processing).
 4.  **Extract** (only if no usable cache): Proceed to Phase 2.
 
+### 4.5.1 Pre-Flight COM Check + User Consent Gate (MANDATORY — before Phase 2)
+
+**When**: This gate MUST be executed whenever Phase 2 extraction is about to begin (i.e., user confirmed they want fresh data, or no cache exists). Do NOT skip this gate even if the user just said "extract now."
+
+**Purpose**: The `doors_manager.py extract` command will auto-launch DOORS GUI if COM is unavailable. This is a heavy operation — it opens a GUI window, requires manual login, and disrupts the user's workflow. The user MUST explicitly consent before this happens.
+
+**Procedure (sequential, do not parallelize):**
+
+1. **Check if DOORS is already running**:
+   ```powershell
+   Get-Process doors -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, Responding
+   ```
+   If DOORS is running AND `Responding=True` → proceed to Phase 2 extraction (no consent needed; COM fast path will be used).
+
+2. **If DOORS is NOT running**, STOP and ask the user via `vscode_askQuestions`:
+   - **Question header**: "Launch DOORS?"
+   - **Question**: "DOORS is not running. The extraction will launch the DOORS GUI — you'll need to log in manually. Launch DOORS now?"
+   - **Options** (single-select):
+     - `"Launch DOORS now (I'll log in manually)"` (recommended)
+     - `"Cancel — I'll start DOORS myself first"`
+
+3. **Branch on answer**:
+   - **"Launch DOORS now"** → proceed to Phase 2 extraction. Re-run the extraction command **without `--no-gui`** so the script is authorized to launch the DOORS GUI:
+     ```bash
+     cmd /c python .github/skills/doors-extractor/scripts/doors_manager.py extract --url <TARGET_URL> --output report/doors/<PROJECT>_<MODULE>_<YYYYMMDD_HHMMSS>_raw.json
+     ```
+     The `doors_manager.py` script will handle the GUI launch and COM polling.
+   - **"Cancel"** → STOP. Inform the user: "Please start DOORS and log in manually, then ask me to extract again. With DOORS already running, the COM fast path (~30s) will be used and `--no-gui` will remain in effect."
+
+**Rationale**: This gate prevents the agent from auto-launching a DOORS GUI window without the user's knowledge. The GUI launch requires manual login (username/password, which the skill never stores), so launching without the user present just produces a hung login screen and wastes time. This aligns with §5 Rule 3 (NO PASSWORD STORAGE) — the skill never auto-authenticates, so it must never auto-launch the authentication UI either.
+
 ### 4.6 Phase 2: Extraction (Infrastructure)
 
 **🔴 CHECKPOINT · Pre-Extraction Gate**: Only proceed if (a) user explicitly requests fresh data OR (b) no usable cache exists. If neither, do NOT extract.
 
+**🔴 CHECKPOINT · DOORS Launch Consent Gate**: Before running `doors_manager.py extract`, execute the Pre-Flight COM Check + User Consent Gate from §4.5.1. This gate is MANDATORY — never call `doors_manager.py extract` when DOORS is not running without first obtaining explicit user consent. The gate output determines whether to proceed or stop.
+
 1.  **Naming Convention**: Raw data file MUST include **Project Name** and **DateTime (YYYYMMDD_HHMMSS)**. The time part (HHMMSS) is **MANDATORY** — date-only filenames (e.g., `_20260605_raw.json`) are a violation. Always use the full current datetime, e.g., `VW_10638_SysRS_20260605_143052_raw.json`. The `.done` sentinel file created by DXL will automatically have the same name with `.done` appended.
 2.  **Output Location**: Default to `report/doors/` under the project root.
-3.  **Command** (Recommended - clean output):
+3.  **Command** (Recommended - clean output, COM-only safety net):
+    ```bash
+    cmd /c python .github/skills/doors-extractor/scripts/doors_manager.py extract --url <TARGET_URL> --output report/doors/<PROJECT_NAME>_<MODULE_NAME>_<YYYYMMDD_HHMMSS>_raw.json --no-gui
+    # fallback (legacy layout)
+    cmd /c python .claude/skills/doors-extractor/scripts/doors_manager.py extract --url <TARGET_URL> --output report/doors/<PROJECT_NAME>_<MODULE_NAME>_<YYYYMMDD_HHMMSS>_raw.json --no-gui
+    ```
+
+    **`--no-gui` is the DEFAULT safety net.** When set, the script ONLY attempts COM extraction on an already-running DOORS instance. If COM is unavailable (DOORS not running), the script exits with a clear error instead of auto-launching the GUI. This prevents accidental GUI launch without user consent.
+
+    **After user consents to GUI launch** (via §4.5.1 gate), re-run the SAME command but **omit `--no-gui`**:
     ```bash
     cmd /c python .github/skills/doors-extractor/scripts/doors_manager.py extract --url <TARGET_URL> --output report/doors/<PROJECT_NAME>_<MODULE_NAME>_<YYYYMMDD_HHMMSS>_raw.json
-    # fallback (legacy layout)
-    cmd /c python .claude/skills/doors-extractor/scripts/doors_manager.py extract --url <TARGET_URL> --output report/doors/<PROJECT_NAME>_<MODULE_NAME>_<YYYYMMDD_HHMMSS>_raw.json
     ```
     **⚠️ Quote escaping note (PowerShell)**: When running from PowerShell via `cmd /c "..."`, do NOT use `\"` to quote inner arguments — cmd.exe does not recognize backslash-escaped quotes. Either omit inner quotes (works when paths have no spaces), or use `""` for inner quoting: `cmd /c "python ... --url ""<URL>"" --output ""<PATH>"""`. The safest approach is to omit the outer `"..."` wrapper and let cmd.exe parse arguments directly as shown above.
 

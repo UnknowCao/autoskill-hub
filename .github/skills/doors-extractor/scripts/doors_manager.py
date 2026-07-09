@@ -428,12 +428,17 @@ def wait_for_doors_process(timeout_sec=20):
     return False
 
 
-def run_extraction(target_url, output_file, keep_temp=False):
+def run_extraction(target_url, output_file, keep_temp=False, no_gui=False):
     """
     Orchestrates the extraction process:
     1. Try COM/OLE reuse (fast path - seconds, requires running DOORS)
     2. Fallback: Launch DOORS GUI subprocess without credentials (manual login)
     3. After GUI launch, poll COM connection until user logs in or GUI completes
+
+    When no_gui=True: only attempt COM reuse. If COM is unavailable, print a clear
+    error message and exit — do NOT auto-launch the DOORS GUI. This is a safety net
+    that must be explicitly dropped by the caller (i.e., the agent) only after user
+    consent has been obtained.
     """
     # === FAST PATH: COM/OLE Reuse ===
     print("Attempting COM connection to running DOORS...", file=sys.stderr)
@@ -441,9 +446,22 @@ def run_extraction(target_url, output_file, keep_temp=False):
     if success:
         print(msg, file=sys.stderr)
         return
-    print(f"COM unavailable: {msg}. Falling back to GUI launch.", file=sys.stderr)
+    print(f"COM unavailable: {msg}.", file=sys.stderr)
+
+    # === no_gui guard: stop here if GUI launch is not authorized ===
+    if no_gui:
+        print(
+            "ERROR: DOORS is not running and --no-gui is set. "
+            "GUI launch has been blocked.\n"
+            "Action required: Start DOORS manually and log in, or re-run without --no-gui "
+            "after obtaining explicit user consent for GUI launch.\n"
+            "See SKILL.md §4.5.1 (Pre-Flight COM Check + User Consent Gate).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # === SLOW PATH: Launch GUI, then wait for COM ===
+    print("Falling back to GUI launch.", file=sys.stderr)
     config = load_config()
     doors_exe = find_doors_executable(config)
     
@@ -534,12 +552,16 @@ def main():
     p_extract = subparsers.add_parser('extract', help="Extract raw data from DOORS")
     p_extract.add_argument('--url', required=True, help="DOORS URL or Module Path")
     p_extract.add_argument('--output', required=True, help="Path for raw JSON output")
+    p_extract.add_argument('--no-gui', action='store_true',
+                           help="COM-only mode: do NOT launch DOORS GUI if COM unavailable. "
+                                "Use this as default safety net; drop the flag only after "
+                                "user has explicitly consented to GUI launch.")
     
     args = parser.parse_args()
     
     if args.command == "extract":
         target = parse_doors_url(args.url)
-        run_extraction(target, args.output)
+        run_extraction(target, args.output, no_gui=args.no_gui)
 
 if __name__ == "__main__":
     main()

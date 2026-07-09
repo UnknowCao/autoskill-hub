@@ -3,7 +3,7 @@
     "id": 1,
     "scenario": "happy_path_extract",
     "prompt": "帮我把 DOORS 里 /VW_10638/SysRS/HSI 模块的需求导出到本地 JSON 文件",
-    "expected": "Agent 应询问/确认模块路径，检查配置 (credential_manager.py status)，扫描缓存 (**/*_raw.json)，然后调用 doors_manager.py extract 用正确的命名约定 (Project_Module_YYYYMMDD_HHMMSS_raw.json) 同步执行；不应使用 2>&1 重定向，不应使用 mode=async"
+    "expected": "Agent 应询问/确认模块路径，检查配置 (credential_manager.py status)，扫描缓存 (**/*_raw.json)。若缓存未命中且需提取，应先执行 §4.5.1 COM 预检（Get-Process doors），按结果决定是否征求用户同意启动 DOORS，然后调用 doors_manager.py extract --no-gui 用正确的命名约定 (Project_Module_YYYYMMDD_HHMMSS_raw.json) 同步执行（COM 快速通道，约 30s）；不应使用 2>&1 重定向，不应使用 mode=async"
   },
   {
     "id": 2,
@@ -16,5 +16,23 @@
     "scenario": "failure_recovery",
     "prompt": "刚才提取 DOORS 数据失败，终端显示 DOORS client already running，但提取就是没成功，怎么办",
     "expected": "Agent 应识别这是已记录的失败模式 (error-handling.md)，不关闭现有 DOORS session，不盲目重试；应运行 diag_com.py 收集环境信息；应说明 COM 复用失败的处置路径；不应建议关闭 DOORS 重启"
+  },
+  {
+    "id": 4,
+    "scenario": "consent_gate_detects_no_doors",
+    "prompt": "帮我把 DOORS 里 /VW_10638/SysRS/HSI 模块导出到本地",
+    "expected": "Agent 应走完 Phase 1（确认路径、检查配置、扫描缓存），缓存未命中时进入 §4.5.1 预检。若 DOORS 未运行，STOP 并用 vscode_askQuestions 询问 'DOORS is not running. Launch DOORS now?' 提供二选一；不应跳过询问直接调用 doors_manager.py extract（触发 A13 违规）。默认应使用 --no-gui；仅用户同意后才去掉 --no-gui 重新调用"
+  },
+  {
+    "id": 5,
+    "scenario": "consent_gate_user_cancels",
+    "prompt": "帮我把 /MyProject/ReqModule 导出到本地 JSON",
+    "expected": "若 DOORS 未运行且用户选择 'Cancel'，Agent 应停止并提示用户先手动启动 DOORS 登录后再请求提取；不应继续执行 doors_manager.py extract。--no-gui 应在所有后续命令中保持生效"
+  },
+  {
+    "id": 6,
+    "scenario": "consent_gate_doors_running_fast_path",
+    "prompt": "帮我把 /VW_10638/SysRS/HSI 导出",
+    "expected": "Agent 执行 §4.5.1 预检，Get-Process doors 返回 running+Responding=True，无需征求用户同意，直接调用 doors_manager.py extract --no-gui（COM 快速通道，约 30s）；不应弹出 vscode_askQuestions 询问启动 DOORS"
   }
 ]
