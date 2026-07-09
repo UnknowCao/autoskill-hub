@@ -70,6 +70,18 @@ cmd /c "python .claude/skills/doors-extractor/scripts/credential_manager.py clea
 | A12 | Use generic tools (jq/grep) for processing raw JSON | Always use a `scripts/library/` script | Schema-aware processing | 4.7 |
 | A13 | Call `doors_manager.py extract` when DOORS is not running, without user consent | Pre-flight check COM + `Get-Process doors`; if DOORS not running, ask user via `vscode_askQuestions` before launching GUI. **Always use `--no-gui` by default** — only drop the flag after explicit user consent. | GUI launch requires manual login; auto-launching without consent disrupts user's workflow. `--no-gui` provides script-level defense-in-depth. | 4.5.1, 4.6 |
 
+### Quick Workflow Selector
+
+> Jump directly to the section matching your intent:
+
+| Intent (EN / 中文) | Go to |
+|---|---|
+| "Extract / export from DOORS" · "导出/提取DOORS数据" | §4.5 → §4.6 (Phase 1→2) |
+| "Filter / process already-extracted data" · "筛选/处理已提取数据" | §4.7 (Phase 3) |
+| "Extraction failed / error" · "提取失败/报错" | §6 (Error Handling) |
+| "First-time setup" · "首次配置" | §2 (Local Configuration) |
+| "Add custom processing logic" · "添加自定义处理脚本" | §4.7 OPTION B |
+
 ## 4. Usage Workflow
 
 ### 4.1 Terminal Execution Policy (MANDATORY)
