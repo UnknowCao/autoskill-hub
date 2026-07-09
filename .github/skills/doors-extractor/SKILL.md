@@ -316,7 +316,7 @@ Refer to **[references/error-handling.md](references/error-handling.md)** for th
 | Scenario | Symptom | First Response | If Still Failing |
 |---|---|---|---|
 | Config missing | DOORS launch fallback cannot find exe/data | `cmd /c "python credential_manager.py setup"` | Verify `DOORS_PATH` env var; check `~/.doors/config.json` exists |
-| DOORS already running | COM unavailable; extraction fails | Keep session; do NOT close/restart | Run `diag_com.py`; classify output via §6.2 Step 0 anchors; follow §6.2 escalation |
+| DOORS already running | COM unavailable; extraction fails | Keep session; do NOT close/restart. Run `diag_com.py`. **Most common outcome (≥90%): COM_HALF_OPEN** — wait 60 s, retry extraction once (§6.2 Step 2). | If not COM_HALF_OPEN: classify via §6.2 Step 0 anchors; follow §6.2 escalation |
 | `& cmd.exe` rejected | PowerShell restricted mode error | Use `cmd /c python ...` (no `&`) | Use PowerShell-native cmdlets directly |
 | pathlib check attempted | `python -c "import pathlib..."` | Replace with `Get-ChildItem ... \| Select Name,Length,LastWriteTime` | — (one-shot fix) |
 | Fake red "errors" | Red lines despite successful extraction | Omit `2>&1` redirection; rerun | — (artifact, not real error) |
