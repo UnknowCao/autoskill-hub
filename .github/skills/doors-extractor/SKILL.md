@@ -135,6 +135,7 @@ Question style requirements:
     *   **If status reports `configured`** (both `doors_data` and `doors_path` present): proceed to step 3.
     *   **If status reports `not configured` OR errors out** (e.g. `~/.doors/config.json` missing, `DOORS_PATH` env unset): run `cmd /c python .github/skills/doors-extractor/scripts/credential_manager.py setup`, which opens a tkinter dialog to capture `doors_data` (port@hostname) and executable path. Only non-secret fields are stored. **Do NOT proceed to extraction until `status` confirms `configured`** — running extract on a missing config causes a silent DOORS-launch fallback that wastes several minutes.
 3.  **🔴 CHECKPOINT · Cache Scan**: Search the workspace with glob `**/*_raw.json` for existing raw data. Match by module name, prefer the most recent date.
+    *   **Freshness rule**: Cache ≤ 7 days old is "fresh" and preferred. Cache > 7 days old is "stale" — still offer the binary choice but append a staleness warning: "Found `X.json` (N days old, may be stale). Use this or re-extract?"
     *   If raw data exists: STOP and ask ONLY "Found existing raw data `X.json`. Use this or re-extract from DOORS?" (binary choice, via `vscode_askQuestions`)
     *   If user chooses existing data: Skip Phase 2, proceed to Phase 3 (Processing).
 4.  **Extract** (only if no usable cache): Proceed to Phase 2.
@@ -165,7 +166,7 @@ Question style requirements:
      ```bash
      cmd /c python .github/skills/doors-extractor/scripts/doors_manager.py extract --url <TARGET_URL> --output report/doors/<PROJECT>_<MODULE>_<YYYYMMDD_HHMMSS>_raw.json
      ```
-     The `doors_manager.py` script will handle the GUI launch and COM polling.
+     The `doors_manager.py` script handles the full lifecycle: (a) launches DOORS GUI if needed, (b) polls COM every 10 s for up to 10 min until the user completes login, (c) runs DXL extraction, (d) writes output. **The agent does NOT need to wait separately or check for GUI login — one sync `run_in_terminal` call (mode=sync, timeout=1200000) covers the entire sequence.**
    - **"Cancel"** → STOP. Inform the user: "Please start DOORS and log in manually, then ask me to extract again. With DOORS already running, the COM fast path (~30s) will be used and `--no-gui` will remain in effect."
 
 **Rationale**: This gate prevents the agent from auto-launching a DOORS GUI window without the user's knowledge. The GUI launch requires manual login (username/password, which the skill never stores), so launching without the user present just produces a hung login screen and wastes time. This aligns with §5 Rule 3 (NO PASSWORD STORAGE) — the skill never auto-authenticates, so it must never auto-launch the authentication UI either.
@@ -329,8 +330,11 @@ Run `diag_com.py` AND `Get-Process doors` (see Step 3 command). Classify into ex
 **Step 1 — Collect**: Save `diag_com.py` stdout + failed extraction's stderr to `report/doors/_diag_<YYYYMMDD_HHMMSS>.log`.
 
 **Step 2 — Branch action** (follow Step 0 classification, do NOT deviate):
-- `COM_HEALTHY` / `COM_HALF_OPEN` / `NO_PROCESS` / `PROCESS_HUNG`: perform the stated action, then retry extraction (Phase 2) **exactly ONCE**.
-- `ENV_BROKEN`: do NOT retry; stop and report.
+- `COM_HEALTHY`: retry extraction (Phase 2) **exactly ONCE** — COM is fine, failure was transient.
+- `COM_HALF_OPEN`: wait 60 s for DOORS GUI to finish initializing, then retry extraction (Phase 2) **exactly ONCE**.
+- `NO_PROCESS`: ask user to launch DOORS GUI + log in manually, then retry extraction (Phase 2) **exactly ONCE**.
+- `PROCESS_HUNG`: ask user to kill the hung DOORS process (PID from `Get-Process doors`) via Task Manager, re-launch DOORS + log in, then retry extraction (Phase 2) **exactly ONCE**.
+- `ENV_BROKEN`: do NOT retry; stop and report. Ask user to `pip install pywin32` in the Python environment used by the skill scripts.
 
 **Step 3 — Hard limit + hand-off message template**:
 If the single retry also fails, STOP. Do not enter a retry loop. Hand off to the user / DOORS admin using this exact template (fill in `<...>`):
