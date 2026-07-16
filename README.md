@@ -6,6 +6,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Skills: 1](https://img.shields.io/badge/Skills-1-green.svg)](./skills)
+[![skills.sh](https://skills.sh/b/UnknowCao/autoskill-hub)](https://skills.sh/UnknowCao/autoskill-hub)
 [![ASPICE](https://img.shields.io/badge/ASPICE-v4.0-orange.svg)](#-v-model--aspice-mapping)
 [![ISO 26262](https://img.shields.io/badge/ISO-26262-green.svg)](#-v-model--aspice-mapping)
 [![AUTOSAR](https://img.shields.io/badge/AUTOSAR-Classic%20%7C%20Adaptive-blueviolet.svg)](#-v-model--aspice-mapping)
@@ -74,6 +75,14 @@ connect* upstream/downstream.
 
 Each skill is a self-contained folder with a `SKILL.md` entry point. Pick one and load it
 into your agent — no build step, no dependencies.
+
+### Via skills.sh CLI (recommended)
+
+```bash
+npx skills add UnknowCao/autoskill-hub --skill verification-criteria
+```
+
+### Manual install
 
 **Claude Code / Cursor / Continue** — copy or symlink the skill folder into your agent's
 skills directory:
