@@ -114,6 +114,10 @@ Pass URL directly to `lark-cli` — no manual token extraction needed. Defaults 
    - 解决的问题与现有方案的差距（gap）
    - 所有关键组件 / 步骤 / 数据流 / 触发条件
    - 至少 3 个可区分的实施场景
+6. **Interview Guardrail（最多 3 轮）**：若经过 3 轮追问仍无法满足 5 项中的 ≥4 项：
+   - 🔴 触发 **Checkpoint 1-warning**：向用户展示已收集的信息 + 缺失项清单，告知"当前信息不足以撰写可专利的完整文档"
+   - 请用户选择：① 补充缺失信息后继续 / ② 缩减保护范围，基于现有信息继续（需用户明确确认风险）
+   - **禁止在用户选择前继续 Phase 2**
 
 🔴 **CHECKPOINT 1 — 必须暂停**：向用户复述提炼出的 4 要素 + 访谈要点，等待用户明确确认通过后再进入 Phase 2。若用户指出偏差，回到 Actions 1-5 修正。**禁止在用户确认前继续 Phase 2。**
 
@@ -129,7 +133,7 @@ Pass URL directly to `lark-cli` — no manual token extraction needed. Defaults 
 
 ### Step 2.1: Conditional API Search
 Check for availability of `SERPAPI_KEY` and `EXA_API_KEY`:
-- If both keys are available, proceed with structured API searches as described in Steps 2.2-2.4
+- If both keys are available, proceed with structured API searches as described in Steps 2.2-2.5
 - If keys are missing, inform the user briefly and automatically proceed with WebSearch as a fallback
 
 ### Step 2.2: API Patent Search (Conditional)
@@ -156,13 +160,28 @@ curl -X POST 'https://api.exa.ai/search' \
 - Key claims and technical solutions
 - Assignees and filing dates
 
-### Step 2.3: WebSearch Fallback (Used when APIs unavailable)
+### Step 2.3: API Failure Handling
+
+**When SerpAPI returns 0 results or rate-limit error (HTTP 429)**:
+1. **Retry once** with synonym-expanded keywords and `num=50`
+2. **If still 0 results after retry** → inform user with diagnostic (keywords tried + API status) → fall through to Step 2.4 (WebSearch) automatically
+3. **If rate-limit persists (HTTP 429 after retry)** → skip SerpAPI, proceed with Exa.ai only (if available) + Step 2.4 WebSearch
+
+**When Exa.ai returns 0 results**:
+1. Attempt `type: "fast"` retry with shorter query (first 5 terms only)
+2. **If still 0 results** → inform user → fall through to Step 2.4 WebSearch
+
+**When both SerpAPI and Exa.ai are unavailable or both return 0 results**:
+- Automatically proceed to Step 2.5 (Parallel Web Search) and Step 2.6 (Novelty Analysis)
+- In the Checkpoint 2 report, note that novelty analysis is based solely on web search results, and recommend professional patent search for filing
+
+### Step 2.4: WebSearch Fallback (Used when APIs unavailable)
 When API keys are not available, automatically use Claude's WebSearch tool:
 - Use the `WebSearch` tool to find relevant patent and technical information
 - Query format: "[user's invention description] prior art patent search comparative analysis"
 - Example: `WebSearch("[specific technical concept] prior art patent 2025")`
 
-### Step 2.4: Parallel Web Search
+### Step 2.5: Parallel Web Search
 Perform web searches to gather comprehensive context regardless of API availability:
 
 1. **Specific patents**: Search for detailed patent information by technical concept
@@ -178,7 +197,7 @@ Search query patterns (customize based on invention):
 - "recent research [user's technical concept] academic papers"
 - "[user's solution category] commercial implementation comparison"
 
-### Step 2.5: Novelty Analysis
+### Step 2.6: Novelty Analysis
 
 **Synthesize findings** from both API and web search results:
 1. **Comparison**: Compare the user's idea with the top 3-5 most relevant patents
@@ -187,16 +206,21 @@ Search query patterns (customize based on invention):
 4. **Novelty Gaps**: Note any potential novelty gaps or white spaces
 5. **Feasibility Check**: Confirm technical feasibility from implementation sources
 
-### Step 2.6: IPC Classification
+### Step 2.7: IPC Classification
 
 **Identify the IPC (International Patent Classification) symbols** for the invention:
 - 确定 1-3 个主分类号（IPC subclass / group），用于检索扩展与申请表填写
-- 若无法精确确定，给出 3-5 个候选分类号并说明取舍理由
 - 同步识别 CPC 分类号以便检索 US/EP 现有技术
+
+**若无法精确确定 IPC 分类号**：
+1. 列出 3-5 个候选分类号，逐一说明候选理由及不确定原因
+2. 🔴 在 Checkpoint 2 中向用户展示候选列表，请用户选择或确认
+3. **若用户也无法确定** → 保留所有候选号，在申请表中标注"建议由代理师复核 IPC 分类"
+4. **禁止在用户确认 IPC 候选前进入 Phase 3**（IPC 错误导致检索方向偏移 → 驳回风险）
 
 **Output**: IPC classification list with rationale.
 
-### Step 2.7: Novelty Articulation
+### Step 2.8: Novelty Articulation
 
 明确陈述以下三点（后续权利要求书与发明内容的撰写基础）：
 1. **最接近的现有技术**：1 篇，记录申请号 + 技术方案 + 技术效果

@@ -39,6 +39,7 @@ Below is the **only doc-type-specific format**: `--docx` (applies to `disclosure
 When user specifies `--docx`, the skill fills the agency template (.docx) directly instead of generating Markdown. This guarantees 100% format match with the agency's expected layout.
 
 1. **Locate template** — `assets/raw_templates/<agency>_invention_disclosure.docx` (e.g. `acip_invention_disclosure.docx`)
+   - **若模板文件不存在** → 告知用户"[agency] 模板文件缺失" → 自动回退到 `--md` 模式，使用 `Disclosure-[Agency]-[ShortTitle]-[YYYYMMDD].md` 文件名 → 若有可编辑模板路径，告知用户手动放入 `assets/raw_templates/` 后可重试 `--docx`
 2. **Build content JSON** — Convert Phase 1-3 outputs into a structured dict with field names matching `TEMPLATES[<id>].fields` in `scripts/fill_acip_template.py`
 3. **Run the fill script**:
    ```bash
@@ -48,6 +49,11 @@ When user specifies `--docx`, the skill fills the agency template (.docx) direct
        --output "Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].docx"
    ```
 4. **Verify filled fields** — script prints filled/skipped lists; ensure all header + content fields are filled
+   - **若填充脚本报错**（`FileNotFoundError` / `RuntimeError` / `ValueError`）：
+     - `FileNotFoundError` → 告知用户模板文件路径错误 → 回退到 `--md` 模式
+     - `RuntimeError`（table index mismatch）→ 运行 `python scripts/fill_acip_template.py inspect --docx <template>` 打印诊断 → 将诊断输出 + 错误信息一并告知用户 → 回退到 `--md` 模式
+     - `ValueError`（JSON 字段缺失）→ 列出缺失字段清单 → 询问用户：① 手动补充后重试 ② 跳过缺失字段直接输出 .docx（标记空字段为 `[待补充]`）③ 回退到 `--md` 模式
+   - **若 stdout 出现 `skipped` 字段** → 列出被跳过的字段清单 → 告知用户 → 询问处理方式（同上①②③）
 
 **Adding a new agency template** (4 steps, fully scripted):
 
@@ -171,13 +177,13 @@ Reference these files within this directory for detailed specifications:
 | 1 | **在 `disclosure` 中撰写权利要求书** | 交底书由代理师后续撰写权利要求，发明人只需交底技术方案（`shared_workflow.md` § Phase 3D Actions） | 侵占代理师职责 → 文档作废 |
 | 2 | **在等待用户确认的 🔴 CHECKPOINT 处继续执行** | 每个 CHECKPOINT 标记处**必须暂停**并等待用户明确"通过/修改/重写"，不自动继续（`SKILL.md` § Phase 3A/3D） | 未经确认的输出不可用 → 重做 |
 | 3 | **在 Phase 0 未确认 doc-type 时默认走 `application`** | 若用户 prompt 不含 `application` / `disclosure` 关键词，必须 `vscode_askQuestions` 询问（`shared_workflow.md` § Phase 0 Actions 3） | 产出的文档类型错误 → 全部重做 |
-| 4 | **跳过 Phase 2 现有技术检索** | 即使 API key 缺失也必须走 WebSearch 兜底，且必须输出「最接近现有技术 + 区别特征 + 技术效果」三步分析（`shared_workflow.md` § Step 2.3-2.5 + Checkpoint 2） | 权利要求失去新颖性支撑 → 驳回风险 |
+| 4 | **跳过 Phase 2 现有技术检索** | 即使 API key 缺失也必须走 WebSearch 兜底，且必须输出「最接近现有技术 + 区别特征 + 技术效果」三步分析（`shared_workflow.md` § Step 2.4-2.6 + Checkpoint 2） | 权利要求失去新颖性支撑 → 驳回风险 |
 | 5 | **使用产品名 / 品牌名 / UI 术语**（如 iPhone、Google、点击按钮） | 替换为通用设备术语 / 标准专利表述，详见 [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions | 不符合中国专利法用语规范 → 形式审查驳回 |
 | 6 | **对从属权利要求的引用基础（antecedent basis）不做校验** | 每条从属权利要求引用的对象必须在此前已定义，为引入新术语前必须引用附图中对应的标记号（10/20/30...） | 引用无基础 → 驳回（实施细则第 22 条） |
 | 7 | **生成无文字描述的"裸图"** | 每张附图必须有对应的详细文字说明（含参考标号、功能描述、连接关系）。`disclosure` 中每个附图编号输出一次图题 + 一次文字描述 | 附图不清楚 → 驳回（专利法第 26 条第 3 款） |
 | 8 | **在权利要求中使用"优选地 / 优选的 / 大约 / 较佳"等模糊限定语** | 权利要求必须使用"用于...的...装置"/"包括...的步骤"等确定性语言，模糊限定语只可用于说明书中 | 权利要求不定 → 驳回（专利法第 26 条第 4 款） |
 | 9 | **在摘要中引用权利要求编号或使用"如权利要求 1 所述的..."句式** | 摘要独立于权利要求，≤300 字单段，无引用编号。摘要附图仅标注最有代表性的一幅 | 摘要格式不合格 → 形式审查驳回 |
-| 10 | **在 `--doc-type application` 中不提供 IPC 分类号** | Phase 2.6 必须识别 1-3 个 IPC 主分类号 + CPC 对应号（`shared_workflow.md` § Step 2.6） | 申请表不完整 → 不予受理 |
+| 10 | **在 `--doc-type application` 中不提供 IPC 分类号** | Phase 2 Step 2.7 必须识别 1-3 个 IPC 主分类号 + CPC 对应号（`shared_workflow.md` § Step 2.7） | 申请表不完整 → 不予受理 |
 | 11 | **把 Phase 1 中用户未确认的发明的理解直接用于 Phase 2 检索** | Phase 1 结束后必须经 🔴 CHECKPOINT 1 显示 4 要素并获用户确认，再进入 Phase 2 | 检索方向错误 → 对比文件不相关 |
 | 12 | **在 `--docx` 模式中跳过模板填充验证** | 运行 `fill_acip_template.py fill` 后必须检查其 stdout 的 `filled` / `skipped` 清单，任何 `skipped` 字段必须告知用户并征求处理方式 | 字段缺失 → 代理师退回 |
 
