@@ -123,7 +123,7 @@
 [详细描述]
 ```
 
-变化维度建议：
+变化维度（必选 3 项，从以下维度中各选一个方向）：
 - 数据流向（push/pull, sync/async）
 - 触发条件（time-based, event-based, threshold-based）
 - 模块边界（monolithic, distributed, edge-cloud）

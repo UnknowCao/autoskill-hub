@@ -141,30 +141,9 @@ curl -X POST 'https://api.exa.ai/search' \
 
 ## Application Form Format
 
-See `template.md` for the complete structural template. Key format requirements are provided below.
+完整的结构模板与 8 节顺序定义在 [`../assets/templates/standard_application.md`](../assets/templates/standard_application.md)（单一事实源）。撰写 `--doc-type application` 时直接加载该模板，此处不再重复以避免漂移。
 
-### Required Sections
-
-All patent applications must include the following sections **in this exact order**:
-
-1. **Abstract (摘要)** — ≤ 300 字, single paragraph, no claim-like limitations, indicates a representative abstract figure
-2. **Background Technology (背景技术)** — current state + technical problems
-3. **Search Analysis (检索分析)** — keywords + query + top 3 prior art + closest reference comparison
-4. **Invention Content (发明内容)** — core problem + solution overview + beneficial effects
-5. **Claims (权利要求书)** — independent claims (1-3) + dependent claims (10-20), correct antecedent basis
-6. **Drawings (说明书附图)** — ≥ 3 figures, brief description of drawings, unified reference numerals (10, 20, 30...)
-7. **Specific Implementation Modes (具体实施方式)** — ≥ 3 embodiments with structural variations
-8. **Others (其他)** — creative points + alternatives + defects
-
-> 注: 摘要 / 权利要求书 / 说明书附图 为中国专利法实施细则第 23 条及审查指南的强制要求,不可省略。
-
-### Implementation Requirements
-
-Provide at least 3 embodiments with variations in:
-- 数据流向 (push/pull, sync/async)
-- 触发条件 (time-based, event-based, threshold-based)
-- 模块边界 (monolithic, distributed, edge-cloud)
-- 处理位置 (local, remote, edge)
+> 注：摘要 / 权利要求书 / 说明书附图 为中国专利法实施细则第 23 条及审查指南的强制要求，不可省略。
 
 ---
 

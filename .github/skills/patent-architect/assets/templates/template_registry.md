@@ -7,10 +7,10 @@
 
 ## 已注册模板
 
-| Template ID | 名称 | 适用场景 | 输出本质 | 文件位置 |
-|-------------|------|---------|---------|---------|
-| `standard` ⭐ | 标准专利申请表 | 公司内部直接申请，含权利要求书/摘要 | 最终专利申请文件 | `templates/standard_application.md` |
-| `acip` | ACIP（华进）技术交底书 | 通过华进知识产权代理申请 | 发明人 → 代理师的交底材料 | `templates/acip_invention_disclosure.md` |
+| Template ID | 名称 | 适用场景 | 输出本质 | 支持 `--docx` | 文件位置 |
+|-------------|------|---------|---------|-------------|---------|
+| `standard` ⭐ | 标准专利申请表 | 公司内部直接申请，含权利要求书/摘要 | 最终专利申请文件 | ❌（仅 `--md` / `--lark`） | `assets/templates/standard_application.md` |
+| `acip` | ACIP（华进）技术交底书 | 通过华进知识产权代理申请 | 发明人 → 代理师的交底材料 | ✅（`fill_acip_template.py`） | `assets/templates/acip_invention_disclosure.md` |
 
 ⭐ `standard` 为默认模板，未指定 `--template` 时使用。
 
@@ -80,10 +80,10 @@
 
 取得第三方公司的原始 `.doc` / `.docx` 模板文件，存放到：
 ```
-c:\AI\.github\skills\patent-architect\raw_templates\<公司简称>_<模板类型>.<原扩展名>
+c:\AI\.github\skills\patent-architect\assets\raw_templates\<公司简称>_<模板类型>.<原扩展名>
 ```
 
-例如：`raw_templates/acip_invention_disclosure.doc`
+例如：`assets/raw_templates/acip_invention_disclosure.doc`
 
 ### 步骤 2：转换为 Markdown
 
@@ -99,7 +99,7 @@ $doc.Close(); $word.Quit()
 
 # .docx → .md
 cd c:\AI\.github\skills\markitdown-enhanced
-python scripts/_convert_core.py "<output.docx>" -o "templates/<new_template>.md"
+python scripts/_convert_core.py "<output.docx>" -o "assets/templates/<new_template>.md"
 ```
 
 ### 步骤 3：规范化 Markdown
