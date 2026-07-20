@@ -31,8 +31,9 @@ Save the generated document as a local Markdown file:
 
 Create the document as a Feishu cloud document:
 
-1. **CRITICAL** — Read `${CLAUDE_PLUGIN_ROOT}/skills/lark/lark-shared/SKILL.md` for authentication
-2. Read `${CLAUDE_PLUGIN_ROOT}/skills/lark/lark-doc/references/lark-doc-create.md` for Lark-flavored Markdown syntax and `docs +create` parameters
+1. **CRITICAL** — Read the Lark skill for authentication (located at `${CLAUDE_PLUGIN_ROOT}/skills/lark/lark-shared/SKILL.md` or equivalent skill directory). If the Lark skill is not installed, inform the user and auto-fallback to `--md` mode.
+   - **若 Lark 认证失败**（无 token / 过期 session / 网络错误）→ 告知用户 → 自动回退到 `--md` 模式，使用对应的 md 文件名规则
+2. Read the Lark doc creation reference for Lark-flavored Markdown syntax and `docs +create` parameters (located at `${CLAUDE_PLUGIN_ROOT}/skills/lark/lark-doc/references/lark-doc-create.md` or equivalent)
 3. Convert the document to Lark-flavored Markdown, applying these enhancements:
 
 | Section | Feishu Feature | Purpose |
@@ -85,8 +86,9 @@ Pass URL directly to `lark-cli` — no manual token extraction needed. Defaults 
 2. If not specified, infer from keywords in the user's prompt:
    - Mentioned agency name (华进 / ACIP / 华进联合 / 其他代理机构) → `disclosure`
    - Mentioned "交底书" / "交底" / "代理" / "代理人" → `disclosure`
-   - Mentioned "申请表" / "申请文件" / "权利要求" / "直接申请" → `application`
-3. If still ambiguous, **ask the user explicitly** using `vscode_askQuestions`:
+   - Mentioned "申请表" / "申请文件" / "直接申请" → `application`
+   - ⚠️ **关键规则：仅匹配用户显式意图中的关键词**（如"请帮我生成专利申请表"中的"申请表"），**发明内容描述中的词汇不作为 doc-type 信号**（如"一种专利权利要求自动撰写的方法"中的"权利要求"是发明主题，不是 doc-type 选择）。若无法区分，回退到 Actions 3（askQuestions）
+3. If still ambiguous after keyword filtering, **ask the user explicitly** using `vscode_askQuestions`:
    - Question: "你需要哪种文档？"
    - Options:
      - `application` — **专利申请表**（含权利要求书/摘要，公司内部直接申请用）
@@ -176,10 +178,10 @@ curl -X POST 'https://api.exa.ai/search' \
 - In the Checkpoint 2 report, note that novelty analysis is based solely on web search results, and recommend professional patent search for filing
 
 ### Step 2.4: WebSearch Fallback (Used when APIs unavailable)
-When API keys are not available, automatically use Claude's WebSearch tool:
-- Use the `WebSearch` tool to find relevant patent and technical information
+When API keys are not available, automatically use the available web search tool (e.g. `WebSearch` / `tavily_search` / `mcp_playwright_browser`):
+- Search for relevant patent and technical information using a general web search tool
 - Query format: "[user's invention description] prior art patent search comparative analysis"
-- Example: `WebSearch("[specific technical concept] prior art patent 2025")`
+- Example: search for "[specific technical concept] prior art patent 2025"
 
 ### Step 2.5: Parallel Web Search
 Perform web searches to gather comprehensive context regardless of API availability:
@@ -205,6 +207,11 @@ Search query patterns (customize based on invention):
 3. **Distinguishing Features**: Determine distinguishing features (区别技术特征)
 4. **Novelty Gaps**: Note any potential novelty gaps or white spaces
 5. **Feasibility Check**: Confirm technical feasibility from implementation sources
+
+**若未找到任何相关现有技术**（所有搜索方法均返回 0 结果）：
+- 将此标记为"新颖性初步确认（无已知现有技术）"
+- 🔴 在 Checkpoint 2 中向用户说明此情况，并建议委托专业专利检索机构做全面的专利性检索
+- **禁止直接得出结论为"全球首创"**——网络搜索覆盖范围有限，可能存在未收录的专利/论文
 
 ### Step 2.7: IPC Classification
 

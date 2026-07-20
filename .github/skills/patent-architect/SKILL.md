@@ -176,7 +176,7 @@ Reference these files within this directory for detailed specifications:
 |---|------|---------|------|
 | 1 | **在 `disclosure` 中撰写权利要求书** | 交底书由代理师后续撰写权利要求，发明人只需交底技术方案（`shared_workflow.md` § Phase 3D Actions） | 侵占代理师职责 → 文档作废 |
 | 2 | **在等待用户确认的 🔴 CHECKPOINT 处继续执行** | 每个 CHECKPOINT 标记处**必须暂停**并等待用户明确"通过/修改/重写"，不自动继续（`SKILL.md` § Phase 3A/3D） | 未经确认的输出不可用 → 重做 |
-| 3 | **在 Phase 0 未确认 doc-type 时默认走 `application`** | 若用户 prompt 不含 `application` / `disclosure` 关键词，必须 `vscode_askQuestions` 询问（`shared_workflow.md` § Phase 0 Actions 3） | 产出的文档类型错误 → 全部重做 |
+| 3 | **在 Phase 0 未确认 doc-type 时默认走 `application`** | 若用户 prompt 经关键词过滤（排除发明内容描述中的词汇）后仍无法唯一确定 doc-type，必须 `vscode_askQuestions` 询问（`shared_workflow.md` § Phase 0 Actions 2-3）。**发明内容描述中的关键词（如"权利要求"在"一种专利权利要求自动撰写的方法"中）不作为 doc-type 信号** | 产出的文档类型错误 → 全部重做 |
 | 4 | **跳过 Phase 2 现有技术检索** | 即使 API key 缺失也必须走 WebSearch 兜底，且必须输出「最接近现有技术 + 区别特征 + 技术效果」三步分析（`shared_workflow.md` § Step 2.4-2.6 + Checkpoint 2） | 权利要求失去新颖性支撑 → 驳回风险 |
 | 5 | **使用产品名 / 品牌名 / UI 术语**（如 iPhone、Google、点击按钮） | 替换为通用设备术语 / 标准专利表述，详见 [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions | 不符合中国专利法用语规范 → 形式审查驳回 |
 | 6 | **对从属权利要求的引用基础（antecedent basis）不做校验** | 每条从属权利要求引用的对象必须在此前已定义，为引入新术语前必须引用附图中对应的标记号（10/20/30...） | 引用无基础 → 驳回（实施细则第 22 条） |
