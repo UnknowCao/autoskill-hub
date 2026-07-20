@@ -95,7 +95,7 @@ Pass URL directly to `lark-cli` — no manual token extraction needed. Defaults 
      - `disclosure` — **技术交底书**（发明人→代理师交底用，如华进 ACIP）
      - Let user pick; do NOT proceed without a clear answer
 4. Once decided, load the corresponding template from `assets/templates/<template>.md`
-5. Briefly confirm to the user: "将以 **[文档类型]** 模板生成文档，输出格式：[md/lark]"
+5. 向用户显式确认文档类型与输出格式："将以 **[文档类型]** 模板生成文档，输出格式：[md/lark/docx]"
 
 **Output**: Confirmed `doc-type` + loaded template path.
 

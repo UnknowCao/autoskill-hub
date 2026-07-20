@@ -1,33 +1,36 @@
 """
-Fill disclosure templates with new invention content.
+Fill the ACIP (华进) invention disclosure .docx template with content.
 
-This is the generic template-filling tool for `patent-architect` skill.
-It supports any registered agency template (ACIP, etc.) via a template
-config that maps field names to (table_index, row, col) positions.
+CURRENT SCOPE: ACIP-only. The TEMPLATES dict below currently registers
+only the `acip` template, and the 16 field coordinates (row, col) are
+hard-coded against ACIP's specific .docx table layout. Despite the
+config-driven shape (TEMPLATES dict + --template flag), this script is
+NOT yet a multi-agency tool — adding another agency requires deriving
+new (row, col) coordinates and field names for that template.
+
+The `inspect` subcommand IS generic: it prints any .docx's table layout
+(merged-cell aware) to help derive coordinates when onboarding a new
+agency. See SKILL.md "Adding a new agency template" for the workflow.
 
 Usage
 -----
-1. Fill a template with content from JSON:
-     python fill_disclosure_template.py fill \
+1. Fill the ACIP template with content from JSON:
+     python fill_acip_template.py fill \
          --template acip \
          --content invention.json \
-         --output "Disclosure-ARGesture-20260720.docx"
+         --output "Disclosure-ACIP-ARGesture-20260720.docx"
 
    If --content is omitted, a built-in sample (AR gesture) is used for testing.
 
-2. Inspect a new template's table structure (for adding new agencies):
-     python fill_disclosure_template.py inspect \
-         --docx "path/to/new_template.docx"
+2. Inspect any .docx template's table structure (for onboarding new agencies):
+     python fill_acip_template.py inspect \
+         --docx "path/to/new_agency_template.docx"
 
    This prints each table's row/column layout with merged-cell detection,
    so you can derive the field->(row,col) mapping for a new template config.
 
 3. List registered templates:
-     python fill_disclosure_template.py list
-
-Template configs live in `templates/registry.md` (human-readable) and are
-mirrored as constants below. When adding a new template, register both here
-(in TEMPLATES) and in registry.md.
+     python fill_acip_template.py list
 
 Author: patent-architect skill
 """
@@ -46,7 +49,7 @@ from docx.oxml.ns import qn
 
 
 # ===========================================================================
-# Template registry — programmatic mirror of templates/registry.md
+# Template registry — programmatic mirror of assets/templates/template_registry.md
 # ===========================================================================
 # Each template defines:
 #   docx_path : relative path (from skill root) to the original .docx template
@@ -60,7 +63,7 @@ from docx.oxml.ns import qn
 
 TEMPLATES: Dict[str, dict] = {
     "acip": {
-        "docx_path": "raw_templates/acip_invention_disclosure.docx",
+        "docx_path": "assets/raw_templates/acip_invention_disclosure.docx",
         "table_idx": 1,   # ACIP puts the instructions in table 0, main form in table 1
         "fields": {
             # Header rows
@@ -285,7 +288,7 @@ SAMPLE_CONTENT = {
 # ===========================================================================
 def main():
     parser = argparse.ArgumentParser(
-        prog="fill_disclosure_template",
+        prog="fill_acip_template",
         description="Fill patent disclosure templates with content",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
