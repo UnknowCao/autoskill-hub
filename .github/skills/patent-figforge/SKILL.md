@@ -77,6 +77,8 @@ This skill provides **patent drafting knowledge** — you write Graphviz DOT cod
 | 框图/系统/模块/block diagram | **Block Diagram** | `rankdir=TB` | All `shape=box`, border styles differentiate types |
 | 架构/层级/hierarchy | **Hierarchy** | `rankdir=TB` 或 `LR` | `shape=box`, nested with `rank=same` |
 
+🔴 **CHECKPOINT**: 确认图类型后再进入 Step 2。不确定时向用户展示上表请用户选择。
+
 ### Step 2: Write DOT code with patent rules
 
 Write DOT code following the shape specs, layout rules, and line specs in this skill. Key boilerplate:
@@ -105,9 +107,11 @@ dot -Tsvg diagram.dot -o output.svg
 
 Also available: `-Tpng`, `-Tpdf`. Use `-Kneato` / `-Kfdp` / `-Kcirco` / `-Ktwopi` for alternative layout engines.
 
+🔴 **CHECKPOINT**: 渲染后立即检查：(a) `dot` 退出码=0？(b) SVG 文件 > 0 bytes？(c) 用浏览器/图片查看器打开确认显示正常。任一失败 → 查 Failure Modes 表。全部通过 → 进入 Step 4。
+
 ### Step 4: Run pre-submission checklist
 
-Go through the 12-item checklist at the bottom of this skill. Fix any violations before finalizing.
+🛑 **STOP · 阻塞门**: 逐项核对下方 12 项清单。**未全部通过前不得交付给用户**。每项不通过必须修复后重新核对。全部 12 项通过后才能进入 Presentation Format 交付流程。
 
 ## Quick-Start Templates
 
@@ -380,7 +384,9 @@ When delivering diagrams to the user:
    ```
 5. **Confirm checklist passed**: "Pre-submission checklist: 12/12 passed."
 
-## 提交前检查清单 (Pre-Submission Checklist)
+## 🛑 提交前检查清单 (Pre-Submission Checklist) — 阻塞门
+
+> **未全部通过此清单前，禁止交付给用户。** 逐项核对，不通过必须修复。
 
 生成专利图后，逐项核对：
 
