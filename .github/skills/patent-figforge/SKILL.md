@@ -17,29 +17,7 @@ Invoke this skill when users ask to:
 - 加引线标注编号 / Add reference numbers with lead lines to diagrams
 - 生成专利附图 / Generate patent figures (USPTO / CNIPA)
 
-## What This Skill Does
-
-1. **Flowchart Generation**:
-   - Method step flowcharts
-   - Decision trees
-   - Process flows with branches
-   - Patent-style step numbering
-
-2. **Block Diagram Creation**:
-   - System component diagrams
-   - Hardware architecture diagrams
-   - Software module diagrams
-   - Component interconnections
-
-3. **Custom Diagram Rendering**:
-   - Render Graphviz DOT code
-   - Support multiple formats (SVG, PNG, PDF)
-   - Multiple layout engines (dot, neato, fdp, circo, twopi)
-
-4. **Patent-Style Formatting**:
-   - Add reference numbers (10, 20, 30, etc.)
-   - Use clear labels and connections
-   - Professional formatting for USPTO filing
+This skill covers three diagram types (flowchart / block diagram / hierarchy), three output formats (SVG / PNG / PDF), five layout engines, and full patent formatting with lead-line reference numbers. See **Workflow** below for the step-by-step process and **Shape Types** / **专利附图通用规范** for detailed specs.
 
 ## Required Dependencies
 
@@ -234,14 +212,6 @@ digraph BlockDiagram {
 ✓ 垂直连线从框边锚点直出
 ```
 
-## Layout Engines
-
-- `dot`: Hierarchical (top-down/left-right)
-- `neato`: Spring model layout
-- `fdp`: Force-directed layout
-- `circo`: Circular layout
-- `twopi`: Radial layout
-
 ## 专利附图通用规范
 
 > 基于 USPTO 37 CFR §1.84、CNIPA 审查指南 §4.3 及专利代理行业惯例
@@ -306,10 +276,6 @@ USPTO：足够清晰可辨，实际建议 ≥ 12pt
 | **SVG** | 编辑、归档 | 矢量优先，推荐格式 |
 | **PDF** | 正式提交 | USPTO/CNIPA 直接提交 |
 | **PNG** | 预览、嵌入 | DPI ≥ 300 |
-
-- `svg`: Scalable Vector Graphics (best for editing)
-- `png`: Raster image (good for viewing)
-- `pdf`: Portable Document Format (USPTO compatible)
 
 ## Patent-Style Reference Numbers (Lead Lines) — 专利图最核心特征
 
@@ -418,25 +384,6 @@ When delivering diagrams to the user:
 | 使用圆角框 | 非专业工程图风格 | 直角框 `shape=box` |
 | 图上加标题 | 专利图不这么做 | 仅底部 "图1" |
 | 彩色填充（B&W 模式） | 不符合提交要求 | 白色填充 |
-
-## Common Use Cases
-
-1. **Method Claims** → Flowcharts
-   - Show sequential steps
-   - Include decision branches
-   - Number steps (S1, S2, S3...)
-   - Follow layout: TB direction, safe-channel arrow routing
-
-2. **System Claims** → Block Diagrams
-   - Show components and connections
-   - Use reference numbers with lead lines (框外标注)
-   - Indicate data flow directions
-   - Use border styles to distinguish component types (not colors)
-
-3. **Architecture Diagrams** → Custom DOT
-   - Complex system layouts
-   - Multiple interconnections
-   - Hierarchical structures
 
 ## Failure Modes & Recovery
 
