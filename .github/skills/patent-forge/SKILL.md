@@ -9,6 +9,22 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 > ⚖️ **法律免责声明**：Patent Forge 产出的文档为 AI 辅助生成的技术草稿，**不构成法律意见**。提交专利申请前，必须由具备执业资质的专利代理师或专利律师审核。本 skill 无法替代专业法律服务。最终递交文件的法律责任由申请人/代理机构承担。
 
+## Quick Decision（10 秒判定）
+
+```
+用户说 "帮我写专利/交底书/申请文件" ？
+  ├─ 含 "交底书/代理/华进/ACIP/三环" → disclosure（交底书，代理师写权利要求）
+  │    └─ 含 "--docx" → 填 .docx 模板；否则 → --md
+  └─ 含 "申请表/申请文件" 或无代理关键词 → application（申请表，含权利要求书）
+       └─ 产出: 权利要求 1-3 独立 + 10-20 从属 + 摘要 ≤300字 + 附图 ≥3 + 实施方式 ≥3
+
+⚠️ 关键规则：发明内容描述中的词不算 doc-type 信号！
+  例："一种专利权利要求自动撰写的方法"中的 "权利要求" 是发明主题，不触发 application
+  例："一种智能交底书生成系统"中的 "交底书" 是发明主题，不触发 disclosure
+  仅用户显式意图关键词（"帮我写申请表"/"通过华进提交交底书"）才是信号
+  无法判定？→ askQuestions 询问用户
+```
+
 ## Output Document Type (`--doc-type`)
 
 **The user chooses ONE of two document types.** This is the most important decision — ask explicitly in Phase 0 if not specified.
