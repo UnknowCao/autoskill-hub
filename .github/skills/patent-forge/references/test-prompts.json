@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "category": "happy_path_application",
+    "prompt": "我有一个发明想法:基于电池内阻实时估计的 SOH 健康度在线监测方法,通过交流注入+EKF 估算内阻,再通过内阻-容量映射表推导 SOH。帮我生成完整的中国专利申请文件。",
+    "expected": "应自动判定 doc-type=application,执行 Phase 1-3,产出含权利要求书+摘要+说明书附图+具体实施方式的完整申请表;权利要求独立 1-3 条+从属 10-20 条;附图参考标号统一编排;显式标记 Checkpoint 复述确认"
+  },
+  {
+    "id": 2,
+    "category": "disclosure_acip_docx",
+    "prompt": "帮我把这个想法做成华进 ACIP 的技术交底书,要 --docx 输出,内容是:一种基于多摄像头融合的 AR 眼睛疲劳检测系统,硬件含三颗 IR 摄像头+一颗 RGB,软件含眼睑闭合度 PERCLOS 算法+头部姿态补偿。",
+    "expected": "应识别华进/ACIP 关键词→doc-type=disclosure;--docx 模式;走 acip 模板 9 节结构;第四节详细阐述占 ≥60% 篇幅,分硬件结构+控制方法两个维度;每张图都有文字描述;调用 scripts/fill_acip_template.py"
+  },
+  {
+    "id": 3,
+    "category": "edge_case_no_doc_type_specified",
+    "prompt": "我想保护一个发明:一种用 LLM 做专利权利要求自动撰写的方法。请帮我生成专利文档。",
+    "expected": "doc-type 未指定且无代理机构关键词→Phase 0 必须显式 askQuestions 询问 application vs disclosure,不应直接默认走 application;用户确认后才加载对应模板"
+  },
+  {
+    "id": 4,
+    "category": "domain_mechanical_structure",
+    "prompt": "帮我写一份专利申请表:一种可折叠的电动汽车充电桩结构,包括底座、升降立柱、折叠臂和充电枪收纳槽,折叠臂展开后充电枪可覆盖左右各 45° 范围,收纳时整体高度不超过 80cm。",
+    "expected": "应自动判定 application;Phase 1 识别机械结构类发明(非纯软件);Phase 3A 附图须含结构示意图(非纯流程图);具体实施方式覆盖至少 3 个实施例(不同折叠机构/驱动方式);权利要求应覆盖结构特征(底座/立柱/折叠臂/收纳槽的机械连接关系);不应强制要求软件/算法类权利要求"
+  },
+  {
+    "id": 5,
+    "category": "boundary_all_search_fails",
+    "prompt": "我有一个想法:一种基于量子隧穿效应的新型非易失性存储单元。帮我做成专利申请表。注:我没有 SerpAPI key,也没有 Exa.ai key。",
+    "expected": "Phase 2 Step 2.1 检测到 API key 缺失→自动走 WebSearch 兜底;Step 2.5 执行网页搜索;若所有搜索均 0 结果→标记'新颖性初步确认(无已知现有技术)',禁止断言'全球首创';Checkpoint 2 中建议委托专业检索机构;审计日志记录所有尝试方法;不应因 API key 缺失而跳过 Phase 2"
+  },
+  {
+    "id": 6,
+    "category": "disclosure_other_agency",
+    "prompt": "我要通过三环专利代理所提交一个发明:一种基于联邦学习的车载语音助手个性化训练方法。请生成技术交底书。",
+    "expected": "识别'三环专利代理所'→doc-type=disclosure;若 template_registry.md 中有三环模板则加载,若无则回退到通用交底书模板(acip_invention_disclosure.md)并告知用户;9 节结构;第四节详细阐述占 ≥60%;不应在交底书中撰写权利要求书(Anti-Pattern #1)"
+  },
+  {
+    "id": 7,
+    "category": "edge_case_severely_incomplete_info",
+    "prompt": "我想申请一个关于'智能推荐'的专利,帮我写一下。",
+    "expected": "Phase 1 结构化访谈触发:发明描述极度模糊→追问 4 要素(技术领域/技术问题/技术方案/技术效果);最多 3 轮访谈→若仍不足 4/5 项→触发 Checkpoint 1-warning,展示已收集信息+缺失项清单,请用户选择①补充或②缩减范围继续;禁止在用户确认前进入 Phase 2;不应自行编造发明细节填补空白"
+  }
+]
