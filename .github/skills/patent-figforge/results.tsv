@@ -1,0 +1,7 @@
+timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
+2026-07-22T10:00	baseline	patent-figforge	-	74.0	baseline	-	初始评估: D8=5.83/10 (3 judges avg)	full_test
+2026-07-22T10:15	ddc919a	patent-figforge	74.0	-	keep	D2/D6	R1: add hierarchy skeleton + shape-specs + failure modes + reference	full_test
+2026-07-22T10:20	fd48342	patent-figforge	-	-	keep	D3/D5	R2: add flowchart decision exit convention + loop-back routing + anti-patterns 11-13	full_test
+2026-07-22T10:25	986d775	patent-figforge	-	-	keep	D2/D7	R3: surface reference content with inline cross-references	full_test
+2026-07-22T10:35	6537421	patent-figforge	-	-	keep	-	fix: restore missing headers	full_test
+2026-07-22T10:40	0da8709	patent-figforge	-	83.4	keep	D5	R4: fix invisible node rank anchoring in loop-back pattern	full_test
