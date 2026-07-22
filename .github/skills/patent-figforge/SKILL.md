@@ -1,6 +1,6 @@
 ---
 name: patent-figforge
-description: "Patent-ready technical diagrams via Graphviz DOT."
+description: "Patent-ready technical diagrams via Graphviz DOT. 专利附图：流程图、系统框图、架构图。"
 ---
 
 # Patent Figforge
