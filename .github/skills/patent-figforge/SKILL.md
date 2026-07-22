@@ -37,7 +37,13 @@ digraph PatentFigure {
     rankdir=TB;  bgcolor=white;  fontname="Arial";
     node [fontname="Arial", fontsize=14, fontcolor=black, color=black];
     edge [fontname="Arial", fontsize=11, fontcolor=black, color=black];
-    // nodes & edges here
+
+    // Example: box + lead-line reference number
+    cpu [label="Processor", shape=box];
+    r10 [label="10", shape=plaintext, fontsize=11];
+    edge [style=dotted, penwidth=0.35, arrowhead=none, constraint=false];
+    r10 -> cpu;
+
     label="图1";  labelloc="b";  fontsize=12;
 }
 ```
