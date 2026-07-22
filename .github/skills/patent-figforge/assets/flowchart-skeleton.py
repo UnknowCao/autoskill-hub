@@ -37,7 +37,12 @@ g.edge('dec1:w', 'end',   label='否')    # No  → left tip of diamond
 
 # === Loop-back pattern (uncomment to use) ===
 # For "否 returns to earlier step" patterns, use invisible routing nodes:
-# g.node('route1', '', shape='point', width='0')         # invisible node in safe channel
+# g.node('route1', '', shape='point', width='0')         # invisible node
+# # Anchor to the rank of the step it returns TO (prevents floating to rank 0):
+# with g.subgraph() as s:
+#     s.attr(rank='same')
+#     s.node('route1')
+#     s.node('step1')                                     # the step loop-back returns to
 # g.edge('dec1:s', 'route1', label='否', constraint='false')
 # g.edge('route1', 'step1', constraint='false')           # route back to earlier step
 

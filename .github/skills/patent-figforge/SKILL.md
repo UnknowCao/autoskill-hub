@@ -90,18 +90,25 @@ g.edge('dec1', 'step_yes', label='是')
 
 **Loop-back routing** (e.g., "否" returns to an earlier step):
 
-Loop-backs are the most common flowchart pattern and the hardest to route correctly. Use invisible intermediate nodes to create "safe channel" paths:
+Loop-backs are the most common flowchart pattern and the hardest to route correctly. Use invisible intermediate nodes **anchored to a nearby rank** to create "safe channel" paths:
 
 ```python
-# Step 1: Create invisible routing node in the inter-row gap
+# Step 1: Create invisible routing node
 g.node('route_back', '', shape='point', width='0')
 
-# Step 2: Route the loop-back through the invisible node
+# Step 2: Anchor it to the same rank as a nearby process node
+# ⚠️ Without rank anchoring, constraint='false' nodes float to rank 0
+with g.subgraph() as s:
+    s.attr(rank='same')
+    s.node('route_back')
+    s.node('nearby_step')       # e.g., the step the loop-back returns to
+
+# Step 3: Route the loop-back through the anchored node
 g.edge('dec1:w', 'route_back', label='否', constraint='false')
 g.edge('route_back', 'earlier_step', constraint='false')
 ```
 
-> **Principle**: Every horizontal edge segment travels in an inter-row safe channel. Never cut diagonally across boxes. See `references/shape-specs.md` § Arrow Routing Rule.
+> **Principle**: Every horizontal edge segment travels in an inter-row safe channel. Never cut diagonally across boxes. Rank-anchoring ensures the invisible node stays in the correct inter-row gap. See `references/shape-specs.md` § Arrow Routing Rule.
 
 ### Step 3: Render
 
@@ -169,6 +176,7 @@ Engines: `dot` / `neato` / `fdp` / `circo` / `twopi`.
 | Output file too large | PNG: reduce DPI; SVG: simplify nodes | Split into sub-figures |
 | Cluster disappears (hierarchy) | Set `newrank='true'` in `graph_attr` | Replace `rank='same'` inside clusters with `style='invis'` edges (see shape-specs.md § Hierarchy) |
 | Decision branch exits wrong side | Set `splines='polyline'`; add port hints `:e`/`:w` on edges | Route through invisible intermediate nodes placed beside diamond |
+| Loop-back routing node floats to top | Anchor invisible node to a process node with `rank='same'` subgraph (see Flowchart specifics § Loop-back) | Add `weight='100'` on the rank-anchoring edge |
 
 ## References
 
