@@ -29,13 +29,19 @@ g.node('step2', '步骤二', shape='box', width='3.0', height='0.6')
 # End
 g.node('end', '结束', shape='ellipse', width='1.8', height='0.5')
 
-# Flow edges
+# Flow edges — use port hints (:e/:w/:s/:n) to control exit direction
 g.edge('start', 'step1')
 g.edge('step1', 'dec1')
-g.edge('dec1', 'step2', label='是')
-g.edge('dec1', 'end', label='否')
+g.edge('dec1:e', 'step2', label='是')    # Yes → right tip of diamond
+g.edge('dec1:w', 'end',   label='否')    # No  → left tip of diamond
 
-# Lead lines — see references/numbering.md for pattern
+# === Loop-back pattern (uncomment to use) ===
+# For "否 returns to earlier step" patterns, use invisible routing nodes:
+# g.node('route1', '', shape='point', width='0')         # invisible node in safe channel
+# g.edge('dec1:s', 'route1', label='否', constraint='false')
+# g.edge('route1', 'step1', constraint='false')           # route back to earlier step
+
+# Reference numbers — see references/numbering.md for pattern
 # g.node('r10', '10', shape='plaintext', fontsize='11')
 # g.edge('r10', 'step1', style='dotted', penwidth='0.35', arrowhead='none', constraint='false')
 

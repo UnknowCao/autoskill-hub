@@ -68,6 +68,39 @@ Skeletons: `assets/flowchart-skeleton.py`, `assets/block-diagram-skeleton.py`, `
 - Inter-layer arrows: connect specific components, not layer-to-layer; label in Chinese (CNIPA) or English (USPTO)
 - See `references/shape-specs.md` § Hierarchy for full layout rules
 
+#### Flowchart specifics
+
+**Decision exit convention** (critical for patent compliance):
+
+| Branch | Exits from | Port hint |
+|--------|-----------|-----------|
+| **是 (Yes)** | Diamond **right** tip | `:e` |
+| **否 (No)** | Diamond **bottom** tip (or left) | `:s` or `:w` |
+
+```python
+# ✅ RIGHT — port hints control exit direction:
+g.edge('dec1:e', 'step_yes', label='是')
+g.edge('dec1:s', 'step_no',  label='否')
+
+# ❌ WRONG — no port hint: graphviz may route 是 left, 否 right
+g.edge('dec1', 'step_yes', label='是')
+```
+
+**Loop-back routing** (e.g., "否" returns to an earlier step):
+
+Loop-backs are the most common flowchart pattern and the hardest to route correctly. Use invisible intermediate nodes to create "safe channel" paths:
+
+```python
+# Step 1: Create invisible routing node in the inter-row gap
+g.node('route_back', '', shape='point', width='0')
+
+# Step 2: Route the loop-back through the invisible node
+g.edge('dec1:w', 'route_back', label='否', constraint='false')
+g.edge('route_back', 'earlier_step', constraint='false')
+```
+
+> **Principle**: Every horizontal edge segment travels in an inter-row safe channel. Never cut diagonally across boxes. See `references/shape-specs.md` § Arrow Routing Rule.
+
 ### Step 3: Render
 
 ```python
@@ -115,6 +148,9 @@ Engines: `dot` / `neato` / `fdp` / `circo` / `twopi`.
 | 8 | Box w/h ≈ 1:1 | 🟡 | ≥ 3:1 via `width`/`height` |
 | 9 | Tall diamond | 🟡 | Flat, w/h ≈ 2:1 |
 | 10 | Gradients/shadows | 🟡 | Pure black lines |
+| 11 | 是 exits left / 否 exits right | 🔴 | Port hints: `dec1:e` (是→right), `dec1:w` or `:s` (否→left/bottom) |
+| 12 | Loop-back cuts through flow | 🔴 | Invisible intermediate node in safe channel (see Flowchart specifics) |
+| 13 | Decision branches not labeled | 🟡 | Always `label='是'` / `label='否'` on decision edges |
 
 ## Failure Modes
 
