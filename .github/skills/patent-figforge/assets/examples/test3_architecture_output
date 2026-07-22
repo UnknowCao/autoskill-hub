@@ -1,0 +1,59 @@
+digraph SystemArchitecture {
+	graph [bgcolor=white fontname="Microsoft YaHei" newrank=true rankdir=TB splines=polyline]
+	node [color=black fontcolor=black fontname="Microsoft YaHei" fontsize=14 penwidth=0.6]
+	edge [color=black fontcolor=black fontname="Microsoft YaHei" fontsize=11 penwidth=0.6]
+	fontname="Microsoft YaHei" fontsize=14 label="图1" labelloc=b
+	sensor [label="传感器
+(Sensor)" height=0.8 shape=box width=3.0]
+	daq [label="数据采集
+(DAQ)" height=0.8 shape=box width=3.0]
+	ecu [label="域控制器
+(Domain ECU)" height=0.8 shape=box width=3.0]
+	algo [label="算法
+(Algorithm)" height=0.8 shape=box width=3.0]
+	motor [label="电机
+(Motor)" height=0.8 shape=box width=3.0]
+	brake [label="制动
+(Brake)" height=0.8 shape=box width=3.0]
+	r10 [label=10 fontsize=11 shape=plaintext]
+	r20 [label=20 fontsize=11 shape=plaintext]
+	r30 [label=30 fontsize=11 shape=plaintext]
+	r40 [label=40 fontsize=11 shape=plaintext]
+	r50 [label=50 fontsize=11 shape=plaintext]
+	r60 [label=60 fontsize=11 shape=plaintext]
+	subgraph cluster_perception {
+		color=black fontcolor=black fontname="Microsoft YaHei" fontsize=13 label="感知层" labeljust=l penwidth=0.6 style=dashed
+		sensor
+		daq
+	}
+	subgraph cluster_decision {
+		color=black fontcolor=black fontname="Microsoft YaHei" fontsize=13 label="决策层" labeljust=l penwidth=0.6 style=dashed
+		ecu
+		algo
+	}
+	subgraph cluster_execution {
+		color=black fontcolor=black fontname="Microsoft YaHei" fontsize=13 label="执行层" labeljust=l penwidth=0.6 style=dashed
+		motor
+		brake
+	}
+	sensor -> daq [style=invis]
+	ecu -> algo [style=invis]
+	motor -> brake [style=invis]
+	r10 -> sensor [style=invis]
+	r20 -> daq [style=invis]
+	r30 -> ecu [style=invis]
+	r40 -> algo [style=invis]
+	r50 -> motor [style=invis]
+	r60 -> brake [style=invis]
+	sensor -> ecu [label="传感数据"]
+	daq -> ecu [label="采集数据"]
+	ecu -> motor [label="驱动指令"]
+	algo -> ecu [label="控制策略" constraint=false]
+	motor -> brake [label="协同" constraint=false]
+	r10 -> sensor [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r20 -> daq [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r30 -> ecu [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r40 -> algo [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r50 -> motor [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r60 -> brake [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+}

@@ -1,0 +1,72 @@
+digraph ChargingFlowchart {
+	graph [bgcolor=white fontname="Microsoft YaHei" rankdir=TB splines=polyline]
+	node [color=black fontcolor=black fontname="Microsoft YaHei" fontsize=14 penwidth=0.6]
+	edge [color=black fontcolor=black fontname="Microsoft YaHei" fontsize=11 penwidth=0.6]
+	fontname="Microsoft YaHei" fontsize=14 label="图1" labelloc=b
+	start [label="开始" height=0.5 shape=ellipse width=1.8]
+	end [label="结束" height=0.5 shape=ellipse width=1.8]
+	detect [label="检测连接" height=0.6 shape=box width=3.0]
+	start_chg [label="启动充电" height=0.6 shape=box width=3.0]
+	monitor [label="监测充满" height=0.6 shape=box width=3.0]
+	stop_chg [label="停止充电" height=0.6 shape=box width=3.0]
+	continue_chg [label="继续充电" height=0.6 shape=box width=3.0]
+	dec_conn [label="连接成功?" height=1.4 shape=diamond width=2.8]
+	dec_full [label="充满?" height=1.4 shape=diamond width=2.8]
+	start -> detect
+	detect -> dec_conn
+	dec_conn -> start_chg [label="是"]
+	start_chg -> monitor
+	monitor -> dec_full
+	dec_full -> stop_chg [label="是"]
+	stop_chg -> end
+	dec_conn -> detect [label="否" constraint=false]
+	dec_full -> continue_chg [label="否"]
+	continue_chg -> monitor [constraint=false]
+	{
+		rank=same
+		stop_chg
+		continue_chg
+	}
+	r10 [label=10 fontsize=11 shape=plaintext]
+	r20 [label=20 fontsize=11 shape=plaintext]
+	r30 [label=30 fontsize=11 shape=plaintext]
+	r40 [label=40 fontsize=11 shape=plaintext]
+	r50 [label=50 fontsize=11 shape=plaintext]
+	r60 [label=60 fontsize=11 shape=plaintext]
+	{
+		rank=same
+		detect
+		r10
+	}
+	{
+		rank=same
+		dec_conn
+		r20
+	}
+	{
+		rank=same
+		start_chg
+		r30
+	}
+	{
+		rank=same
+		monitor
+		r40
+	}
+	{
+		rank=same
+		dec_full
+		r50
+	}
+	{
+		rank=same
+		continue_chg
+		r60
+	}
+	r10 -> detect [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r20 -> dec_conn [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r30 -> start_chg [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r40 -> monitor [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r50 -> dec_full [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+	r60 -> continue_chg [arrowhead=none constraint=false penwidth=0.35 style=dotted]
+}

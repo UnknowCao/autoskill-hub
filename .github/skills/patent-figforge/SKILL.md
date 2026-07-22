@@ -27,11 +27,11 @@ pip install graphviz
 
 ### Step 1: Determine diagram type
 
-| User says | Type | Direction | Node shapes |
-|-----------|------|-----------|-------------|
-| 流程图/方法/flowchart | **Flowchart** | `rankdir='TB'` | ellipse → box → diamond → ellipse |
-| 框图/系统/block diagram | **Block Diagram** | `rankdir='TB'` | All `shape='box'` |
-| 架构/层级/hierarchy | **Hierarchy** | `rankdir='TB'` or `'LR'` | `shape='box'`, `rank='same'` |
+| User says | Type | Direction | Node shapes | Skeleton |
+|-----------|------|-----------|-------------|----------|
+| 流程图/方法/flowchart | **Flowchart** | `rankdir='TB'` | ellipse → box → diamond → ellipse | `flowchart-skeleton.py` |
+| 框图/系统/block diagram | **Block Diagram** | `rankdir='TB'` | All `shape='box'` | `block-diagram-skeleton.py` |
+| 架构/层级/hierarchy | **Hierarchy** | `rankdir='TB'` or `'LR'` | `shape='box'`, cluster groups | `hierarchy-skeleton.py` |
 
 🔴 **CHECKPOINT**: confirm type before Step 2. If unsure, show this table to user.
 
@@ -48,7 +48,7 @@ g = graphviz.Digraph(
     edge_attr={'fontname': 'Microsoft YaHei', 'fontsize': '11', 'fontcolor': 'black',
                'color': 'black', 'penwidth': '0.6'},
 )
-g.attr(label='图1', labelloc='b', fontsize='12')
+g.attr(label='图1', labelloc='b', fontsize='14')
 
 # Example: box + lead-line reference number
 g.node('cpu', 'Processor', shape='box')
@@ -57,7 +57,16 @@ g.edge('r10', 'cpu', style='dotted', penwidth='0.35',
        arrowhead='none', constraint='false')
 ```
 
-Skeletons: `assets/flowchart-skeleton.py`, `assets/block-diagram-skeleton.py`.
+Skeletons: `assets/flowchart-skeleton.py`, `assets/block-diagram-skeleton.py`, `assets/hierarchy-skeleton.py`.
+
+#### Hierarchy specifics
+
+- Use `subgraph cluster_*` for layer grouping with `label='层名'`, `labeljust='l'`, `style='dashed'`
+- Set `newrank='true'` in `graph_attr` to prevent rank/cluster conflicts
+- **⚠️ Do NOT use `rank='same'` subgraphs inside clusters** — Graphviz drops clusters silently. Use invisible edges (`style='invis'`) for intra-layer alignment instead
+- Layer labels: `fontsize='13'`, top-left justified
+- Inter-layer arrows: connect specific components, not layer-to-layer; label in Chinese (CNIPA) or English (USPTO)
+- See `references/shape-specs.md` § Hierarchy for full layout rules
 
 ### Step 3: Render
 
@@ -70,15 +79,12 @@ Engines: `dot` / `neato` / `fdp` / `circo` / `twopi`.
 
 🔴 **CHECKPOINT**: verify (a) no Python exception (b) output file > 0 bytes (c) opens correctly. Fail → see Failure Modes.
 
-### Step 4: Checklist
-
-🛑 **STOP · BLOCKING GATE**: run 12-item checklist below. **Do NOT deliver until all pass.**
-
 ## Critical Rules
 
 - `shape='box'` (**sharp**, NEVER rounded), B&W only, no color fills
 - Flowchart: `rankdir='TB'`, box w/h ≥ 3:1, diamond w/h ≈ 2:1, flat ellipse start/end
 - Block diagram: sensor=`style='solid'`, processor=`style='solid'`, storage=`style='dashed'`, decision=`style='dotted'`, output=`style='solid', penwidth='1.5'`
+- Hierarchy: cluster border `style='dashed', penwidth='0.6'`, all component boxes `shape='box', style='solid'`
 - Lines: `penwidth='0.6'` outlines, `penwidth='0.35'` lead lines
 - Font: `fontsize='14'` box text, `fontsize='11'` labels
 - Reference numbers **outside** boxes, thin dotted lead lines, `arrowhead='none'`
@@ -119,14 +125,17 @@ Engines: `dot` / `neato` / `fdp` / `circo` / `twopi`.
 | Syntax / attribute error | Check quotes, commas, `->` in edge calls | Simplify to minimal graph |
 | Blank output | Verify `bgcolor='white'`, nodes have `label` | Try `format='png'` |
 | Chinese garbled | `fontname='Microsoft YaHei'` (Win) / `fontname='WenQuanYi Micro Hei'` (Linux) | Fall back to English labels |
-| Lead lines overlap | `constraint='false'`, `weight='0'` | Note: manual editing in vector editor |
+| Lead lines overlap | `constraint='false'`, `weight='0'` | Use invisible intermediate nodes for routing; last resort: manual editing |
 | Output file too large | PNG: reduce DPI; SVG: simplify nodes | Split into sub-figures |
+| Cluster disappears (hierarchy) | Set `newrank='true'` in `graph_attr` | Replace `rank='same'` inside clusters with `style='invis'` edges (see shape-specs.md § Hierarchy) |
+| Decision branch exits wrong side | Set `splines='polyline'`; add port hints `:e`/`:w` on edges | Route through invisible intermediate nodes placed beside diamond |
 
 ## References
 
-- `references/shape-specs.md` — flowchart & block diagram shape tables, layout rules, arrow routing
+- `references/shape-specs.md` — flowchart, block diagram & hierarchy shape tables, layout rules, arrow routing
 - `references/patent-standards.md` — USPTO/CNIPA paper, margin, font, line specs, output formats
 - `references/numbering.md` — numbering conventions, lead line specs, Python implementation, examples
 - `assets/flowchart-skeleton.py` — copy-paste flowchart template
 - `assets/block-diagram-skeleton.py` — copy-paste block diagram template
-- `assets/examples/` — 5 complete patent diagram scripts covering typical scenarios
+- `assets/hierarchy-skeleton.py` — copy-paste hierarchy/architecture template
+
