@@ -103,6 +103,7 @@ dot -Tsvg diagram.dot -o output.svg
 | Blank SVG | Verify `bgcolor=white`, labels exist | Try `-Tpng` |
 | Chinese garbled | `fontname="Arial"` | Fall back to English labels |
 | Lead lines overlap | `constraint=false`, `weight=0` | Note: manual editing in vector editor |
+| Output file too large | PNG: reduce DPI; SVG: simplify nodes | Split into sub-figures (Fig. 1A, 1B) |
 
 ## References
 
