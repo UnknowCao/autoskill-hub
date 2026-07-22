@@ -1,0 +1,29 @@
+digraph Flowchart {
+    rankdir=TB;  bgcolor=white;
+    fontname="Arial";
+    node [fontname="Arial", fontsize=14, color=black, penwidth=0.6];
+    edge [fontname="Arial", fontsize=11, color=black, penwidth=0.6];
+
+    // Start (flat ellipse)
+    start [label="开始", shape=ellipse, width=1.8, height=0.5];
+
+    // Process steps (wide sharp box, w/h ≥ 3:1)
+    step1 [label="步骤一", shape=box, width=3.0, height=0.6];
+
+    // Decision (flat diamond, w/h ≈ 2:1)
+    dec1  [label="条件?", shape=diamond, width=2.8, height=1.4];
+
+    // End
+    end   [label="结束", shape=ellipse, width=1.8, height=0.5];
+
+    // Flow edges
+    start -> step1;
+    step1 -> dec1;
+    dec1 -> step2 [label="是"];
+    dec1 -> end   [label="否"];
+
+    // Lead lines: reference numbers → boxes (thin, dotted, no arrow)
+    // See references/numbering.md for lead line implementation
+
+    label="图1";  labelloc="b";  fontsize=12;
+}

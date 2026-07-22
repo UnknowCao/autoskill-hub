@@ -1,0 +1,20 @@
+digraph BlockDiagram {
+    rankdir=TB;  bgcolor=white;
+    fontname="Arial";
+    node [fontname="Arial", fontsize=14, color=black, penwidth=0.6];
+    edge [fontname="Arial", fontsize=11, color=black, penwidth=0.6];
+
+    // Components (sharp box, different border styles — see references/shape-specs.md)
+    sensor  [label="Sensor\n(10)", shape=box, style=solid,  width=2.5, height=0.7];
+    cpu     [label="Processor\n(20)", shape=box, style=solid,  width=2.5, height=0.7];
+    storage [label="Memory\n(30)", shape=box, style=dashed, width=2.5, height=0.7];
+    output  [label="Display\n(40)", shape=box, style=solid, penwidth=1.5, width=2.5, height=0.7];
+
+    // Connections
+    sensor -> cpu [label="data"];
+    cpu -> storage [label="store"];
+    storage -> cpu [label="retrieve"];
+    cpu -> output [label="display"];
+
+    label="图1";  labelloc="b";  fontsize=12;
+}
