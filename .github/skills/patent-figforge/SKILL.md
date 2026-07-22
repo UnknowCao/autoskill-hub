@@ -42,10 +42,10 @@ import graphviz
 
 g = graphviz.Digraph(
     name='PatentFigure',
-    graph_attr={'rankdir': 'TB', 'bgcolor': 'white', 'fontname': 'Arial'},
-    node_attr={'fontname': 'Arial', 'fontsize': '14', 'fontcolor': 'black',
+    graph_attr={'rankdir': 'TB', 'bgcolor': 'white', 'fontname': 'Microsoft YaHei'},
+    node_attr={'fontname': 'Microsoft YaHei', 'fontsize': '14', 'fontcolor': 'black',
                'color': 'black', 'penwidth': '0.6'},
-    edge_attr={'fontname': 'Arial', 'fontsize': '11', 'fontcolor': 'black',
+    edge_attr={'fontname': 'Microsoft YaHei', 'fontsize': '11', 'fontcolor': 'black',
                'color': 'black', 'penwidth': '0.6'},
 )
 g.attr(label='图1', labelloc='b', fontsize='12')
@@ -118,7 +118,7 @@ Engines: `dot` / `neato` / `fdp` / `circo` / `twopi`.
 | `graphviz` import error | `pip install graphviz` | Check Python environment |
 | Syntax / attribute error | Check quotes, commas, `->` in edge calls | Simplify to minimal graph |
 | Blank output | Verify `bgcolor='white'`, nodes have `label` | Try `format='png'` |
-| Chinese garbled | `fontname='Arial'` | Fall back to English labels |
+| Chinese garbled | `fontname='Microsoft YaHei'` (Win) / `fontname='WenQuanYi Micro Hei'` (Linux) | Fall back to English labels |
 | Lead lines overlap | `constraint='false'`, `weight='0'` | Note: manual editing in vector editor |
 | Output file too large | PNG: reduce DPI; SVG: simplify nodes | Split into sub-figures |
 

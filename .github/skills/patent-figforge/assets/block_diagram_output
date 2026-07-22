@@ -1,0 +1,18 @@
+digraph BD {
+	graph [bgcolor=white fontname="Microsoft YaHei" rankdir=TB]
+	node [color=black fontname="Microsoft YaHei" fontsize=14 penwidth=0.6]
+	edge [color=black fontname="Microsoft YaHei" fontsize=11 penwidth=0.6]
+	s [label="Sensor
+(10)" height=0.7 shape=box style=solid width=2.5]
+	c [label="CPU
+(20)" height=0.7 shape=box style=solid width=2.5]
+	m [label="Memory
+(30)" height=0.7 shape=box style=dashed width=2.5]
+	o [label="Display
+(40)" height=0.7 penwidth=1.5 shape=box style=solid width=2.5]
+	s -> c
+	c -> m
+	m -> c
+	c -> o
+	fontsize=12 label="图1" labelloc=b
+}

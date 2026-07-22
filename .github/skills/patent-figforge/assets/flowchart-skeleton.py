@@ -3,10 +3,10 @@ import graphviz
 
 g = graphviz.Digraph(
     name='Flowchart',
-    graph_attr={'rankdir': 'TB', 'bgcolor': 'white', 'fontname': 'Arial'},
-    node_attr={'fontname': 'Arial', 'fontsize': '14', 'fontcolor': 'black',
+    graph_attr={'rankdir': 'TB', 'bgcolor': 'white', 'fontname': 'Microsoft YaHei'},
+    node_attr={'fontname': 'Microsoft YaHei', 'fontsize': '14', 'fontcolor': 'black',
                'color': 'black', 'penwidth': '0.6'},
-    edge_attr={'fontname': 'Arial', 'fontsize': '11', 'fontcolor': 'black',
+    edge_attr={'fontname': 'Microsoft YaHei', 'fontsize': '11', 'fontcolor': 'black',
                'color': 'black', 'penwidth': '0.6'},
 )
 g.attr(label='图1', labelloc='b', fontsize='12')
