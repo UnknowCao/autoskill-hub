@@ -59,7 +59,7 @@ g.edge('r10', 'cpu', style='dotted', penwidth='0.35',
 
 Skeletons: `assets/flowchart-skeleton.py`, `assets/block-diagram-skeleton.py`, `assets/hierarchy-skeleton.py`.
 
-#### Hierarchy specifics
+> **📐 Layout rules** (before building): see `references/shape-specs.md` for grid columns (2–3), safe-channel routing between rows, equal-width same-row boxes, and arrow routing rules. See `references/numbering.md` for linear vs hierarchical numbering conventions and lead-line implementation patterns.
 
 - Use `subgraph cluster_*` for layer grouping with `label='层名'`, `labeljust='l'`, `style='dashed'`
 - Set `newrank='true'` in `graph_attr` to prevent rank/cluster conflicts
@@ -123,7 +123,7 @@ Engines: `dot` / `neato` / `fdp` / `circo` / `twopi`.
 - Reference numbers **outside** boxes, thin dotted lead lines, `arrowhead='none'`
 - `label='图1'`, `labelloc='b'` — no title on diagram
 
-## 🛑 Pre-Submission Checklist (BLOCKING)
+> 📎 **Detailed specs**: line widths, font sizes, paper margins → `references/patent-standards.md`. Shape dimensions, layout grids, safe-channel routing → `references/shape-specs.md`. Numbering conventions, lead-line implementation → `references/numbering.md`.
 
 ```
 ☐ 1. Black lines, 0.5–0.8pt          ☐ 7. No extra text outside boxes
