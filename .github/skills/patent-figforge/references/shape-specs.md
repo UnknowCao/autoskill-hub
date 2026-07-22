@@ -25,23 +25,20 @@
 
 Horizontal segments must travel in inter-row "safe channels" (lane gaps). **Never** pass through any box boundary.
 
-**WRONG — arrow crosses through box B:**
+> **❌ WRONG**: Arrow A→C cuts diagonally through box B — fatal drafting error.
+> 
+> **✅ RIGHT**: Arrow exits A bottom → travels horizontally in row gap → enters C top. All segments stay in safe channels.
 
-```mermaid
-flowchart TD
-    A[Box A] -->|"╲ crosses B!"| C[Box C]
-    B[Box B] --> C
+In DOT, use `splines=ortho` or `splines=polyline` and avoid port constraints that force cross-box routing:
+
+```dot
+// WRONG — don't do this:
+A -> C;  // if A and C are separated by B in rank, arrow crosses B
+
+// RIGHT — route through intermediate nodes or use rank tricks:
+A -> B;
+B -> C;  // explicit safe-channel path
 ```
-> ❌ Arrow from A→C passes through B's boundary.
-
-**RIGHT — arrow routes through safe channel:**
-
-```mermaid
-flowchart TD
-    A[Box A] --> B[Box B]
-    B -->|"safe channel"| C[Box C]
-```
-> ✅ Arrow exits B bottom, travels horizontally in inter-row lane gap, then enters C.
 
 ## Block Diagram Types
 

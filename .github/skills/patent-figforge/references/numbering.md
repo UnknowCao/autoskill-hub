@@ -39,23 +39,22 @@ Lead lines connect reference numbers to components — the defining feature that
 
 ### Correct vs Wrong
 
-**WRONG — number crammed inside box:**
+> **❌ WRONG**: Number `110` written inside the component box — violates patent convention.
+> 
+> **✅ CORRECT**: Number `110` placed outside the box, connected by a thin (0.3–0.4pt) dotted lead line (`style=dotted, arrowhead=none`).
 
-```mermaid
-flowchart LR
-    subgraph wrong["❌ WRONG"]
-        C[Component<br/>110]
-    end
+In DOT:
+
+```dot
+// ❌ WRONG — number crammed inside label:
+node [label="Component\n(110)"];   // bad: "110" is part of box content
+
+// ✅ CORRECT — number as separate node, lead line outside:
+component [label="Component", shape=box];
+r10 [label="110", shape=plaintext, fontsize=11];
+edge [style=dotted, penwidth=0.35, arrowhead=none, constraint=false];
+r10 -> component;
 ```
-> Number inside the box — violates patent convention.
-
-**CORRECT — number outside with thin lead line:**
-
-```mermaid
-flowchart LR
-    N10[110] -.->|"thin lead line"| C2[Component]
-```
-> ✅ Number outside box, connected by thin dotted lead line.
 
 ### DOT Implementation
 
