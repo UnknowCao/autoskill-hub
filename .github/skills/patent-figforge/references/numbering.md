@@ -39,36 +39,45 @@ Lead lines connect reference numbers to components — the defining feature that
 
 ### Correct vs Wrong
 
-> **❌ WRONG**: Number `110` written inside the component box — violates patent convention.
+> **❌ WRONG**: Number `110` written inside the component label — violates patent convention.
 > 
-> **✅ CORRECT**: Number `110` placed outside the box, connected by a thin (0.3–0.4pt) dotted lead line (`style=dotted, arrowhead=none`).
+> **✅ CORRECT**: Number `110` placed outside the box, connected by a thin (0.35pt) dotted lead line.
 
-In DOT:
+In Python:
 
-```dot
-// ❌ WRONG — number crammed inside label:
-node [label="Component\n(110)"];   // bad: "110" is part of box content
+```python
+# ❌ WRONG — number crammed inside label:
+g.node('c', 'Component\n(110)')   # bad: "110" is part of box content
 
-// ✅ CORRECT — number as separate node, lead line outside:
-component [label="Component", shape=box];
-r10 [label="110", shape=plaintext, fontsize=11];
-edge [style=dotted, penwidth=0.35, arrowhead=none, constraint=false];
-r10 -> component;
+# ✅ CORRECT — number as separate node, lead line outside:
+g.node('component', 'Component', shape='box')
+g.node('r10', '110', shape='plaintext', fontsize='11')
+g.edge('r10', 'component', style='dotted', penwidth='0.35',
+       arrowhead='none', constraint='false')
 ```
 
-### DOT Implementation
+### Python Implementation
 
-```dot
-// Reference numbers as plaintext nodes
-r10 [label="10", shape=plaintext, fontsize=11];
+```python
+import graphviz
 
-// Invisible edges for alignment
-edge [style=invis];
-{ rank=same; r10; component_node; }
+g = graphviz.Digraph()
+# ... setup graph_attr, node_attr ...
 
-// Lead lines: thin, dotted, no arrowhead, constraint=false
-edge [style=dotted, penwidth=0.35, arrowhead=none, constraint=false, color=black];
-r10 -> component_node;
+# Reference numbers as plaintext nodes
+g.node('r10', '10', shape='plaintext', fontsize='11')
+
+# Invisible edges for alignment
+g.edge('r10', 'component_node', style='invis')
+# Group same rank
+with g.subgraph() as s:
+    s.attr(rank='same')
+    s.node('r10')
+    s.node('component_node')
+
+# Lead lines: thin, dotted, no arrowhead, constraint=false
+g.edge('r10', 'component_node', style='dotted', penwidth='0.35',
+       arrowhead='none', constraint='false', color='black')
 ```
 
 ### Example Labeling

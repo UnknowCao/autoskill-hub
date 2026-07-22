@@ -1,20 +1,27 @@
 ---
 name: patent-figforge
-description: "Patent-ready technical diagrams via Graphviz DOT. 专利附图：流程图、系统框图、架构图。"
+description: "Patent-ready technical diagrams via Python graphviz. 专利附图：流程图、系统框图、架构图。"
 ---
 
 # Patent Figforge
 
-Write Graphviz DOT for patent figures (USPTO/CNIPA). Requires `dot` (Graphviz).
+Generate patent figures (USPTO/CNIPA) using the Python `graphviz` package. Requires `dot` (Graphviz) as backend.
 
 ## Required Dependencies
 
-This skill requires Graphviz to be installed:
+**System Graphviz (backend — required)**:
 
-**Windows**: `choco install graphviz`
-**Linux**: `sudo apt install graphviz`
-**Mac**: `brew install graphviz`
-**Python**: `pip install graphviz`
+| OS | Command |
+|----|---------|
+| Windows | `choco install graphviz` |
+| Linux | `sudo apt install graphviz` |
+| Mac | `brew install graphviz` |
+
+**Python package (frontend — used by this skill)**:
+
+```bash
+pip install graphviz
+```
 
 ## Workflow
 
@@ -22,43 +29,46 @@ This skill requires Graphviz to be installed:
 
 | User says | Type | Direction | Node shapes |
 |-----------|------|-----------|-------------|
-| 流程图/方法/flowchart | **Flowchart** | `rankdir=TB` | ellipse → box → diamond → ellipse |
-| 框图/系统/block diagram | **Block Diagram** | `rankdir=TB` | All `shape=box` |
-| 架构/层级/hierarchy | **Hierarchy** | `rankdir=TB` or `LR` | `shape=box`, `rank=same` |
+| 流程图/方法/flowchart | **Flowchart** | `rankdir='TB'` | ellipse → box → diamond → ellipse |
+| 框图/系统/block diagram | **Block Diagram** | `rankdir='TB'` | All `shape='box'` |
+| 架构/层级/hierarchy | **Hierarchy** | `rankdir='TB'` or `'LR'` | `shape='box'`, `rank='same'` |
 
 🔴 **CHECKPOINT**: confirm type before Step 2. If unsure, show this table to user.
 
-### Step 2: Write DOT
+### Step 2: Build graph with Python
 
-Write DOT following shape & line rules in `references/`. Boilerplate:
+```python
+import graphviz
 
-```dot
-digraph PatentFigure {
-    rankdir=TB;  bgcolor=white;  fontname="Arial";
-    node [fontname="Arial", fontsize=14, fontcolor=black, color=black];
-    edge [fontname="Arial", fontsize=11, fontcolor=black, color=black];
+g = graphviz.Digraph(
+    name='PatentFigure',
+    graph_attr={'rankdir': 'TB', 'bgcolor': 'white', 'fontname': 'Arial'},
+    node_attr={'fontname': 'Arial', 'fontsize': '14', 'fontcolor': 'black',
+               'color': 'black', 'penwidth': '0.6'},
+    edge_attr={'fontname': 'Arial', 'fontsize': '11', 'fontcolor': 'black',
+               'color': 'black', 'penwidth': '0.6'},
+)
+g.attr(label='图1', labelloc='b', fontsize='12')
 
-    // Example: box + lead-line reference number
-    cpu [label="Processor", shape=box];
-    r10 [label="10", shape=plaintext, fontsize=11];
-    edge [style=dotted, penwidth=0.35, arrowhead=none, constraint=false];
-    r10 -> cpu;
-
-    label="图1";  labelloc="b";  fontsize=12;
-}
+# Example: box + lead-line reference number
+g.node('cpu', 'Processor', shape='box')
+g.node('r10', '10', shape='plaintext', fontsize='11')
+g.edge('r10', 'cpu', style='dotted', penwidth='0.35',
+       arrowhead='none', constraint='false')
 ```
 
-Skeletons: `assets/flowchart-skeleton.dot`, `assets/block-diagram-skeleton.dot`.
+Skeletons: `assets/flowchart-skeleton.py`, `assets/block-diagram-skeleton.py`.
 
 ### Step 3: Render
 
-```bash
-dot -Tsvg diagram.dot -o output.svg
+```python
+g.render('output', format='svg')  # also 'png', 'pdf'
 ```
 
-`-Tpng`, `-Tpdf`. Engines: `-Kneato` / `-Kfdp` / `-Kcirco` / `-Ktwopi`.
+Or specify engine: `g.render('output', format='svg', engine='neato')`.
+Engines: `dot` / `neato` / `fdp` / `circo` / `twopi`.
 
-🔴 **CHECKPOINT**: verify (a) exit=0 (b) SVG>0 bytes (c) opens correctly. Fail → see Failure Modes.
+🔴 **CHECKPOINT**: verify (a) no Python exception (b) output file > 0 bytes (c) opens correctly. Fail → see Failure Modes.
 
 ### Step 4: Checklist
 
@@ -66,13 +76,13 @@ dot -Tsvg diagram.dot -o output.svg
 
 ## Critical Rules
 
-- `shape=box` (**sharp**, NEVER rounded), B&W only, no color fills
-- Flowchart: `rankdir=TB`, box w/h ≥ 3:1, diamond w/h ≈ 2:1, flat ellipse start/end
-- Block diagram: sensor=solid, processor=solid, storage=`dashed`, decision=`dotted`, output=`solid, penwidth=1.5`
-- Lines: 0.5–0.8pt outlines, 0.3–0.4pt lead lines
-- Font: 14pt box text, 10–12pt labels/numbers
-- Reference numbers **outside** boxes, thin dotted lead lines, no arrowheads
-- `label="图1"`, `labelloc="b"` — no title on diagram
+- `shape='box'` (**sharp**, NEVER rounded), B&W only, no color fills
+- Flowchart: `rankdir='TB'`, box w/h ≥ 3:1, diamond w/h ≈ 2:1, flat ellipse start/end
+- Block diagram: sensor=`style='solid'`, processor=`style='solid'`, storage=`style='dashed'`, decision=`style='dotted'`, output=`style='solid', penwidth='1.5'`
+- Lines: `penwidth='0.6'` outlines, `penwidth='0.35'` lead lines
+- Font: `fontsize='14'` box text, `fontsize='11'` labels
+- Reference numbers **outside** boxes, thin dotted lead lines, `arrowhead='none'`
+- `label='图1'`, `labelloc='b'` — no title on diagram
 
 ## 🛑 Pre-Submission Checklist (BLOCKING)
 
@@ -89,14 +99,14 @@ dot -Tsvg diagram.dot -o output.svg
 
 | # | Don't | Sev | Do instead |
 |---|-------|:---:|------|
-| 1 | Rounded corners | 🔴 | `shape=box` |
-| 2 | Lines >1.5pt | 🔴 | 0.5–0.8pt |
+| 1 | Rounded corners | 🔴 | `shape='box'` |
+| 2 | Lines >1.5pt | 🔴 | `penwidth='0.6'` |
 | 3 | Arrows through boxes | 🔴 | Safe-channel routing |
 | 4 | Numbers inside boxes | 🔴 | Outside + lead lines |
 | 5 | Color fills | 🔴 | White fill, B&W |
-| 6 | Title on diagram | 🟡 | Only "图1" below |
-| 7 | Lead lines cross | 🟡 | Clockwise, `constraint=false` |
-| 8 | Box w/h ≈ 1:1 | 🟡 | ≥ 3:1 |
+| 6 | Title on diagram | 🟡 | Only `label='图1'` below |
+| 7 | Lead lines cross | 🟡 | Clockwise, `constraint='false'` |
+| 8 | Box w/h ≈ 1:1 | 🟡 | ≥ 3:1 via `width`/`height` |
 | 9 | Tall diamond | 🟡 | Flat, w/h ≈ 2:1 |
 | 10 | Gradients/shadows | 🟡 | Pure black lines |
 
@@ -104,17 +114,19 @@ dot -Tsvg diagram.dot -o output.svg
 
 | Symptom | First fix | Still failing? |
 |---------|-----------|----------------|
-| `dot: not found` | Install Graphviz (see Dependencies) | https://graphviz.org/download/ |
-| Syntax error | Check quotes, semicolons, `->` | Simplify to minimal skeleton |
-| Blank SVG | Verify `bgcolor=white`, labels exist | Try `-Tpng` |
-| Chinese garbled | `fontname="Arial"` | Fall back to English labels |
-| Lead lines overlap | `constraint=false`, `weight=0` | Note: manual editing in vector editor |
-| Output file too large | PNG: reduce DPI; SVG: simplify nodes | Split into sub-figures (Fig. 1A, 1B) |
+| `graphviz.backend.ExecutableNotFound` | Install system Graphviz (see Dependencies) | https://graphviz.org/download/ |
+| `graphviz` import error | `pip install graphviz` | Check Python environment |
+| Syntax / attribute error | Check quotes, commas, `->` in edge calls | Simplify to minimal graph |
+| Blank output | Verify `bgcolor='white'`, nodes have `label` | Try `format='png'` |
+| Chinese garbled | `fontname='Arial'` | Fall back to English labels |
+| Lead lines overlap | `constraint='false'`, `weight='0'` | Note: manual editing in vector editor |
+| Output file too large | PNG: reduce DPI; SVG: simplify nodes | Split into sub-figures |
 
 ## References
 
 - `references/shape-specs.md` — flowchart & block diagram shape tables, layout rules, arrow routing
 - `references/patent-standards.md` — USPTO/CNIPA paper, margin, font, line specs, output formats
-- `references/numbering.md` — numbering conventions, lead line specs, DOT implementation, examples
-- `assets/flowchart-skeleton.dot` — copy-paste flowchart template
-- `assets/block-diagram-skeleton.dot` — copy-paste block diagram template
+- `references/numbering.md` — numbering conventions, lead line specs, Python implementation, examples
+- `assets/flowchart-skeleton.py` — copy-paste flowchart template
+- `assets/block-diagram-skeleton.py` — copy-paste block diagram template
+- `assets/examples/` — 5 complete patent diagram scripts covering typical scenarios

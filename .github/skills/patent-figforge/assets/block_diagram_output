@@ -1,0 +1,18 @@
+digraph BlockDiagram {
+	graph [bgcolor=white fontname=Arial rankdir=TB]
+	node [color=black fontcolor=black fontname=Arial fontsize=14 penwidth=0.6]
+	edge [color=black fontcolor=black fontname=Arial fontsize=11 penwidth=0.6]
+	fontsize=12 label="图1" labelloc=b
+	sensor [label="Sensor
+(10)" height=0.7 shape=box style=solid width=2.5]
+	cpu [label="Processor
+(20)" height=0.7 shape=box style=solid width=2.5]
+	storage [label="Memory
+(30)" height=0.7 shape=box style=dashed width=2.5]
+	output [label="Display
+(40)" height=0.7 penwidth=1.5 shape=box style=solid width=2.5]
+	sensor -> cpu [label=data]
+	cpu -> storage [label=store]
+	storage -> cpu [label=retrieve]
+	cpu -> output [label=display]
+}

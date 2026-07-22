@@ -1,0 +1,59 @@
+// ============================================================
+// Example 2: System Block Diagram (系统框图)
+// Scenario: Wireless charging system architecture
+// Best practices demonstrated:
+//   - Component types via border styles (not colors):
+//     sensor=solid, processor=solid, storage=dashed,
+//     communication=dashed, output=solid+bold
+//   - 2-row grid layout with safe channels
+//   - Lead lines at 4 corners (clockwise: TL→TR→BR→BL)
+//   - Linear numbering 10,20,30,40
+//   - Directed connections with labels
+//   - B&W, "图1" below
+// ============================================================
+
+digraph SystemBlockDiagram {
+    // --- Global ---
+    rankdir=TB;  bgcolor=white;  splines=polyline;
+    nodesep=0.6;  ranksep=1.2;
+    fontname="Arial";
+    node [fontname="Arial", fontsize=14, fontcolor=black, color=black];
+    edge [fontname="Arial", fontsize=11, fontcolor=black, color=black];
+
+    // --- Top row: Power layer ---
+    node [shape=box, style=solid, penwidth=0.6, width=2.5, height=0.7];
+    tx      [label="发射端\n(TX)"];       // sensor/input → solid
+    node [shape=box, style=solid, penwidth=1.5, width=2.5, height=0.7];
+    rx      [label="接收端\n(RX)"];       // output → solid+bold
+
+    // --- Bottom row: Control layer ---
+    node [shape=box, style=solid, penwidth=0.6, width=2.5, height=0.7];
+    mcu     [label="控制器\n(MCU)"];      // processor → solid
+    node [shape=box, style=dashed, penwidth=0.6, width=2.5, height=0.7];
+    ble     [label="通信模块\n(BLE)"];    // communication → dashed
+
+    // --- Reference numbers (clockwise: TL, TR, BR, BL) ---
+    node [shape=plaintext, fontsize=11, width=0, height=0, margin=0];
+    r10 [label="10"];  r20 [label="20"];  r30 [label="30"];  r40 [label="40"];
+
+    // --- Layout alignment ---
+    { rank=same; r10; tx; rx; r20; }
+    { rank=same; r30; mcu; ble; r40; }
+    edge [style=invis, weight=100];  tx -> mcu;  rx -> ble;
+    edge [style=invis, weight=10];
+    r10 -> tx;  rx -> r20;  r30 -> mcu;  ble -> r40;
+
+    // --- Lead lines ---
+    edge [style=dotted, penwidth=0.35, arrowhead=none, constraint=false, color=black];
+    r10 -> tx;  r20 -> rx;  r30 -> mcu;  r40 -> ble;
+
+    // --- Functional connections ---
+    edge [style=solid, penwidth=0.6, arrowhead=normal, color=black, arrowsize=0.8];
+    tx  -> rx  [label="  电能传输"];
+    mcu -> tx  [label="  控制信号"];
+    mcu -> rx  [label="  控制信号"];
+    ble -> mcu [label="  无线通信", dir=both, arrowtail=normal];
+
+    // --- Figure caption ---
+    label="图1";  labelloc="b";  fontsize=12;
+}

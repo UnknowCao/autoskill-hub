@@ -1,0 +1,49 @@
+// ============================================================
+// Example 3: Hierarchical System Architecture (层级架构)
+// Scenario: 3-level embedded system: controller → subsystems → modules
+// Best practices demonstrated:
+//   - Hierarchical numbering: 100→110→111, 100→120→121
+//   - 3 nested levels with proportional sizing
+//   - Containment via rank=same grouping
+//   - Lead lines for every component (7 total)
+//   - Consistent numbering across levels
+// ============================================================
+
+digraph HierarchicalArchitecture {
+    // --- Global ---
+    rankdir=TB;  bgcolor=white;  splines=ortho;
+    nodesep=0.4;  ranksep=0.8;
+    fontname="Arial";
+    node [fontname="Arial", fontsize=14, fontcolor=black, color=black, penwidth=0.6];
+    edge [fontname="Arial", fontsize=10, fontcolor=black, color=black];
+
+    // --- Level 1: Main Controller ---
+    node [shape=box, style=solid, width=3.5, height=0.6];
+    main [label="主控制器 (100)"];
+
+    // --- Level 2: Subsystems ---
+    node [shape=box, style=solid, width=2.8, height=0.55, fontsize=13];
+    subA [label="子系统 A (110)"];
+    subB [label="子系统 B (120)"];
+
+    // --- Level 3: Modules ---
+    node [shape=box, style=dashed, width=2.2, height=0.5, fontsize=12];
+    a1 [label="电压检测模块 (111)"];
+    a2 [label="温度检测模块 (112)"];
+    b1 [label="均衡控制模块 (121)"];
+    b2 [label="通信接口模块 (122)"];
+
+    // --- Hierarchy edges ---
+    edge [style=solid, penwidth=0.5, arrowhead=none];
+    main -> subA;  main -> subB;
+    edge [style=dashed, penwidth=0.4, arrowhead=none];
+    subA -> a1;  subA -> a2;
+    subB -> b1;  subB -> b2;
+
+    // --- Layout ---
+    { rank=same; subA; subB; }
+    { rank=same; a1; a2; b1; b2; }
+
+    // --- Figure caption ---
+    label="图1";  labelloc="b";  fontsize=12;
+}

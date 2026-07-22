@@ -29,15 +29,15 @@ Horizontal segments must travel in inter-row "safe channels" (lane gaps). **Neve
 > 
 > **✅ RIGHT**: Arrow exits A bottom → travels horizontally in row gap → enters C top. All segments stay in safe channels.
 
-In DOT, use `splines=ortho` or `splines=polyline` and avoid port constraints that force cross-box routing:
+In Python, use `splines='ortho'` or `splines='polyline'` and avoid port constraints that force cross-box routing:
 
-```dot
-// WRONG — don't do this:
-A -> C;  // if A and C are separated by B in rank, arrow crosses B
+```python
+# WRONG — don't do this:
+g.edge('A', 'C')  # if A and C are separated by B in rank, arrow crosses B
 
-// RIGHT — route through intermediate nodes or use rank tricks:
-A -> B;
-B -> C;  // explicit safe-channel path
+# RIGHT — route through intermediate nodes:
+g.edge('A', 'B')
+g.edge('B', 'C')  # explicit safe-channel path
 ```
 
 ## Block Diagram Types

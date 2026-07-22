@@ -1,0 +1,68 @@
+// ============================================================
+// Example 5: Data Flow with I/O Shapes (含数据I/O的流程图)
+// Scenario: Signal processing pipeline with input, processing, storage, output
+// Best practices demonstrated:
+//   - Parallelogram for data input/output
+//   - Double-box (peripheries=2) for subroutines
+//   - Cylinder for database/storage
+//   - Mixed shape usage in a single patent figure
+//   - Linear numbering across diverse shapes
+// ============================================================
+
+digraph DataFlowPipeline {
+    // --- Global ---
+    rankdir=LR;  bgcolor=white;  splines=ortho;
+    nodesep=0.5;  ranksep=0.6;
+    fontname="Arial";
+    node [fontname="Arial", fontsize=14, fontcolor=black, color=black, penwidth=0.6];
+    edge [fontname="Arial", fontsize=10, fontcolor=black, color=black, penwidth=0.6];
+
+    // --- Data input (parallelogram) ---
+    node [shape=parallelogram, style=solid, width=2.0, height=0.6];
+    raw     [label="原始信号\n输入 (10)"];
+
+    // --- Processing (sharp box) ---
+    node [shape=box, style=solid, width=2.5, height=0.6];
+    filter  [label="数字滤波器\n(20)"];
+
+    // --- Subroutine (double box) ---
+    node [shape=box, style=solid, peripheries=2, width=2.5, height=0.6];
+    fft     [label="FFT 频谱分析\n(30)"];
+
+    // --- Storage (cylinder) ---
+    node [shape=cylinder, style=solid, width=1.8, height=0.6, fontsize=12];
+    db      [label="历史数据库\n(40)"];
+
+    // --- Decision (diamond) ---
+    node [shape=diamond, style=solid, width=2.6, height=1.3, fontsize=12];
+    anomaly [label="检测到\n异常?"];
+
+    // --- Output (sharp box) ---
+    node [shape=box, style=solid, penwidth=1.5, width=2.5, height=0.6];
+    report  [label="生成检测报告\n(50)"];
+
+    // --- Alert (sharp box) ---
+    node [shape=box, style=solid, width=2.0, height=0.6];
+    alert   [label="发送警报\n(60)"];
+
+    // --- End ---
+    node [shape=ellipse, width=1.5, height=0.5];
+    done    [label="完成"];
+
+    // --- Flow ---
+    raw     -> filter  [xlabel="ADC采样"];
+    filter  -> fft     [xlabel="滤波后"];
+    fft     -> anomaly [xlabel="频谱特征"];
+    anomaly -> db      [xlabel="否 (存档)"];
+    db      -> report;
+    anomaly -> alert   [xlabel="是"];
+    alert   -> done;
+    report  -> done;
+
+    // --- Layout ---
+    { rank=same; anomaly; db; }
+    { rank=same; alert; report; }
+
+    // --- Figure caption ---
+    label="图1";  labelloc="b";  fontsize=12;
+}
