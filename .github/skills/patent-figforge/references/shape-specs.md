@@ -25,16 +25,23 @@
 
 Horizontal segments must travel in inter-row "safe channels" (lane gaps). **Never** pass through any box boundary.
 
+**WRONG — arrow crosses through box B:**
+
+```mermaid
+flowchart TD
+    A[Box A] -->|"╲ crosses B!"| C[Box C]
+    B[Box B] --> C
 ```
-WRONG (arrow through box):          RIGHT (safe channel):
-┌───┐                               ┌───┐
-│ A │──╲                             │ A │
-└───┘   ╲  ← crosses B!            └─┬─┘
-┌───┐     ╲                           │
-│ B │──────▶ C                      ┌─▽─┐
-└───┘                               │ B │────────▶ C
-                                    └───┘
+> ❌ Arrow from A→C passes through B's boundary.
+
+**RIGHT — arrow routes through safe channel:**
+
+```mermaid
+flowchart TD
+    A[Box A] --> B[Box B]
+    B -->|"safe channel"| C[Box C]
 ```
+> ✅ Arrow exits B bottom, travels horizontally in inter-row lane gap, then enters C.
 
 ## Block Diagram Types
 
