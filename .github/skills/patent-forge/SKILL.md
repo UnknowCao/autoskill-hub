@@ -15,7 +15,7 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 用户说 "帮我写专利/交底书/申请文件" ？
   ├─ 含 "交底书/代理/华进/ACIP/三环" → disclosure（交底书，代理师写权利要求）
   │    ├─ 华进/ACIP → ACIP 专属模板
-  │    ├─ 其他代理（三环/中科等）→ ACIP 通用模板 + 告知用户
+  │    ├─ 其他代理（三环/中科等）→ 触发 Checkpoint（Anti-Pattern #18）→ 用户选 ① ACIP 通用模板（文件名 -generic-）或 ② 暂停等放模板
   │    └─ 含 "--docx" → 填 .docx 模板；否则 → --md
   └─ 含 "申请表/申请文件" 或无代理关键词 → application（申请表，含权利要求书）
        └─ 产出: 权利要求 1-3 独立 + 10-20 从属 + 摘要 ≤300字 + 附图 ≥3 + 实施方式 ≥3
@@ -235,8 +235,8 @@ patent-forge-output/
 
 最终输出前**按文档类型**逐项核对（清单 A: application / 清单 D: disclosure / 共通原则）—— **完整清单已移至** [`references/quality_checklists.md`](./references/quality_checklists.md)，在 Checkpoint 4A / 4D 时加载。
 
-- **清单 A**（`--doc-type application`）：结构完整性 8 项 + 法律合规性 5 项 + 新颖性与创造性 4 项
-- **清单 D**（`--doc-type disclosure`）：9 节结构完整性 + 软硬结合专项 4 项 + 质量原则 3 项
+- **清单 A**（`--doc-type application`）：结构完整性 + 法律合规性 + 新颖性与创造性（含 Anti-Pattern #17 编造禁令双重校验）—— 完整项数见 [`references/quality_checklists.md`](./references/quality_checklists.md)
+- **清单 D**（`--doc-type disclosure`）：9 节结构完整性 + 软硬结合专项 + 质量原则（含 Anti-Pattern #17 编造禁令 + #18 非 ACIP 确认双重校验）—— 完整项数见 [`references/quality_checklists.md`](./references/quality_checklists.md)
 - **共通质量原则 + 语言规范**：见 [`references/shared_workflow.md`](./references/shared_workflow.md) § 共通质量原则 + [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions
 
 ---
@@ -263,6 +263,8 @@ patent-forge-output/
 | 14 | **仅用关键词检索现有技术，不跑 IPC/CPC 分类号二次检索** | 初始关键词检索后，必须从 top 5 命中中提取 IPC/CPC 分类号，再跑一次分类号限定检索（`shared_workflow.md` § Step 2.7.1）。关键词检索平均遗漏 15-30% 相关现有技术 | 漏检关键对比文件 → 授权后被无效 |
 | 15 | **不生成现有技术文献清单** | `application` 模式必须输出「现有技术文献清单」（含公开号/标题/优先权日/相关性），供代理师和审查员核查检索充分性（`SKILL.md` § Phase 3A Action 8） | 检索不可追溯 → 审查员质疑检索质量 |
 | 16 | **对非软件类发明强制使用软件维度（数据流/触发条件/架构）的实施例变化** | 根据 Phase 1 识别的技术领域选择匹配的实施例变化维度（机械：驱动方式/几何构型/材料；电子：电路拓扑/元件选型；化学：配比/合成条件）。详见 Phase 3A Action 5 领域分支表 | 实施例与发明类型不匹配 → 公开不充分（专利法第 26 条第 3 款） |
+| 17 | **在 Phase 1 信息不足时编造技术细节（核心技术特征 / 技术效果 / 实施场景）填补空白以推进 Phase 2** | 触发 Checkpoint 1-warning，向用户展示已收集信息 + 缺失项清单，由用户选择 ① 补充信息后继续 / ② 缩减保护范围继续（用户明确确认风险）（`shared_workflow.md` § Phase 1 Action 6-7）。**禁止自行编造"技术问题/技术效果/核心模块"细节填补 4 要素空白** | 编造内容 → 说明书不支持权利要求 → 驳回（专利法第 26 条第 3/4 款）；编造的"现有技术对比"构成虚假陈述 |
+| 18 | **在 `disclosure` 模式下，遇到未注册的代理机构时静默替换为 ACIP 通用模板并直接生成文档** | 当用户提及的代理机构（如"三环"/"中科"）在 `assets/templates/template_registry.md` 中无注册时，**必须先触发 Checkpoint** 向用户告知「[agency] 专属模板未注册，将使用 ACIP 通用交底书模板生成，输出文件名标注为 `Disclosure-[Agency]-generic-[ShortTitle]-[YYYYMMDD].md`」，等待用户选择 ① 继续用通用模板 / ② 暂停待用户放入专属 .docx 模板后重试（`SKILL.md` § `--docx` Mode Step 1 + `template_registry.md` 决策树） | 静默替换模板 → 文档格式与目标代理机构不匹配 → 退回重做 |
 
 > 此清单不是建议——是硬性红线。所有 Anti-Patterns 在 `quality_checklists.md` 的清单 A / 清单 D 中有对应的 checklist 项作为双重校验。每次 Checkpoint 4A / 4D 触发时，除加载 `quality_checklists.md` 外，还应快速回顾本表对应行。
 

@@ -1,6 +1,6 @@
 # Patent Forge Examples — 机械/结构类
 
-> **用途**: `--doc-type application` 的机械/结构类发明完整示例，作为 [`application_example.md`](./application_example.md)（软件类）的领域补充。本示例严格遵守清单 A 的全部 17 项，**特别演示机械类权利要求的「位置关系 + 连接关系 + 参考标号」范式**——这是 patent-forge Phase 3A Action 3 领域专属范式的 dogfood 实现。
+> **用途**: `--doc-type application` 的机械/结构类发明完整示例，作为 [`application_example.md`](./application_example.md)（软件类）的领域补充。本示例严格遵守清单 A 的全部项（见 [`quality_checklists.md`](./quality_checklists.md) § A），**特别演示机械类权利要求的「位置关系 + 连接关系 + 参考标号」范式**——这是 patent-forge Phase 3A Action 3 领域专属范式的 dogfood 实现。
 >
 > **领域判定**: Phase 1 Action 1 应将本发明归类为 **机械/结构类**（非软件/算法类），从而触发机械维度实施例 + 装配图/运动简图附图 + 机械类 claims 范式。
 
