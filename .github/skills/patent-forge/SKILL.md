@@ -184,7 +184,7 @@ Reference these files within this directory for detailed specifications:
 - `assets/raw_templates/acip_invention_disclosure.docx` — Original ACIP .docx template (used by `--docx` mode)
 - `references/api_and_terminology.md` — SerpAPI/Exa.ai endpoints + Chinese patent terminology standards + language conventions
 - `references/application_example.md` — High-quality `--doc-type application` example (Focus Period Recommendation System)
-- `references/test-prompts.json` — Three test prompts (happy-path / disclosure-docx / ambiguous-doc-type)
+- `references/test-prompts.json` — Seven test prompts (P1 happy-path application / P2 disclosure-ACIP-docx / P3 doc-type ambiguity / P4 mechanical structure / P5 all-search-fails / P6 non-ACIP agency / P7 severely incomplete info)
 
 ## Output File Organization (输出文件目录结构)
 
@@ -213,7 +213,7 @@ patent-forge-output/
     └── Patent-[ShortTitle]-[YYYYMMDD].md   # 最终输出
 ```
 
-> 时间允许时按此结构组织输出；时间紧张时至少保留 `final/` + `02-phase2-prior-art/` 两个目录。
+**强制最低产物**：`final/`（最终文档）+ `02-phase2-prior-art/`（检索审计日志）两个目录必须生成，其余子目录按 Phase 进度填充。
 
 ## Quality Checklist
 

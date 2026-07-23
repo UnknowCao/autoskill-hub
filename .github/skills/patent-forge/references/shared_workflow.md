@@ -23,7 +23,7 @@ Save the generated document as a local Markdown file:
 - Filename pattern:
   - `application` → `Patent-[ShortTitle]-[YYYYMMDD].md`
   - `disclosure` → `Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].md`
-- Prefer `docs/` or `patents/` directory, otherwise current working directory
+- 保存到 `docs/` 或 `patents/` 目录；若两者均不存在，使用当前工作目录
 - 附图由 `patent-figforge` skill 生成 SVG/PNG，文末标注"正式申请/提交需替换为专利制图 / Visio (.vsd) 原图"
 
 ---
@@ -240,7 +240,7 @@ Search query patterns (customize based on invention):
 
 > **来源**：参考 patent-application-creator 的最佳实践。以下粒度标准适用于 `--doc-type application` 的各章节撰写，确保输出标准化、不遗漏关键内容。
 
-| 章节 | 推荐篇幅 | 内容要点 |
+| 章节 | 目标篇幅 | 内容要点 |
 |------|---------|---------|
 | **技术领域** | 1-2 段 | 明确所属技术领域，引用 Phase 2 确定的 IPC 分类号 |
 | **背景技术** | 2-3 段 | ① 现有技术状况概述 ② 现有技术存在的问题与不足 ③ 引述最接近现有技术（含公开号 + 优先权日） |
