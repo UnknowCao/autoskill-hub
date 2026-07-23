@@ -26,6 +26,35 @@ Save the generated document as a local Markdown file:
 - 保存到 `docs/` 或 `patents/` 目录；若两者均不存在，使用当前工作目录
 - 附图由 `patent-figforge` skill 生成 SVG/PNG，文末标注"正式申请/提交需替换为专利制图 / Visio (.vsd) 原图"
 
+### Output Layout（输出目录结构）
+
+每次运行产出按 6 级目录组织，确保产物可追溯：
+
+```
+patent-forge-output/
+├── 01-phase1-understanding/
+│   └── invention_4_elements.md          # Phase 1: 4 要素提炼 + 用户确认记录
+├── 02-phase2-prior-art/
+│   ├── search_audit_log.md              # 检索审计日志（三计数）
+│   ├── closest_prior_art.md             # 最接近现有技术分析
+│   └── ipc_classification.md            # IPC/CPC 分类号及候选理由
+├── 03-phase3-document/
+│   ├── claims_draft_v1.md               # (application) 权利要求书草案
+│   ├── specification_full.md            # 说明书全文
+│   └── prior_art_reference_list.md      # 现有技术文献清单
+├── 04-diagrams/
+│   ├── fig1_architecture.svg            # 整体架构图（patent-figforge 生成）
+│   ├── fig2_method_flow.svg             # 方法流程图（patent-figforge 生成）
+│   └── fig3_key_module.svg              # 关键模块示意图（patent-figforge 生成）
+├── 05-compliance/
+│   ├── checklist_A_or_D.md              # 清单 A/D 逐项核对结果
+│   └── compliance_report.md             # 合规审查报告
+└── final/
+    └── Patent-[ShortTitle]-[YYYYMMDD].md   # 最终输出
+```
+
+> SKILL.md § Output File Organization 引用本节。强制最低产物：`final/` + `02-phase2-prior-art/` 必须生成，其余按 Phase 进度填充。
+
 ---
 
 ## Phase 0: Document Type Selection
