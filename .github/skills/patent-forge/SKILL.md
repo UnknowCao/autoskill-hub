@@ -48,48 +48,12 @@ Additional third-party agency templates may be registered in `assets/templates/t
 
 ## Output Format (`--md` / `--docx`)
 
-Format selection logic and `--md` mode filename rules are **shared by both doc-types** — see [`references/shared_workflow.md`](./references/shared_workflow.md) § Output Format.
+| 模式 | 适用 | 何时用 |
+|---|---|---|
+| `--md`（默认）| 两种 doc-type 共通 | 内部审阅、版本控制；filename 规则见 [`shared_workflow.md`](./references/shared_workflow.md) § Output Format |
+| `--docx` | **仅 `--doc-type disclosure`** | 提交外部代理机构，100% 匹配对方 .docx 版式。**详细步骤 + 错误处理 + 新代理接入 4 步** → [`references/docx_mode.md`](./references/docx_mode.md) |
 
-Below is the **only doc-type-specific format**: `--docx` (applies to `disclosure` only).
-
-### `--docx` Mode (Template Filling)
-
-> **Important**: `--docx` only applies to `--doc-type disclosure`. For `--doc-type application`, use `--md` (the standard application format does not have an agency-specific template).
-
-When user specifies `--docx`, the skill fills the agency template (.docx) directly instead of generating Markdown. This guarantees 100% format match with the agency's expected layout.
-
-1. **Locate template** — `assets/raw_templates/<agency>_invention_disclosure.docx` (e.g. `acip_invention_disclosure.docx`)
-   - **若模板文件不存在** → 告知用户"[agency] 模板文件缺失" → 自动回退到 `--md` 模式，使用 `Disclosure-[Agency]-[ShortTitle]-[YYYYMMDD].md` 文件名 → 若有可编辑模板路径，告知用户手动放入 `assets/raw_templates/` 后可重试 `--docx`
-2. **Build content JSON** — Convert Phase 1-3 outputs into a structured dict with field names matching `TEMPLATES[<id>].fields` in `scripts/fill_acip_template.py`
-3. **Run the fill script**:
-   ```bash
-   python scripts/fill_acip_template.py fill \
-       --template acip \
-       --content invention_content.json \
-       --output "Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].docx"
-   ```
-4. **Verify filled fields** — script prints filled/skipped lists; ensure all header + content fields are filled
-   - **若填充脚本报错**（`FileNotFoundError` / `RuntimeError` / `ValueError`）：
-     - `FileNotFoundError` → 告知用户模板文件路径错误 → 回退到 `--md` 模式
-     - `RuntimeError`（table index mismatch）→ 运行 `python scripts/fill_acip_template.py inspect --docx <template>` 打印诊断 → 将诊断输出 + 错误信息一并告知用户 → 回退到 `--md` 模式
-     - `ValueError`（JSON 字段缺失）→ 列出缺失字段清单 → 询问用户：① 手动补充后重试 ② 跳过缺失字段直接输出 .docx（标记空字段为 `[待补充]`）③ 回退到 `--md` 模式
-   - **若 stdout 出现 `skipped` 字段** → 列出被跳过的字段清单 → 告知用户 → 询问处理方式（同上①②③）
-
-**Adding a new agency template** (4 steps, fully scripted):
-
-```bash
-# Step 1: Inspect the new template's table layout
-python scripts/fill_acip_template.py inspect --docx new_agency.docx
-
-# Step 2: From the inspect output, derive (row, col) for each field
-#         (CRITICAL: merged cells share the same _tc — only fill the
-#          first occurrence to avoid overwriting question labels)
-
-# Step 3: Register in TEMPLATES dict (scripts/fill_acip_template.py)
-#         AND in assets/templates/template_registry.md (keyword mapping)
-
-# Step 4: Copy .docx to assets/raw_templates/<agency>_invention_disclosure.docx
-```
+> `--doc-type application` 无代理机构专属模板，统一用 `--md`。
 
 ## Phase 0-2 (Shared)
 
