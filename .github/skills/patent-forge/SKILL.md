@@ -27,24 +27,14 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
   无法判定？→ askQuestions 询问用户
 ```
 
-## Output Document Type (`--doc-type`)
+## Doc-Type & Format（决策详见 Quick Decision + Phase 0）
 
-**The user chooses ONE of two document types.** This is the most important decision — ask explicitly in Phase 0 if not specified.
+| `--doc-type` | 文档名 | 模板 | 受众 | 含权利要求书 + 摘要？ |
+|---|---|---|---|---|
+| `application`（默认）| **专利申请表** | `assets/templates/standard_application.md` | 专利局（最终递交）| ✅ |
+| `disclosure` | **技术交底书** | `assets/templates/acip_invention_disclosure.md`（其他代理见 `template_registry.md`）| 代理师（如 ACIP 华进）| ❌（代理师后续撰写）|
 
-| `--doc-type` | Document Name | Template File | Audience | Contains Claims & Abstract? |
-|--------------|--------------|--------------|----------|----------------------------|
-| `application` (default) | **专利申请表** (Patent Application Form) | `assets/templates/standard_application.md` | Patent Office (final filing) | ✅ Yes |
-| `disclosure` | **技术交底书** (Invention Disclosure) | `assets/templates/acip_invention_disclosure.md` | Patent Agent (e.g. ACIP 华进) | ❌ No (agent writes claims later) |
-
-**Decision guidance for the user**:
-- 选择 `application` 若：公司内部直接申请专利，需要完整的权利要求书 + 摘要 + 说明书附图
-- 选择 `disclosure` 若：通过外部专利代理机构（如华进 ACIP）提交，发明人只需向代理师交底技术方案
-
-Additional third-party agency templates may be registered in `assets/templates/template_registry.md`. When user mentions a specific agency name (e.g. "华进", "ACIP"), auto-switch to the corresponding `disclosure` variant.
-
-> **Shared workflow**: Phase 0 (doc-type 选择) · Phase 1 (理解发明 4 要素 + 访谈) · Phase 2 (现有技术检索 + 新颖性分析 + IPC) · 输出格式决策树 (`--md`) · 共通质量原则 · 语言规范 —— **全部定义在 `references/shared_workflow.md`，两种 doc-type 都必须遵循**。本文件仅保留各 doc-type 的差异部分（Phase 3 分支、`--docx` 模式、清单 A/D）。
->
-> 详见 [`references/shared_workflow.md`](./references/shared_workflow.md)。
+**决策入口**：上方 Quick Decision 卡片（10 秒判定）→ 歧义时 Phase 0 `vscode_askQuestions`（详见 [`shared_workflow.md`](./references/shared_workflow.md) § Phase 0）。**发明内容描述中的词不算 doc-type 信号**（Anti-Pattern #3）。
 
 ## Output Format (`--md` / `--docx`)
 
@@ -127,20 +117,31 @@ Additional third-party agency templates may be registered in `assets/templates/t
 
 Filename 命名规则详见 [`references/shared_workflow.md`](./references/shared_workflow.md) § Output Format。
 
-**Supporting Files**
+## Supporting Files（按类别分组）
 
-Reference these files within this directory for detailed specifications:
-- `references/shared_workflow.md` — **Shared workflow (single source of truth)**: Phase 0/1/2 + Output Format (`--md`) + 共通质量原则
-- `references/quality_checklists.md` — **Output checklists** loaded at Checkpoint 4A/4D (清单 A: application + 清单 D: disclosure)
-- `assets/templates/template_registry.md` — Template registry & agency keyword mapping (read this first to pick template)
-- `assets/templates/standard_application.md` — Template for `--doc-type application` (专利申请表)
-- `assets/templates/acip_invention_disclosure.md` — Template for `--doc-type disclosure` via ACIP 华进
-- `scripts/fill_acip_template.py` — **`--docx` output tool (ACIP-only data, generic `inspect` for onboarding new agencies)**: fill the ACIP .docx template with content (subcommands: `fill` / `inspect` / `list`)
-- `assets/raw_templates/acip_invention_disclosure.docx` — Original ACIP .docx template (used by `--docx` mode)
-- `references/api_and_terminology.md` — SerpAPI/Exa.ai endpoints + Chinese patent terminology standards + language conventions
-- `references/application_example.md` — High-quality `--doc-type application` example: **software/algorithm domain** (Focus Period Recommendation System, 14 claims incl. method/system/storage-medium)
-- `references/application_example_mechanical.md` — High-quality `--doc-type application` example: **机械/结构类 domain** (Foldable EV Charging Pile, 14 claims incl. positional/connectivity relations with reference numbers 10-83) — dogfood for Phase 3A Action 3 机械类 claims 范式
-- `references/test-prompts.json` — Seven test prompts (P1 happy-path application / P2 disclosure-ACIP-docx / P3 doc-type ambiguity / P4 mechanical structure / P5 all-search-fails / P6 non-ACIP agency / P7 severely incomplete info)
+**📋 工作流与规范**（Phase 0-2 + 共通原则）
+- [`references/shared_workflow.md`](./references/shared_workflow.md) — **Single source of truth**: Phase 0/1/2 + Output Format + Output Layout 目录树 + 共通质量原则 + 语言规范
+- [`references/api_and_terminology.md`](./references/api_and_terminology.md) — SerpAPI/Exa.ai 端点 + 中文专利术语 + Language Conventions
+
+**🎯 领域适配**
+- [`references/domain_matrix.md`](./references/domain_matrix.md) — **领域适配矩阵**: 6 领域 × (claims 范式 / 实施例维度 / 附图类型)，Phase 3A Action 3/5/6 加载
+- [`references/application_example.md`](./references/application_example.md) — dogfood 示例 · **软件/算法类**（Focus Period 推荐系统，14 claims）
+- [`references/application_example_mechanical.md`](./references/application_example_mechanical.md) — dogfood 示例 · **机械/结构类**（可折叠充电桩，14 claims，参考标号 10-83）
+
+**🛡️ 合规与禁令**
+- [`references/anti_patterns.md`](./references/anti_patterns.md) — **完整 18 条 Anti-Patterns + Error Handling Matrix**（Checkpoint 4A/4D 强制加载）
+- [`references/quality_checklists.md`](./references/quality_checklists.md) — 清单 A (application) + 清单 D (disclosure)，Checkpoint 4A/4D 加载
+
+**📝 模板与脚本**
+- [`assets/templates/template_registry.md`](./assets/templates/template_registry.md) — 代理机构模板注册表 + 关键词映射
+- [`assets/templates/standard_application.md`](./assets/templates/standard_application.md) — `application` 模板（专利申请表）
+- [`assets/templates/acip_invention_disclosure.md`](./assets/templates/acip_invention_disclosure.md) — `disclosure` 模板（ACIP 华进 9 节结构）
+- [`assets/raw_templates/acip_invention_disclosure.docx`](./assets/raw_templates/acip_invention_disclosure.docx) — 原始 ACIP .docx 模板（`--docx` 模式用）
+- [`references/docx_mode.md`](./references/docx_mode.md) — **`--docx` 模式详细步骤** + 错误处理 + 新代理接入 4 步
+- [`scripts/fill_acip_template.py`](./scripts/fill_acip_template.py) — `--docx` 填充工具（subcommands: `fill` / `inspect` / `list`）
+
+**🧪 测试**
+- [`references/test-prompts.json`](./references/test-prompts.json) — 7 个测试 prompt（P1 happy-path / P2 disclosure-docx / P3 doc-type 歧义 / P4 机械结构 / P5 全搜索失败 / P6 非 ACIP 代理 / P7 信息严重不足）
 
 ## Output File Organization（输出目录结构）
 
