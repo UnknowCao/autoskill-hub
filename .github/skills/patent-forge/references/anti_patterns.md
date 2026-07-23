@@ -1,6 +1,6 @@
 # Anti-Patterns & Error Handling（禁止行为与错误处理）
 
-> **用途**: patent-forge 完整 18 条 Anti-Patterns 大表 + 8 行 Error Handling Matrix 的单一事实源。SKILL.md 仅保留**高频 5 条**（#1/#2/#3/#17/#18）作为快速警示，完整内容在本文件。
+> **用途**: patent-forge 完整 18 条 Anti-Patterns 大表 + 9 行 Error Handling Matrix 的单一事实源。SKILL.md 仅保留**高频 5 条**（#1/#2/#3/#17/#18）作为快速警示，完整内容在本文件。
 >
 > **位置**: `references/anti_patterns.md`（相对于 skill 根目录）。
 
