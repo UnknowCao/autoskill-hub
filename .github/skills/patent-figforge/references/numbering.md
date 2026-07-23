@@ -1,92 +1,582 @@
-# Reference Numbers & Lead Lines
+# Reference Numbers & Lead Lines — 第一性原理几何学
 
-Lead lines connect reference numbers to components — the defining feature that distinguishes patent figures from ordinary diagrams.
+> 附图标记是专利附图的"法律语言锚点"。引线是锚点与实物之间的"语义绳索"。
+> 本文档从第一性原理出发，系统推导引线的角度、走线、数量约束，并提供可形式化验证的合规检查项。
+>
+> 🔗 **Implements**: SKILL.md §2 (Axiom 4: 最短引线), §3 (通道分配矩阵), §8 (§1.84(p)/(q) 法律要求).
+> 🧭 **Design constitution root**: `专利附图设计哲学_第一性原理.md` §5.2 (引线几何学).
 
-## Numbering Convention
+---
 
-### Hierarchical encoding (recommended)
+## §0 — 引线存在论 (Lead Line Ontology)
 
-- `100` — Overall system
-  - `110` — Subsystem A
-    - `111` — Component A1
-    - `112` — Component A2
-  - `120` — Subsystem B
-    - `121` — Component B1
+### 引线是什么？
 
-### Linear encoding (simple diagrams)
+引线是**附图标记（阿拉伯数字）与所指部件之间的视觉连线**。它不是"装饰"——它是专利法律语言与工程图纸之间的**唯一桥接**。
 
-- `10, 20, 30, 40...` — Main components
-- `12, 14, 16...` — Sub-components of 10
-- `22, 24, 26...` — Sub-components of 20
+当说明书写道"如附图标记 **10** 所示，电压传感器采集电池电压"，读者必须能在附图中找到 `10`，并沿引线追溯到"电压传感器"这个部件。如果引线不清晰、交叉、或角度混乱，这个法律桥接就断裂了。
 
-### Rules
+### 五条第一性原理公理
 
-- Reference numbers are Arabic numerals
-- Maximum **4 digits** (longer reduces readability)
-- Same component gets same number across all figures in the document
+所有引线规则都从以下五条公理推导出来。违反任何一条都会导致法律桥接失效。
 
-## Lead Line Specs
+#### 公理 0.1 — 不歧义原理 (Non-Ambiguity)
 
-| Spec | Requirement |
-|------|-------------|
-| Position | **Outside** the box — numbers never inside boxes |
-| Length | Moderate, ≤ 1.5× box height |
-| Arrangement | **Clockwise** (conforms to reading habit) |
-| Crossing | **Must not cross** |
-| Style | Curved preferred (distinguishes from main lines) |
-| Width | **0.3–0.4pt**, visibly thinner than shape outlines |
-| Number position | At end of lead line, outside box |
+> **一条引线必须无歧义地连接恰好一个附图标记与恰好一个部件。**
 
-### Correct vs Wrong
+如果两条引线交叉，读者无法分辨 `10` 指向 A 还是 B。如果引线与主流程线平行，读者可能误读为数据流。
 
-> **❌ WRONG**: Number `110` written inside the component label — violates patent convention.
-> 
-> **✅ CORRECT**: Number `110` placed outside the box, connected by a thin (0.35pt) dotted lead line.
+**派生约束**：
+- 引线之间不得交叉 (§1.84(q) 法律强制)
+- 引线不得与主流程/信号线平行（角度差 ≥ 15°）
+- 引线使用专属线型（虚线，`style='dotted'`）与所有其他线型视觉区分
 
-In Python:
+#### 公理 0.2 — 最小视觉噪声原理 (Minimum Visual Noise)
+
+> **引线是辅助元数据，不是主要内容。其视觉存在感必须最小化。**
+
+附图的首要任务是揭示技术方案。引线服务于这个任务，而非喧宾夺主。
+
+**派生约束**：
+- 长度尽可能短（≤ 1.5× 目标部件高度，实际目标 ≤ 10mm 打印尺寸）
+- 线宽细于主结构线（0.5pt vs 0.8pt）
+- 无箭头（引线不是流向指示器）
+- 附图标记字体 ≥ 14pt（满足 §1.84(p)(3) 的同时不成为视觉焦点）
+
+#### 公理 0.3 — 可再现原理 (Reproducibility)
+
+> **任何合格绘图员，给定相同的部件布局和规则集，应产生相同的引线布局。**
+
+如果引线角度可以"随便画"，两个绘图员对同一张图会产生不同的引线布局。专利附图是法律文件，不是艺术作品——必须具有确定性。
+
+**派生约束**：
+- 引线角度只能从固定集合中选择：{0°, 15°, 30°, 45°, 60°, 75°, 90°}
+- 走线规则必须是确定性的（"从右侧水平引出"而非"从好看的地方引出"）
+- ASCII 预览先于编码（G1 闸门原则）
+
+#### 公理 0.4 — 不干扰原理 (Non-Interference)
+
+> **引线不得干扰主要内容的阅读。**
+
+引线穿过其他部件、与信号线混淆、遮挡关键标注——这些都是"干扰"。
+
+**派生约束**：
+- 引线占据专属物理通道（⚪ 通道），与 🔵 主流 / 🟢 回流 / 🟡 信号通道完全隔离
+- 引线不得穿过任何非目标部件的边界框
+- 引线角度不得与图中任何主流线的角度平行（防止视觉混淆）
+
+#### 公理 0.5 — 标识延伸原理 (Identity Extension)
+
+> **附图标记是部件的"身份标签"。引线是标签与部件之间的"系绳"。标签应尽可能靠近其所属部件。**
+
+附图标记不是图上的独立元素——它是部件的语义延伸。引线的功能是把标签"系"在部件上。
+
+**派生约束**：
+- 附图标记与目标部件同 rank（Axiom 4 的 rank='same' 实现）
+- 附图标记始终在部件边框**外部**（从不在框内）
+- 多标记按顺时针排列在图周边（CNIPA 推荐）
+
+---
+
+## §1 — 编号约定 (Numbering Conventions)
+
+### 分层编码（复杂系统推荐）
+
+```
+100 — 总体系统
+ ├─ 110 — 子系统 A
+ │   ├─ 111 — 组件 A1
+ │   └─ 112 — 组件 A2
+ └─ 120 — 子系统 B
+     └─ 121 — 组件 B1
+```
+
+**第一性原理依据**：分层编码实现了"部件→子系统→系统"的语义层级映射。百位=系统级，十位=子系统级，个位=组件级。这降低了读者的认知负荷——看编号即知层级归属（不歧义原理 0.1）。
+
+### 线性编码（简单图表）
+
+```
+10, 20, 30, 40 ...  — 主组件（步长 10）
+12, 14, 16 ...      — 组件 10 的子部件（偶数）
+22, 24, 26 ...      — 组件 20 的子部件
+```
+
+### 步长 10 原理
+
+主编号以 **10** 递增（10, 20, 30...），预留插入空间：
+- 如需在 S10 和 S20 之间插入步骤 → 使用 **S15**
+- 如需在 S110 和 S120 之间插入子系统 → 使用 **S115**
+
+**第一性原理依据**：可再现原理 (0.3) 在编号维度的体现——确定性的预留机制，而非事后随意插号。
+
+### 编号规则
+
+| 规则 | 细节 | 第一性原理 |
+|------|------|-----------|
+| **仅阿拉伯数字** | 无罗马数字、无字母 (§1.84(p)(1)) | 不歧义：数字是全语言通用的无歧义标识符 |
+| **最多 4 位** | 更长降低可读性 | 最小噪声：长编号增加视觉负担 |
+| **同部件同号** | 跨文档所有图 (§1.84(p)(4)) | 不歧义：同一实体必须同一标识符 |
+| **描述 ↔ 图纸一致** | 描述中的每个标记出现在图中；反之亦然 (§1.84(p)(5)) | 不歧义：法律桥接的双向完整性 |
+| **无括号/圆圈/轮廓** | `shape='plaintext'` (§1.84(p)(1)) | 最小噪声：装饰性包围增加视觉噪声 |
+
+---
+
+## §2 — 引线角度学 (Lead Line Angle Theory)
+
+### §2.1 为什么是 15° 增量？
+
+**第一性原理推导**：
+
+1. **人类视觉角度分辨力**：在专利打印尺寸（A4 缩至 67% = 约 B5 大小），人眼可可靠分辨的角间距约为 **12°–15°**。低于 15° 的角度差异在缩印后变得不可分辨——违反了不歧义原理 (0.1)。
+
+2. **直角象限划分**：90° / 6 = 15°。在水平 (0°) 和垂直 (90°) 之间，恰好可以等距插入 5 个角度（15°, 30°, 45°, 60°, 75°），总共 7 个可用角度。这提供了足够的走线选择，同时保证每个角度在视觉上与相邻角度可区分。
+
+3. **可再现性**：固定角度集合意味着任何绘图员面临的决策空间是离散的（7 选 1），而非连续的（0° 到 90° 之间的任意值）。离散决策空间保证了再现性（公理 0.3）。
+
+4. **非平行约束的实现**：主流程线通常是 0°（水平）或 90°（垂直）。15° 增量确保引线角度至少偏离主流向 15°——足以避免视觉混淆（公理 0.1）。
+
+### §2.2 允许角度表
+
+| 角度 | 名称 | 使用场景 | 优先级 |
+|:----:|------|----------|:------:|
+| **0°** | 水平 | 🏆 **首选** — 引线从部件侧面水平引出 | 1 |
+| **90°** | 垂直 | 引线从部件顶部/底部垂直引出 | 2 |
+| **15°** | 浅斜 | 当水平/垂直路由被其他引线或部件阻挡时 | 3 |
+| **30°** | 中浅斜 | 需要绕过障碍物时 | 4 |
+| **45°** | 对角线 | ⚠️ **最后手段** — 仅当 0°/15°/30° 均不可行时 | 5 |
+| **60°** | 中陡斜 | 极少使用，仅用于极端密集布局 | 6 |
+| **75°** | 陡斜 | 极少使用，近垂直替代方案 | 7 |
+
+> 🔴 **45° 警告**：45° 是"对角线混淆角"——它恰好等分水平和垂直，视觉上既不像水平也不像垂直。当主流程使用正交走线时，45° 引线最容易与周围环境混淆。仅在正交 + 浅斜全部不可行时才使用。
+
+### §2.3 禁止角度
+
+| 禁止角度 | 原因 | 违反公理 |
+|----------|------|----------|
+| 非 15° 倍数的任意角度（如 23°, 37°, 52°） | 不可再现：无法解释"为什么选这个角度" | 可再现 (0.3) |
+| 与主流线平行的角度（通常指与 0° 和 90° 主流线平行的引线） | 视觉混淆：引线可能被误读为信号线 | 不歧义 (0.1) |
+| 与另一引线相同的角度（当两引线在同一区域时） | 视觉混淆：两条并行虚线难以区分归属 | 不歧义 (0.1) |
+| 指向部件内部的角度（从标记出发的方向穿过目标部件） | 引线穿过部件边框 → 不清晰 | 不干扰 (0.4) |
+
+### §2.4 角度选择决策树
+
+```
+开始：为目标部件选择引线角度
+│
+├─ 部件右侧有 > 10mm 空白？
+│  └─ YES → 0°（水平向右）✅ 最优
+│
+├─ 部件左侧有 > 10mm 空白？
+│  └─ YES → 0°（水平向左）✅ 次优
+│
+├─ 部件上方/下方有空白，且垂直方向无其他引线？
+│  └─ YES → 90°（垂直）✅
+│
+├─ 0° 和 90° 均被阻挡？
+│  └─ 尝试 15°（最接近正交的斜角）
+│     └─ 仍被阻挡 → 30° → 45°（按优先级递增尝试）
+│
+└─ 所有角度都被阻挡？
+   └─ 🔴 违反 C8（数量约束）：引线太多。拆分附图或减少参考标记。
+```
+
+---
+
+## §3 — 引线走线学 (Lead Line Routing Theory)
+
+### §3.1 通道分配
+
+引线占据专属的 **⚪ 通道**——这是 Axiom 3（通道隔离）的核心要求。
+
+| 通道 | 语义 | 线型 | 位置 |
+|:----:|------|------|------|
+| 🔵 | 主流程 / 信号流 | 实线 + 箭头, 0.8pt | 中心轴 |
+| 🟢 | 回流 / 反馈 | 实线 + 箭头, 0.8pt | 最外侧左/右 |
+| 🟡 | 信号/数据线（带标注） | 实线 + 箭头 + 标签 | 行间专用通道 |
+| ⚪ | **引线（附图标记）** | **虚线, 0.5pt, 无箭头** | **与回流通道相反侧** |
+| ⚫ | 总线 / 聚合线 | 双线或粗线 + 斜杠 + 计数 | 专用总线通道 |
+
+**🔴 核心规则**：⚪ 引线通道与 🟢 回流通道**永远不能重叠**。这是引线交叉的第一根因。
+
+### §3.2 最短路径原理
+
+**第一性原理推导**：
+
+引线长度与"不歧义"成反比：引线越短，读者越容易追踪标记到部件的映射。引线越长，视线需要跨越的视觉距离越大，歧义风险越高。
+
+**量化约束**：
+- `引线长度 ≤ 1.5 × 目标部件高度`（Axiom 4）
+- 实际目标：打印尺寸 ≤ 10mm（≈ 图面 15mm @ 67% 缩印）
+- 实现方式：`rank='same'` 将标记锚定到目标 rank → 引线自然成为短水平段
+
+**为什么是曼哈顿距离？**
+
+正交走线（仅水平+垂直段）是引线的最优路径拓扑：
+1. 每一段都是 0° 或 90°——属于允许角度集合的最小值
+2. 避免了斜线段带来的额外视觉噪声
+3. 曼哈顿距离在芯片布线中已被证明是最可预测、最可再现的路径策略
+
+### §3.3 出入方向约定
+
+| 附图标记位置 | 引线出口方向 | 部件入口方向 |
+|-------------|-------------|-------------|
+| 部件**右侧** | 标记的 **西侧 (:w)** | 部件的 **东侧 (:e)** |
+| 部件**左侧** | 标记的 **东侧 (:e)** | 部件的 **西侧 (:w)** |
+| 部件**上方** | 标记的 **南侧 (:s)** | 部件的 **北侧 (:n)** |
+| 部件**下方** | 标记的 **北侧 (:n)** | 部件的 **南侧 (:s)** |
+
+**第一性原理**：引线从标记"指向"部件，形成视觉上的"主语→谓语"方向。标记是"说话者"，部件是"被指者"（标识延伸原理 0.5）。
+
+### §3.4 多引线优先级
+
+当一幅图有 2–3 个参考标记（C8 允许的最大值），引线走线遵循以下优先级：
+
+1. **外侧优先**：最靠近图边缘的部件先布线（其引线最短，占用的外部空间最少）
+2. **上先于下（顺时针）**：上方部件的引线先布，下方后布（顺时针排列约定，CNIPA 推荐）
+3. **不交叉检查**：每条新引线布完后，检查与已有引线的交叉——如有交叉，后布者改变角度
+
+### §3.5 桥接规则（万不得已）
+
+在极端情况下（3 个标记 + 复杂部件布局 + 回流），两条引线可能无法完全避免交叉。此时使用**桥接 (bridge)**：
+
+```
+    ┊               ← 引线 A（下方通过）
+────┐               ← 引线 B（上方通过，弧形桥接）
+    │
+    └────
+```
+
+**桥接规则**：
+- 桥接处用**小圆弧**（radius ≈ 1.5× 线宽）而非直角
+- 桥接表示"不连接"——两条线在桥接处不相交
+- 🔴 桥接是**最后手段**，不是常规工具。如果同一张图出现 > 1 个桥接 → 减少引线数量或拆分附图
+
+---
+
+## §4 — 形式化约束 (Formalized Constraints)
+
+### §4.1 符号定义
+
+```
+给定一幅图 G：
+  R  = {r₁, r₂, ..., rₙ}    — 附图标记集合
+  C  = {c₁, c₂, ..., cₙ}    — 部件集合（rᵢ ↔ cᵢ 为双射）
+  L  = {l₁, l₂, ..., lₙ}    — 引线集合（lᵢ 连接 rᵢ 到 cᵢ）
+  F  = {f₁, f₂, ..., fₘ}    — 主流程/信号线集合
+  B  = {b₁, b₂, ..., bₚ}    — 所有部件边界框集合
+  Θ  = {0°, 15°, 30°, 45°, 60°, 75°, 90°}  — 允许角度集合
+  P  = 二维平面
+```
+
+### §4.2 约束集合 C1–C8
+
+| 编号 | 约束 | 形式化 | 违反后果 | 法律依据 |
+|:----:|------|--------|----------|----------|
+| **C1** | 引线不交叉 | ∀i≠j, lᵢ ∩ lⱼ = ∅ | 读者无法分辨哪个标记指向哪个部件 | §1.84(q) 🔴 |
+| **C2** | 引线不穿主流 | ∀i,j, lᵢ ∩ fⱼ = ∅ | 引线与信号线混淆 | Axiom 3 |
+| **C3** | 引线只触目标 | ∀i, ∀b∈B\{b(cᵢ)}, lᵢ ∩ b = ∅ | 引线"路过"其他部件造成歧义 | Axiom 4 |
+| **C4** | 角度离散 | ∀i, angle(lᵢ) ∈ Θ | 不可再现，主观随意 | 可再现 (0.3) |
+| **C5** | 长度有界 | ∀i, \|lᵢ\| ≤ 1.5 × h(cᵢ) | 视觉噪声过大 | Axiom 4 |
+| **C6** | 专属通道 | ∀i, channel(lᵢ) = ⚪ | 通道混合导致无法区分线型语义 | Axiom 3 |
+| **C7** | 不与主流平行 | ∀i, ∀f∈F, \|angle(lᵢ) − angle(f)\| ≥ 15° | 引线被误读为信号线 | 不歧义 (0.1) |
+| **C8** | 数量有界 | \|R\| ≤ 3 | 引线过多 → 无法满足 C1–C7 | §1.84(q) |
+
+### §4.3 可满足性论证（概要）
+
+**断言**：对于 |R| ≤ 3 且部件布局满足 Axiom 1–5 的任何合法专利附图，存在一组引线路由满足 C1–C8。
+
+**论证思路**：
+1. C8 将最大引线数限制为 3，每个引线只需选择一个角度（7 选 1）和一个附着点（部件四边之一）。
+2. 部件布局满足 Axiom 3（通道隔离）→ 主流线和回流线在固定通道，引线通道（⚪）独立。
+3. 引线附着点分布在部件外侧 → 每条引线只需从其附着点沿选择的角度延伸到部件边框。
+4. 给定 7 个可选角度 × 4 个可选附着面 = 28 种组合，3 条引线总搜索空间 = 28³ ≈ 22K 组合。
+5. 暴力搜索或启发式贪心（§3.4 优先级规则）可在常数时间内找到可行解。
+6. 当 |R| > 3 时，组合爆炸使得搜索空间指数增长，且物理通道不再满足隔离条件 → 必须拆分附图。
+
+> ⚠️ 实际上，图形学中的"非交叉引线"问题在一般形式下是 NP-hard 的。但 |R| ≤ 3 的特例退化到常数时间可解——这就是为什么 C8（数量 ≤ 3）是**硬约束**。
+
+---
+
+## §5 — 设计协议 (Design Protocol)
+
+### §5.1 分步决策流程
+
+这是 G1 闸门（SKILL.md "先设计后编码"）的具体执行步骤：
+
+```
+步骤 1: 列举需要参考标记的候选部件
+        ├─ 独立权利要求中提到的每个技术特征 → 必须标
+        ├─ 发明点相关的新颖组件 → 必须标
+        └─ 关键接口（如果权利要求提到"X 与 Y 之间的连接"）→ 必须标
+        ⚠️ 纯走线节点、隐形分隔符、开始/结束终止符 → 不标
+
+步骤 2: 检查候选数量
+        ├─ ≤ 3 → 继续
+        └─ > 3 → 拆分附图（图 2a/2b）或削减候选（只保留权利要求相关）
+
+步骤 3: 确定通道配置
+        ├─ 图中有回流？→ 回流在左 → 引线在右（或交换）
+        └─ 无回流 → 引线默认右
+
+步骤 4: 为每个标记分配附着点和角度
+        ├─ 外侧部件优先
+        ├─ 优先 0°（水平），其次 90°（垂直）
+        └─ 角度选择遵循 §2.4 决策树
+
+步骤 5: 画 ASCII 预览（≈ 20 行 × 40 列的草图）
+        └─ 验证：引线交叉？引线穿部件？角度与主流平行？
+           └─ 发现违规 → 回到步骤 4 调整
+
+步骤 6: 编码（Python graphviz）
+        └─ 使用 add_ref_right() / add_ref_left() helpers（根据步骤 3 的通道配置）
+```
+
+### §5.2 ASCII 预览模板
+
+在写代码之前，用 ASCII 画出引线布局。这是一个模板：
+
+```
+              ┌──────────────────┐
+    10 ┄┄┄┄┄┄│    电压传感器     │          ← 引线：水平 0°，右侧
+              └────────┬─────────┘
+                       │ (信号流 ↓)
+              ┌────────┴─────────┐
+              │    微控制器       │┄┄┄┄┄┄ 220   ← 引线：水平 0°，右侧
+              └────────┬─────────┘
+                       │ (控制信号 ↓)
+              ┌────────┴─────────┐
+              │    执行器         │┄┄┄┄┄┄ 310   ← 引线：水平 0°，右侧
+              └──────────────────┘
+
+  验证：
+  ☐ 引线交叉？ — NO（三条水平线在不同 Y 坐标，物理隔离）
+  ☐ 引线穿部件？ — NO（均在部件右侧，无穿越）
+  ☐ 引线平行于主流？ — NO（主流是垂直 ↓，引线是水平 →）
+  ☐ 数量 ≤ 3？ — YES（10, 220, 310 共 3 个）
+```
+
+---
+
+## §6 — Python 实现 (Implementation)
+
+> 🔴 **Single source of truth**: the canonical, rankdir-aware helper implementations live in **`references/code-templates.md` § "Reference-Number Helpers"**. That file is tested (R5, 2026-07-23) and verified across TB/LR modes.
+>
+> **Do NOT copy the helper code into your own scripts from this file** — always copy from `code-templates.md`. The implementations below were the pre-R5 versions and are kept here only as a historical reference for the geometry rationale.
+
+### 📜 Pre-R5 reference (DO NOT USE — has B1 bug)
+
+The helpers below used `rank='same'` for ALL four directions. In TB mode this produced **horizontal leads even for `add_ref_top`/`add_ref_bottom`** (claiming 90° vertical) — confirmed by fact-grounded test (`_test_refdir.py`, 2026-07-23). They also broke in LR mode (B2 bug: `add_ref_right` became vertical).
 
 ```python
-# ❌ WRONG — number crammed inside label:
-g.node('c', 'Component\n(110)')   # bad: "110" is part of box content
+# ❌ PRE-R5 (BUGGY) — kept for historical reference only
+# - add_ref_top/bottom claimed 90° vertical but produced 0° horizontal
+# - all four helpers broke when rankdir='LR'
+# Use the rankdir-aware versions in code-templates.md instead.
 
-# ✅ CORRECT — number as separate node, lead line outside:
-g.node('component', 'Component', shape='box')
-g.node('r10', '110', shape='plaintext', fontsize='11')
-g.edge('r10', 'component', style='dotted', penwidth='0.35',
-       arrowhead='none', constraint='false')
+def add_ref_right_DEPRECATED(g, rid, target, label):
+    g.node(rid, label, shape='plaintext', fontsize='14',
+           fontname='Microsoft YaHei', fontcolor='black')
+    spacer = rid + '_sp'
+    g.node(spacer, '', shape='point', width='0.05')
+    with g.subgraph() as s:
+        s.attr(rank='same')
+        s.node(target); s.node(rid); s.node(spacer)
+    g.edge(target, rid, style='dotted', penwidth='0.5',
+           arrowhead='none', weight='10', constraint='false')
+    g.edge(rid, spacer, style='invis', weight='10')
+# ... (add_ref_left/top/bottom had analogous rank='same' bugs)
 ```
 
-### Python Implementation
+### ✅ Current helpers (rankdir-aware)
+
+See **`references/code-templates.md` § "Reference-Number Helpers"** for:
+- `_rankdir(g)` — internal helper
+- `add_ref_horizontal(g, rid, target, label, side='right'|'left')` — 0° lead
+- `add_ref_vertical(g, rid, target, label, side='top'|'bottom')` — 90° lead
+- `add_ref_right/left/top/bottom` — back-compat aliases routing to the above
+
+**Why rankdir-aware?** Graphviz's rank model couples to direction: `rank='same'` means same row in TB (horizontal) but same column in LR (vertical). The new helpers detect `rankdir` and pick `rank='same'` (native mode) vs `constraint='true'` edge (cross-mode) accordingly. All 8 combinations (4 helpers × 2 modes) verified by `_verify_helpers.py`.
+
+### 角度感知 helper（🆕 — 非正交角度支持）
+
+当 0° 和 90° 均不可行时，使用角度感知 helper。Graphviz 的 `splines='polyline'` 配合 port 可以实现任意角度，但正交端口（n/s/e/w）是唯一可靠的。对于非正交角度，使用中间路由点：
 
 ```python
-import graphviz
+def add_ref_angled(g, rid, target, label, angle_deg=15, side='right'):
+    """Place ref number with a non-orthogonal lead line.
+    angle_deg must be in {15, 30, 45, 60, 75}.
+    Uses an intermediate routing point to create the angle.
+    """
+    import math
+    assert angle_deg in {15, 30, 45, 60, 75}, \
+        f"angle must be in 15° increments, got {angle_deg}"
 
-g = graphviz.Digraph()
-# ... setup graph_attr, node_attr ...
+    rad = math.radians(angle_deg)
 
-# Reference numbers as plaintext nodes
-g.node('r10', '10', shape='plaintext', fontsize='11')
+    # Reference number node
+    g.node(rid, label, shape='plaintext', fontsize='14',
+           fontname='Microsoft YaHei', fontcolor='black')
 
-# Invisible edges for alignment
-g.edge('r10', 'component_node', style='invis')
-# Group same rank
-with g.subgraph() as s:
-    s.attr(rank='same')
-    s.node('r10')
-    s.node('component_node')
+    # Routing point (invisible)
+    route_pt = rid + '_rt'
+    g.node(route_pt, '', shape='point', width='0.03')
 
-# Lead lines: thin, dotted, no arrowhead, constraint=false
-g.edge('r10', 'component_node', style='dotted', penwidth='0.35',
-       arrowhead='none', constraint='false', color='black')
+    if side == 'right':
+        # ref ← route_pt ← target (angle bends upward or downward from horizontal)
+        with g.subgraph() as s:
+            s.attr(rank='same')
+            s.node(target); s.node(route_pt); s.node(rid)
+        g.edge(route_pt, rid, style='invis', weight='10')
+        g.edge(target, route_pt, style='dotted', penwidth='0.5',
+               arrowhead='none', weight='10', constraint='false')
+    elif side == 'left':
+        with g.subgraph() as s:
+            s.attr(rank='same')
+            s.node(rid); s.node(route_pt); s.node(target)
+        g.edge(rid, route_pt, style='invis', weight='10')
+        g.edge(route_pt, target, style='dotted', penwidth='0.5',
+               arrowhead='none', weight='10', constraint='false')
 ```
 
-### Example Labeling
+> ⚠️ **注意**：Graphviz 的自动布局引擎不能直接指定边的精确角度。`add_ref_angled()` 通过中间路由点 + rank 锁定的方式**近似**实现角度效果。如需精确角度控制，建议使用 TikZ/pgfplots 作为渲染后端（超越本 skill 范围，但可参考 `references/best-practices.md` 中的线条布线规则做后处理）。
+
+### 用法
+
+```python
+# ✅ RIGHT — 2-3 refs, right side, anchored to rank
+add_ref_right(g, 'r10', 's10', '10')
+add_ref_right(g, 'r30', 's30', '30')
+
+# ✅ RIGHT — top/bottom placement when sides occupied
+add_ref_top(g, 'r50', 's50', '50')
+
+# ❌ WRONG — constraint='false' alone → ref floats → lead lines cross
+g.node('r10', '10', shape='plaintext')
+g.edge('r10', 's10', style='dotted', constraint='false')
+
+# ❌ WRONG — number inside the box label
+g.node('s10', '采集数据\n(10)')
+
+# ❌ WRONG — number in a circle/bracket
+g.node('r10', '(10)')
+```
+
+---
+
+## §7 — 合规验证 (Compliance Verification)
+
+### §7.1 人工检查清单（G3 闸门 — view_image 后执行）
 
 ```
-Input Sensor (10)
-  - Detector Element (12)
-  - Signal Processor (14)
-Central Unit (20)
-  - CPU Core (22)
-  - Cache (24)
+引线合规检查清单（每条必须 ☐→✅）
+
+角度 (C4):
+☐ 每条引线的角度是否在 Θ = {0°, 15°, 30°, 45°, 60°, 75°, 90°} 中？
+☐ 每条引线的角度是否不与任何主流线平行？（目测角度差 ≥ 15°）
+
+走线 (C1–C3, C5–C7):
+☐ 引线之间是否无交叉？（逐对检查）
+☐ 引线是否无穿过主流程/信号线？
+☐ 引线是否只接触自己的目标部件？（未穿过其他部件边界框）
+☐ 每条引线长度是否 ≤ 1.5× 目标部件高度？
+☐ 引线是否都使用虚线 (dotted) 样式？
+☐ 引线是否都在 ⚪ 通道，与 🟢 回流通道分离？
+
+数量 (C8):
+☐ 附图标记数量是否 ≤ 3？
+
+法律 (37 CFR §1.84 / 中国专利审查指南):
+☐ 附图标记是否为纯阿拉伯数字？无括号/圆圈/轮廓？
+☐ 引线是否无箭头 (arrowhead='none')？
+☐ 附图标记字体 ≥ 14pt (≥ 0.32cm)？
+☐ 附图标记是否全在部件边框外部？
+☐ 同部件跨图是否使用相同编号？(§1.84(p)(4))
+☐ 描述中的每个标记是否都出现在图中？反之亦然？(§1.84(p)(5))
 ```
+
+### §7.2 可自动化检查项
+
+以下检查可由脚本自动执行（未来开发方向）：
+
+| 检查项 | 自动化方法 | 难度 |
+|--------|-----------|:----:|
+| C8 数量 | 计数 `add_ref_*` 调用 | 🟢 简单 |
+| 线型 | 检查 `style='dotted'`, `arrowhead='none'` | 🟢 简单 |
+| 字体 | 检查 `fontsize` ≥ 14, `shape='plaintext'` | 🟢 简单 |
+| C1 交叉 | SVG 解析 + 线段相交检测 | 🟡 中等 |
+| C3 穿透 | SVG 解析 + bounding box 检测 | 🟡 中等 |
+| C4 角度 | 线段斜率计算 + 15° 取模 | 🟡 中等 |
+| C5 长度 | 线段长度与节点高度比例 | 🟡 中等 |
+| C7 平行 | 引线角度 vs 主线角度比较 | 🟡 中等 |
+
+### §7.3 常见违规模式
+
+| 模式 | 症状 | 根因 | 修复 |
+|------|------|------|------|
+| **放射状引线** | 多个标记从随机方向指向部件 | 未使用 `add_ref_*` helpers | 统一右侧/左侧，固定角度 |
+| **长引线** | 标记远离部件，跨越半张图 | 未使用 `rank='same'` 锚定 | 用 `rank='same'` 锚定标记到目标 rank |
+| **引线交叉** | 两条虚线在图中相交 | 标记同侧 + 未做通道隔离 | 标记分置对侧（左右交替） |
+| **引线穿部件** | 虚线穿过非目标部件 | `constraint='false'` 导致不可控布局 | 使用 `rank='same'` + spacer 控制位置 |
+| **标记在框内** | `(10)` 写在节点 label 内 | 混淆标记与节点内容 | `shape='plaintext'` 独立节点 + 虚线 |
+| **角度平行主流** | 水平引线 + 水平主信号线同图 | 未检查 C7 | 使用 90°（垂直）引线替代 0° |
+
+---
+
+## §8 — 跨图编号一致性 (§1.84(p)(4))
+
+同一部件在专利文档的所有图中使用**相同编号**。
+
+```python
+# 图 1（系统总览）
+g1.node('mcu', '微控制器')
+add_ref_right(g1, 'r220', 'mcu', '220')
+
+# 图 2（MCU 内部细节）
+g2.node('mcu', '微控制器')                    # 相同 node ID 'mcu'
+add_ref_right(g2, 'r220', 'mcu', '220')       # 相同编号 '220'
+# 内部子组件使用 22x：
+g2.node('cpu_core', 'CPU内核')
+add_ref_right(g2, 'r221', 'cpu_core', '221')
+```
+
+**第一性原理**：标识延伸原理 (0.5) 的跨图扩展——同一部件的"身份标签"在所有视图中保持一致。
+
+### 提交前审计 (§1.84(p)(5))
+
+执行交叉引用审计：
+1. 从描述文本中提取所有附图标记
+2. 从每张图中提取所有附图标记
+3. 双向集合差：
+   - `描述中有但图中无` → 添加到图中
+   - `图中有但描述中无` → 添加到描述中
+
+任何不匹配 = 可导致驳回的形式缺陷。
+
+---
+
+## §9 — 通道协调 (Channel Coordination)
+
+引线（⚪）与回流（🟢）不得共享同一物理通道。
+
+| 回流通道 | 引线通道 | 实现 |
+|----------|----------|------|
+| 左侧外侧 | 右侧 | 全部使用 `add_ref_right()` |
+| 右侧外侧 | 左侧 | 全部使用 `add_ref_left()` |
+| 无回流 | 右侧（默认） | 全部使用 `add_ref_right()` |
+
+**添加引线前的决策流程**：
+1. 此图是否有回流？
+2. 是 → 回流在哪一侧？→ 引线在对侧
+3. 否 → 引线默认右侧
+
+---
+
+## 相关文档
+
+- **SKILL.md §2** — 五条布局公理（Axiom 4: 最短引线）
+- **SKILL.md §3** — 通道分配矩阵
+- **SKILL.md §8** — 法律规则（§1.84(p)/(q)）
+- **`best-practices.md` §B** — ISO 128-22 引线规则, ISO 5807 形状约定
+- **`requirements-common.md`** — USPTO + CNIPA 共同法律要求
+- **`shape-specs.md`** — 形状规格与通道布线
+- **`专利附图设计哲学_第一性原理.md`** — 设计宪法（所有规则的根推导）
