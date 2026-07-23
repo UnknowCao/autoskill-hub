@@ -157,82 +157,18 @@ When this skill is invoked:
    )
    ```
 
-5. **Add reference numbers**:
-   ```python
-   # After creating a diagram, add patent-style reference numbers
-   reference_map = {
-       "Input Sensor": 10,
-       "Central Processor": 20,
-       "Memory Storage": 30,
-       "Output Display": 40
-   }
+**Reference numbers**: prefer the in-label `ref=` parameter on each node/block dict (e.g. `{"id": "cpu", "label": "处理器", "ref": 20}`) — it appends `(20)` cleanly with no lead lines. The post-hoc `add_reference_numbers()` API exists for editing existing SVGs but is discouraged for new figures (Anti-Pattern #6).
 
-   annotated_path = generator.add_reference_numbers(
-       svg_path=diagram_path,
-       reference_map=reference_map
-   )
-   ```
+## Shape / Engine / Format quick reference
 
-## Diagram Templates
-
-Get common templates:
-```python
-templates = generator.get_diagram_templates()
-
-# Available templates:
-# - simple_flowchart: Basic process flow
-# - system_block: System architecture
-# - method_steps: Sequential method
-# - component_hierarchy: Hierarchical structure
-```
-
-## Shape Types
-
-### Flowchart Shapes
-- `ellipse`: Start/End points
-- `box`: Process steps
-- `diamond`: Decision points
-- `parallelogram`: Input/Output operations
-- `cylinder`: Database/Storage
-
-### Block Diagram Types
-- `input`: Input devices/sensors
-- `output`: Output devices/displays
-- `process`: Processing units
-- `storage`: Memory/storage
-- `decision`: Control logic
-- `default`: General components
-
-## Layout Engines
-
-- `dot`: Hierarchical (top-down/left-right)
-- `neato`: Spring model layout
-- `fdp`: Force-directed layout
-- `circo`: Circular layout
-- `twopi`: Radial layout
-
-## Output Formats
-
-- `svg`: Scalable Vector Graphics (best for editing)
-- `png`: Raster image (good for viewing)
-- `pdf`: Portable Document Format (USPTO compatible)
+- **Flowchart shapes**: `ellipse` (start/end), `box` (process), `diamond` (decision), `parallelogram` (I/O), `cylinder` (DB). **Block types** (documentation only): `input`/`output`/`process`/`storage`/`decision`/`default` — all render as `box`.
+- **Layout engines**: `dot` (hierarchical — default for patents), `neato`, `fdp`, `circo`, `twopi`.
+- **Output formats**: `svg` (primary, editable), `pdf` (filing), `png` (preview + `view_image` gate). SVG and PNG are the same `format=` switch.
+- **Templates**: `generator.get_diagram_templates()` returns `simple_flowchart`, `system_block`, `method_steps`, `component_hierarchy`.
 
 ## Patent-Style Reference Numbers
 
-Convention:
-- Main components: 10, 20, 30, 40, ...
-- Sub-components: 12, 14, 16 (under 10)
-- Elements: 22, 24, 26 (under 20)
-
-Example labeling:
-```
-"Input Sensor (10)"
-"  - Detector Element (12)"
-"  - Signal Processor (14)"
-"Central Unit (20)"
-"  - CPU Core (22)"
-"  - Cache (24)"
-```
+Convention: main components 10/20/30/40…, sub-components 12/14/16 under 10, elements 22/24/26 under 20. Each number denotes exactly ONE element (no duplicates within a figure).
 
 ## Workflow (gated)
 
@@ -282,37 +218,16 @@ Each 🔴 is a blocking gate — do not proceed until it passes.
    - Multiple interconnections
    - Hierarchical structures
 
-## Failure Modes
+## Failure Modes (quick) & Anti-Patterns (quick)
 
-When a render fails, diagnose by symptom → fix per the table. Each row is an explicit
-"if X fails → Y" branch, not a generic suggestion.
+**Full tables**: see [`references/compliance.md`](references/compliance.md) (7 failure-mode rows + 10 anti-pattern rows + legal basis). The 4 rules below are the most-violated — keep them in mind at all times:
 
-| Symptom | Root cause | Fix |
-|---|---|---|
-| `ExecutableNotFound: failed to execute WindowsPath('dot')` | Graphviz `dot` not on PATH (common on Windows — installer does not add it) | The import recipe already probes `C:\Program Files\Graphviz\bin`. If still failing, run `dot -V`; if not found, install (`choco install graphviz` Windows / `brew install graphviz` Mac / `apt install graphviz` Linux) and re-run. |
-| `FileNotFoundError: ... python/diagram_generator.py` | SKILL root not resolved (import recipe walked up but did not find the module) | Hardcode `_SKILL_ROOT = r"<absolute path to patent-figforge folder>"` as a last-resort override at the top of the recipe. |
-| Chinese renders as tofu □□□ / `???` / empty boxes in SVG/PNG | Fontconfig cannot resolve a CJK family (no fonts.conf mapping) | `_resolve_cjk_font()` auto-writes a fonts.conf on Windows. If still garbled: confirm a candidate font exists (`Test-Path C:\Windows\Fonts\simhei.ttf`) and that `FONTCONFIG_FILE` points at the written conf. On Linux install `fonts-noto-cjk`. |
-| Edge labels (是/否/data) disappear | `splines="ortho"` silently drops edge labels (Graphviz known limitation) | Use `splines="polyline"` (already the skill default). Do NOT switch to `"ortho"`. |
-| `cairosvg` / `OSError: no library 'cairo-2'` when converting SVG→PNG via a **post-processing** library | This is a **separate** Python library (`cairosvg`), NOT Graphviz's own renderer. It needs a system `libcairo` that stock Windows lacks. | Do NOT use `cairosvg`. For PNG, use **Graphviz directly** (`output_format="png"` on the API, or `dot -Tpng`) — its built-in cairo backend works on stock Windows (verified: graphviz 15.1.0 renders PNG in <0.5s, 5500–7700B). SVG and PNG are the same `format=` switch; if SVG works, PNG works. |
-| Lead lines (reference-number dotted edges) cross each other | More than ~3 independent reference-number annotations on one figure; graphviz auto-layout cannot route them cleanly | Keep **≤ 2–3 reference numbers per figure** (USPTO/CNIPA convention). For more, split into multiple figures. Prefer in-label `ref=` over post-hoc `add_reference_numbers` lead lines. |
-| Output file very large / render slow | Hundreds of nodes in one diagram | Split into sub-figures or use `rankdir=LR` with subgraph clustering. One figure per independent claim element. |
+1. **No color** — black ink on white only (§1.84(a)(1)). `bgcolor="white"`, `fillcolor="white"`.
+2. **≤2–3 reference numbers per figure** with lead lines; for more, split into a second figure. Prefer in-label `ref=` (no lead lines).
+3. **`splines="polyline"`** — never `"ortho"` (drops edge labels) or `"curved"` (not reproducible).
+4. **Reference numbers unique** within a figure; each `ref` value denotes exactly one element.
 
-## 🚫 Anti-Patterns & Blacklist
-
-Hard prohibitions — violating any one makes the figure non-compliant or unusable.
-
-| # | ❌ Don't | Why | ✅ Do instead |
-|---|---|---|---|
-| 1 | Use **color** (red/green/blue fills or strokes) | 37 CFR §1.84(a)(1) + CNIPA: **black ink on white only**; color figures are rejected | `bgcolor="white"`, `fillcolor="white"`, default black strokes. No `color=` attribute. |
-| 2 | Use **curved** splines (`splines="curved"`/`"spline"`) | Patent figures must be reproducible line drawings; curves overlap and are hard to read | `splines="polyline"` (orthogonal, sharp). |
-| 3 | Add **>3 reference numbers** with lead lines to one figure | Graphviz cannot route that many lead lines without crossing → §1.84(q) violation (no crossing lead lines) | ≤2–3 ref numbers per figure; split excess into a second figure. |
-| 4 | **Duplicate** a reference number across different elements | CNIPA/USPTO: each number denotes exactly ONE element; duplicates confuse the description | Each `ref` value unique within the figure. Reuse a number only for the same element across figures. |
-| 5 | Use `splines="ortho"` for diagrams with edge labels | `ortho` silently drops edge labels (是/否/data vanish) | `splines="polyline"` — keeps labels, stays orthogonal. |
-| 6 | Use `add_reference_numbers` (post-hoc SVG injection) for new figures | Brittle string matching on SVG `<text>`; lead lines cross (see Failure Mode row 6) | Use the in-label `ref=` parameter on the node/block dict — clean, no lead lines. |
-| 7 | Raster output (PNG) as the **primary** deliverable | Not editable; §1.84 prefers reproducible vector | Primary = **SVG** (editable) + **PDF** (filing). PNG is fine as preview and for `view_image` verification — graphviz renders it directly and reliably (verified <0.5s on stock Windows). |
-| 8 | Set `fontsize` < 14 on reference numbers | §1.84(p)(3): figure text must be ≥ ~14pt for legibility | Default `fontsize="14"` (graph/node); `13` only for diamond decision nodes (narrow). |
-| 9 | Omit the figure entirely and describe it in prose | A picture is required for system/method claims with multiple components | Always emit an SVG + PDF. |
-| 10 | Mix `rankdir` mid-diagram via subgraphs | Breaks the single主流向 (main-flow) direction, causes routing chaos | One `rankdir` per figure (TB for method flowcharts, LR for system block diagrams). |
+For any render failure (ExecutableNotFound / tofu / oversize / cairosvg), look up the symptom→cause→fix row in [`references/compliance.md`](references/compliance.md#failure-modes).
 
 ## Tools Available
 
