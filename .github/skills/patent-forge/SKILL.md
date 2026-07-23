@@ -124,12 +124,12 @@ python scripts/fill_acip_template.py inspect --docx new_agency.docx
    - **混合类**: Combine dimensions from relevant domains; for HW+SW, vary both hardware configuration AND control method
    - **不确定领域**: Default to varying implementation mechanism, structural configuration, and operating conditions
 6. **Diagram Generation**: 生成说明书附图（至少 3 幅）。**图类型匹配技术领域**：
-   - **软件/算法类**: 整体架构图、核心方法流程图、关键模块示意图 → Mermaid (`flowchart` / `sequenceDiagram` / `classDiagram`)
-   - **机械/结构类**: 整体结构图（装配图）、关键部件详图、工作原理图/运动简图 → Mermaid (`flowchart` 用于连接关系) 或文字描述 + 标注"正式申请需替换为 CAD 工程图"
-   - **电子/电路类**: 系统框图、电路原理图、信号流图 → Mermaid (`flowchart`)
-   - **化学/材料类**: 工艺流程图、结构式/组成图、性能对比图 → Mermaid (`flowchart`)
+   - **软件/算法类**: 整体架构图、核心方法流程图、关键模块示意图
+   - **机械/结构类**: 整体结构图（装配图）、关键部件详图、工作原理图/运动简图
+   - **电子/电路类**: 系统框图、电路原理图、信号流图
+   - **化学/材料类**: 工艺流程图、结构式/组成图、性能对比图
    - 参考标号统一编排（10、20、30... 整十递增），贯穿说明书与权利要求书一致
-   - 标注"正式申请需替换为专利制图 / Visio (.vsd) / CAD 原图"
+   - **所有附图生成均由 `patent-figforge` skill 负责**——调用该 skill 生成 SVG/PNG 专利附图，本 skill 仅指定图类型和内容要求，不直接绘制图形。生成后标注"正式申请需替换为 Visio (.vsd) / CAD 原图"
 7. **Novelty Articulation**: Clearly state creative points (创新点) vs. existing solutions
 8. **Prior Art Reference List (现有技术文献清单)**：
    - 列出 Phase 2 检索到的所有相关专利/文献（公开号 + 标题 + 优先权日 + 相关性说明）
@@ -159,7 +159,7 @@ python scripts/fill_acip_template.py inspect --docx new_agency.docx
 5. **References (Section 8)**: 列出对理解方案有帮助的专利 / 论文 / 期刊
 6. **Diagram Generation**:
    - 软硬结合案件典型附图清单：整体三维结构图、工作原理图、参数标注图、性能曲线图、电路图、控制流程图
-   - 用 Mermaid（`flowchart` / `sequenceDiagram`）+ 文末标注"正式提交需提供 Visio (.vsd) 可编辑原图"
+   - **所有附图生成均由 `patent-figforge` skill 负责**——调用该 skill 生成 SVG/PNG 专利附图，本 skill 仅指定图类型和内容要求，不直接绘制图形。附图文末标注"正式提交需提供 Visio (.vsd) 可编辑原图"
 7. **Consistency Check**: 同一对象使用同一术语（专利法"清楚"要求）
 
 🔴 **CHECKPOINT 3D-draft — 必须暂停**：在草稿完成后，向用户预览交底书结构（特别是第四节详细阐述是否符合"公开充分"），等待用户明确确认通过后定稿。**禁止在用户确认前继续。**
@@ -203,9 +203,9 @@ patent-forge-output/
 │   ├── specification_full.md            # 说明书全文
 │   └── prior_art_reference_list.md      # 现有技术文献清单
 ├── 04-diagrams/
-│   ├── fig1_architecture.mmd            # 整体架构图（Mermaid）
-│   ├── fig2_method_flow.mmd             # 方法流程图
-│   └── fig3_key_module.mmd              # 关键模块示意图
+│   ├── fig1_architecture.svg            # 整体架构图（patent-figforge 生成）
+│   ├── fig2_method_flow.svg             # 方法流程图（patent-figforge 生成）
+│   └── fig3_key_module.svg              # 关键模块示意图（patent-figforge 生成）
 ├── 05-compliance/
 │   ├── checklist_A_or_D.md              # 清单 A/D 逐项核对结果
 │   └── compliance_report.md             # 合规审查报告

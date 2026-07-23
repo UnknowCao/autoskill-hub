@@ -24,7 +24,7 @@ Save the generated document as a local Markdown file:
   - `application` → `Patent-[ShortTitle]-[YYYYMMDD].md`
   - `disclosure` → `Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].md`
 - Prefer `docs/` or `patents/` directory, otherwise current working directory
-- 附图用 Mermaid 草图，文末标注"正式申请/提交需替换为专利制图 / Visio (.vsd) 原图"
+- 附图由 `patent-figforge` skill 生成 SVG/PNG，文末标注"正式申请/提交需替换为专利制图 / Visio (.vsd) 原图"
 
 ---
 

@@ -128,4 +128,4 @@ python scripts/_convert_core.py "<output.docx>" -o "assets/templates/<new_templa
 1. **旧版 .doc 转换**：markitdown 不直接支持 `.doc`，需先用 Word COM 转 `.docx`。
 2. **嵌套表格**：ACIP 模板含嵌套表格，markitdown 会压平（已知缺陷 D2/D3，详见 markitdown-enhanced 记忆）。规范化阶段需手工补齐为标准 Markdown 表格。
 3. **公式转义**：markitdown 会把 `$...$` 内的 `*` `_` `^` 错误转义，规范化阶段需用 `fix_formula_escaping.py` 后处理。
-4. **附图原图**：交底书通常要求提供 `.vsd` 等可编辑图档，skill 只能输出 Mermaid 草图，需在输出末尾明确提示用户补交原图。
+4. **附图原图**：附图由 `patent-figforge` skill 生成 SVG/PNG。交底书通常要求提供 `.vsd` 等可编辑图档，需在输出末尾明确提示用户补交原图。
