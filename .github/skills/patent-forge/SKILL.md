@@ -114,35 +114,11 @@ python scripts/fill_acip_template.py inspect --docx new_agency.docx
    - 独立权利要求 1-3 条，二段式「前序部分 + 其特征在于」
    - 从属权利要求 10-20 条，覆盖优选实施方式与 fallback 位置
    - 引用基础正确（先行基础 / antecedent basis），用语在说明书中有支持
-   - **领域专属权利要求范式**（按 Phase 1 识别的技术领域选择，禁止跨领域套用）：
-     - **软件/算法类**：方法权利要求（"一种...方法，包括：步骤 A；步骤 B"）+ 系统权利要求（"一种...系统，包括：模块 X，配置为..."）+ 程序存储介质权利要求（fallback 位置）。完整范式见 [`references/application_example.md`](./references/application_example.md)（Focus Period 推荐系统，14 条权利要求含方法/系统/介质三类）
-     - **机械/结构类**：装置权利要求聚焦**位置关系 + 连接关系 + 配合关系**，每条限定必须含参考标号（10/20/30...）。范式：
-       ```
-       1. 一种[装置名称]，包括底座(10)、立柱(20)和[部件](30)，其特征在于：
-          所述[部件](30)通过[铰接/滑轨/螺纹]连接于所述立柱(20)的[位置]，
-          并被配置为在[工作状态]下[运动/姿态]，在[收纳状态]下[另一姿态]；
-          [锁定机构](40)被配置为将所述[部件](30)固定于[工作位置/收纳位置]。
-
-       2. 根据权利要求 1 所述的[装置]，其特征在于，所述[部件](30)的[几何参数]
-          满足[数值范围]，使得[技术效果]。
-       ```
-       —— 必须覆盖：连接类型（铰接/滑接/螺纹）、运动自由度、锁定机构、几何参数范围
-     - **电子/电路类**：系统权利要求聚焦**电路拓扑 + 信号链 + 元件选型**（"包括传感器单元、信号调理单元、模数转换单元和处理单元，其特征在于：所述信号调理单元包括..."）
-     - **化学/材料类**：组合物权利要求聚焦**组分 + 含量范围 + 制备步骤**（"按重量份计，包括组分 A：x-y 份；组分 B：..."，范围用"至"表达）
+   - **领域专属范式**：按 Phase 1 识别的技术领域，从 [`references/domain_matrix.md`](./references/domain_matrix.md) § 1 Claims 选取对应范式（软件/机械/电子/化学/混合/不确定 6 类，**禁止跨领域套用** Anti-Pattern #16）。完整 dogfood 示例：[`application_example.md`](./references/application_example.md)（软件）+ [`application_example_mechanical.md`](./references/application_example_mechanical.md)（机械）
    - 🔴 **CHECKPOINT 3A-claims — 必须暂停**：草稿完成后向用户展示权利要求书，等待用户明确确认保护范围合理（避免过宽被驳回 / 过窄损失保护），获得反馈后定稿。**禁止在用户确认前继续撰写摘要和实施方式。**
 4. **Abstract Writing**: 撰写摘要，300 字以内，单段，不得包含权利要求式限定语；指明一幅最有代表性的摘要附图
-5. **Embodiments Creation**: Design at least 3 distinct embodiments (具体实施方式). **Variation dimensions depend on the technical domain** (classified in Phase 1 Action 1):
-   - **软件/算法类**: Vary data flow (push/pull, sync/async), trigger conditions (time/event/threshold), architecture (monolithic/distributed/edge-cloud)
-   - **机械/结构类**: Vary drive mechanism (电动/气动/手动), folding geometry (铰接/滑轨/伸缩), material (金属/复合材料), locking mechanism (卡扣/磁吸/螺纹)
-   - **电子/电路类**: Vary circuit topology, component selection, signal processing chain, power management scheme
-   - **化学/材料类**: Vary composition ratio, synthesis method, processing conditions, additive selection
-   - **混合类**: Combine dimensions from relevant domains; for HW+SW, vary both hardware configuration AND control method
-   - **不确定领域**: Default to varying implementation mechanism, structural configuration, and operating conditions
-6. **Diagram Generation**: 生成说明书附图（至少 3 幅）。**图类型匹配技术领域**：
-   - **软件/算法类**: 整体架构图、核心方法流程图、关键模块示意图
-   - **机械/结构类**: 整体结构图（装配图）、关键部件详图、工作原理图/运动简图
-   - **电子/电路类**: 系统框图、电路原理图、信号流图
-   - **化学/材料类**: 工艺流程图、结构式/组成图、性能对比图
+5. **Embodiments Creation**: Design at least 3 distinct embodiments (具体实施方式). **变化维度必须匹配 Phase 1 Action 1 识别的技术领域**——从 [`references/domain_matrix.md`](./references/domain_matrix.md) § 2 实施例变化维度 表中选取（软件/机械/电子/化学/混合/不确定 6 类各有专属维度，禁止跨领域套用 Anti-Pattern #16）。铁律：每个实施例至少变化 1 个维度；3 个实施例不能只变同一个维度
+6. **Diagram Generation**: 生成说明书附图（至少 3 幅）。**图类型必须匹配技术领域**——从 [`references/domain_matrix.md`](./references/domain_matrix.md) § 3 附图类型 表中选取（软件/机械/电子/化学/混合/不确定 6 类各有专属图类型）
    - 参考标号统一编排（10、20、30... 整十递增），贯穿说明书与权利要求书一致
    - **所有附图生成均由 `patent-figforge` skill 负责**——调用该 skill 生成 SVG/PNG 专利附图，本 skill 仅指定图类型和内容要求，不直接绘制图形。生成后标注"正式申请需替换为 Visio (.vsd) / CAD 原图"
 7. **Novelty Articulation**: Clearly state creative points (创新点) vs. existing solutions
