@@ -234,26 +234,36 @@ Example labeling:
 "  - Cache (24)"
 ```
 
-## Presentation Format
+## Workflow (gated)
 
-When creating diagrams:
+Each 🔴 is a blocking gate — do not proceed until it passes.
 
-1. **Describe what will be generated**:
-   "Creating a flowchart for the authentication method with 5 steps..."
+**🔴 GATE 1 · Plan & confirm** (before generating any code):
+- List the nodes/blocks, the edges, the `rankdir` (TB for method flowcharts, LR for system blocks), and the intended reference-number assignment aloud.
+- State how many independent reference numbers the figure needs. If **>3** with lead lines → STOP, tell the user you will split into multiple figures (Anti-Pattern #3).
+- Confirm with the user before rendering if the structure is non-trivial (≥8 nodes, decision branches, or loop-back edges).
 
-2. **Generate the diagram**:
-   Run Python code to create SVG/PNG/PDF
+**Step 2 · Generate**: run the import recipe + the chosen API method (`create_flowchart` / `create_block_diagram` / `render_dot_diagram`). Use in-label `ref=` for reference numbers (Anti-Pattern #6).
 
-3. **Show file location** (the path returned by the API, e.g.):
-   "Diagram created: ./method_flowchart.svg"
+**🔴 GATE 2 · Render sanity** (after `_render` returns):
+- Confirm the SVG file exists and is non-empty (size > 500 bytes — a tofu/empty render is typically <200 bytes).
+- Confirm Chinese labels are present in the SVG source (grep one label, e.g. `Select-String start.svg -Pattern "开始"`). Garbled/`???`/tofu here = fontconfig failed → Failure Mode row 3.
 
-4. **List reference numbers** (if added):
+**🔴 GATE 3 · view_image verification** (MANDATORY before declaring done):
+- **Render a PNG copy** of the figure (e.g. call the API with `output_format="png"`, or `dot -Tpng`) and **open it with the `view_image` tool** to visually inspect. Note: `view_image` only accepts raster formats — SVG cannot be inspected this way, so always produce a PNG for the visual gate even though SVG remains the primary deliverable.
+- Do NOT declare success based on "the file exists" alone.
+- Verify in the image: (a) Chinese glyphs render (no □□□/tofu), (b) edges don't cross except intentional branches, (c) reference numbers are legible, (d) no color (black on white). If any fail → fix and re-render before proceeding.
+- This gate exists because graphviz auto-layout can produce geometrically broken output (crossing lead lines, overlapping labels) that a file-size check will not catch.
+
+**Step 4 · Report**: show the file path and list the reference numbers used:
    ```
+   Diagram created: ./method_flowchart.svg
    Reference Numbers:
-   - Input Module (10)
-   - Processing Unit (20)
-   - Output Interface (30)
+   - 开始/Start (10)
+   - 采样 Sample (20)
+   - 判定 Decide (30)
    ```
+🛑 **STOP**: present the verified figure to the user. Do not auto-generate additional figures or modify claims text without confirmation.
 
 ## Common Use Cases
 
