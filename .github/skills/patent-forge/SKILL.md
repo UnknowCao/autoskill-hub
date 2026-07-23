@@ -114,6 +114,21 @@ python scripts/fill_acip_template.py inspect --docx new_agency.docx
    - 独立权利要求 1-3 条，二段式「前序部分 + 其特征在于」
    - 从属权利要求 10-20 条，覆盖优选实施方式与 fallback 位置
    - 引用基础正确（先行基础 / antecedent basis），用语在说明书中有支持
+   - **领域专属权利要求范式**（按 Phase 1 识别的技术领域选择，禁止跨领域套用）：
+     - **软件/算法类**：方法权利要求（"一种...方法，包括：步骤 A；步骤 B"）+ 系统权利要求（"一种...系统，包括：模块 X，配置为..."）+ 程序存储介质权利要求（fallback 位置）。完整范式见 [`references/application_example.md`](./references/application_example.md)（Focus Period 推荐系统，14 条权利要求含方法/系统/介质三类）
+     - **机械/结构类**：装置权利要求聚焦**位置关系 + 连接关系 + 配合关系**，每条限定必须含参考标号（10/20/30...）。范式：
+       ```
+       1. 一种[装置名称]，包括底座(10)、立柱(20)和[部件](30)，其特征在于：
+          所述[部件](30)通过[铰接/滑轨/螺纹]连接于所述立柱(20)的[位置]，
+          并被配置为在[工作状态]下[运动/姿态]，在[收纳状态]下[另一姿态]；
+          [锁定机构](40)被配置为将所述[部件](30)固定于[工作位置/收纳位置]。
+
+       2. 根据权利要求 1 所述的[装置]，其特征在于，所述[部件](30)的[几何参数]
+          满足[数值范围]，使得[技术效果]。
+       ```
+       —— 必须覆盖：连接类型（铰接/滑接/螺纹）、运动自由度、锁定机构、几何参数范围
+     - **电子/电路类**：系统权利要求聚焦**电路拓扑 + 信号链 + 元件选型**（"包括传感器单元、信号调理单元、模数转换单元和处理单元，其特征在于：所述信号调理单元包括..."）
+     - **化学/材料类**：组合物权利要求聚焦**组分 + 含量范围 + 制备步骤**（"按重量份计，包括组分 A：x-y 份；组分 B：..."，范围用"至"表达）
    - 🔴 **CHECKPOINT 3A-claims — 必须暂停**：草稿完成后向用户展示权利要求书，等待用户明确确认保护范围合理（避免过宽被驳回 / 过窄损失保护），获得反馈后定稿。**禁止在用户确认前继续撰写摘要和实施方式。**
 4. **Abstract Writing**: 撰写摘要，300 字以内，单段，不得包含权利要求式限定语；指明一幅最有代表性的摘要附图
 5. **Embodiments Creation**: Design at least 3 distinct embodiments (具体实施方式). **Variation dimensions depend on the technical domain** (classified in Phase 1 Action 1):
@@ -183,7 +198,8 @@ Reference these files within this directory for detailed specifications:
 - `scripts/fill_acip_template.py` — **`--docx` output tool (ACIP-only data, generic `inspect` for onboarding new agencies)**: fill the ACIP .docx template with content (subcommands: `fill` / `inspect` / `list`)
 - `assets/raw_templates/acip_invention_disclosure.docx` — Original ACIP .docx template (used by `--docx` mode)
 - `references/api_and_terminology.md` — SerpAPI/Exa.ai endpoints + Chinese patent terminology standards + language conventions
-- `references/application_example.md` — High-quality `--doc-type application` example (Focus Period Recommendation System)
+- `references/application_example.md` — High-quality `--doc-type application` example: **software/algorithm domain** (Focus Period Recommendation System, 14 claims incl. method/system/storage-medium)
+- `references/application_example_mechanical.md` — High-quality `--doc-type application` example: **机械/结构类 domain** (Foldable EV Charging Pile, 14 claims incl. positional/connectivity relations with reference numbers 10-83) — dogfood for Phase 3A Action 3 机械类 claims 范式
 - `references/test-prompts.json` — Seven test prompts (P1 happy-path application / P2 disclosure-ACIP-docx / P3 doc-type ambiguity / P4 mechanical structure / P5 all-search-fails / P6 non-ACIP agency / P7 severely incomplete info)
 
 ## Output File Organization (输出文件目录结构)
