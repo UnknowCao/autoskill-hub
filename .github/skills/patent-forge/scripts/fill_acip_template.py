@@ -38,6 +38,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import sys
 import pathlib
 from dataclasses import dataclass, field
@@ -46,6 +48,9 @@ from typing import Dict, List, Optional
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Pt, Inches
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
 # ===========================================================================
@@ -95,26 +100,291 @@ TEMPLATES: Dict[str, dict] = {
 # Cell helpers
 # ===========================================================================
 def clear_cell(cell) -> None:
-    """Remove all <w:p> in a cell, then add one empty paragraph.
-    Preserves cell properties (tcPr: width, borders, merge)."""
+    """Remove all paragraphs AND nested tables in a cell, then add one empty
+    paragraph. Preserves cell properties (tcPr: width, borders, merge).
+
+    Without removing <w:tbl> children, pre-existing sample tables shipped in a
+    template (e.g. ACIP's terminology table) would survive and accumulate
+    alongside newly-rendered content.
+    """
     tc = cell._tc
-    for p in tc.findall(qn("w:p")):
-        tc.remove(p)
+    # Remove both <w:p> (paragraphs) and <w:tbl> (nested tables) in any order.
+    for tag in ("w:p", "w:tbl"):
+        for el in tc.findall(qn(tag)):
+            tc.remove(el)
     p = OxmlElement("w:p")
     tc.append(p)
 
 
-def set_cell_text(cell, text: str, bold: bool = False) -> None:
-    """Replace cell content with multi-line text. Cell formatting inherited."""
-    clear_cell(cell)
-    p = cell.paragraphs[0]
+# ===========================================================================
+# Emoji / status-symbol stripping
+# ===========================================================================
+# Patent disclosure documents are formal legal-adjacent artifacts. Internal
+# workflow markers (🔴🟠🟡🟢⚠️✅❌⛔🛑⚡🔒 and similar) are useful during
+# AI-assisted drafting but must NOT appear in the final .docx/.md delivered
+# to a patent agent. This regex matches the common emoji ranges + an
+# explicit allowlist of status glyphs seen across the patent-forge skills.
+
+_EMOJI_RE = re.compile(
+    "["
+    "\U0001F300-\U0001FAFF"   # symbols & pictographs (🔴🟠🟡🟢✅❌⛔🛑⚡🔒 ...)
+    "\U00002600-\U000027BF"   # misc symbols (☀ ☂ ☑ ☒ ⚠ ...)
+    "\U0001F000-\U0001F2FF"   # mahjong / dominoes / cards (rare here, safe to drop)
+    "\U00002B00-\U00002BFF"   # arrows/stars (➜ ⭐) — note: → (U+2192) is OUTSIDE this range and preserved
+    "\u200D"                  # ZWJ used in emoji composition
+    "\uFE0F"                  # VS-16 (emoji variation selector, e.g. trailing ⚠️)
+    "\u20E3"                  # combining enclosing keycap
+    "]+",
+    flags=re.UNICODE,
+)
+
+
+def _strip_status_symbols(text: str) -> str:
+    """Remove emoji / status glyphs from text, collapsing the resulting
+    double spaces (e.g. "（🔴 最接近）" -> "（最接近）", "✅ 优秀" -> "优秀").
+    Non-emoji punctuation (Chinese/ASCII brackets, arrows like → used as
+    flow notation in method steps) is preserved.
+    """
+    if not isinstance(text, str):
+        return text
+    cleaned = _EMOJI_RE.sub("", text)
+    # Collapse spaces left behind where an emoji sat between CJK chars or
+    # before/after a bracket: "（  text" / "text  ）" / "A  B".
+    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    cleaned = re.sub(r"([（(])\s+", r"\1", cleaned)   # "（ text" -> "（text"
+    cleaned = re.sub(r"\s+([）)])", r"\1", cleaned)   # "text ）" -> "text）"
+    return cleaned.strip()
+
+
+# ===========================================================================
+# Template boilerplate hint stripping
+# ===========================================================================
+# The ACIP (and similar agency) .docx templates ship each answer cell with an
+# instruction hint, e.g. row 20 (terminology) starts with
+#   "请对本交底书中提及的关键术语、技术缩略语进行解释说明..."
+# and row 22 (references) starts with
+#   "（对于理解交底书中的技术方案有帮助的专利/论文/期刊，如有则填写）"
+# When the AI generates content it tends to echo these same hint phrases as a
+# prefix to the real answer, producing duplicated / leaked boilerplate in the
+# final doc. These prefixes are stripped from the START of any field value so
+# only the actual content remains. Matching is prefix-anchored and tolerant of
+# full-width/half-width parentheses and CJK punctuation variants.
+
+_BOILERPLATE_HINT_PREFIXES = (
+    # Terminology section hint (ACIP row 20)
+    "请对本交底书中提及的关键术语、技术缩略语进行解释说明",
+    "请对本交底书中提及的关键术语、技术缩略语进行解释",
+    "请对本交底书",
+    # References section hint (ACIP row 22) — appears with full-width or
+    # half-width parentheses, with or without trailing "，如有则填写"
+    "（对于理解交底书中的技术方案有帮助的专利/论文/期刊",
+    "(对于理解交底书中的技术方案有帮助的专利/论文/期刊",
+    "（对于理解交底书中的技术方案有帮助的专利",
+    "(对于理解交底书中的技术方案有帮助的专利",
+    "对于理解交底书中的技术方案有帮助的专利/论文/期刊",
+)
+
+
+def _strip_boilerplate_hints(text: str) -> str:
+    """Remove template boilerplate instruction hints from the start of `text`.
+
+    Handles the common variants: hint followed by '：' then content, hint
+    wrapped in parentheses on its own line, hint followed by newlines. Keeps
+    the remainder intact. Idempotent: if no hint is present, returns text as-is.
+    """
+    if not isinstance(text, str) or not text:
+        return text
+    for hint in _BOILERPLATE_HINT_PREFIXES:
+        if text.startswith(hint):
+            rest = text[len(hint):]
+            # Drop a trailing instruction clause up to and including the first
+            # '：' / ':' / '）' / ')' / newline so we keep only real content.
+            # Examples:
+            #   "...解释说明：\n\n| 术语 ..."  -> keep "| 术语 ..."
+            #   "...解释说明，如果有英文缩写，必须给出...）\n\n" -> keep ""
+            #   "（对于...如有则填写）\n\n[1] ..." -> keep "[1] ..."
+            rest = re.sub(
+                r"^[：:）)\s]*", "", rest, count=1
+            )
+            # If the hint itself carried a full instruction sentence (e.g. the
+            # long terminology hint with "如果有英文缩写，必须给出..."), strip
+            # everything up to the first markdown table header or reference
+            # marker or the first newline-run that introduces real content.
+            # Heuristic: cut any leading prose that does NOT start with a
+            # table pipe '|', a reference '[N]', or another structural token.
+            rest = re.sub(
+                r"\A(?:[^|\[\n]*?)(?=\||\[|\n\n|\Z)", "", rest, count=1,
+                flags=re.DOTALL,
+            )
+            text = rest.lstrip(" \t")
+            break
+    # Collapse any leading blank lines left behind.
+    return text.lstrip("\n").strip()
+
+
+# ===========================================================================
+# Markdown table parsing & rendering
+# ===========================================================================
+# A markdown pipe-table block is detected as 2+ consecutive lines where:
+#   - line 0 contains a pipe `|`
+#   - line 1 is a separator row like `|---|---|` (only dashes/colons/pipes/spaces)
+# Captured tables are rendered as native Word nested tables instead of text.
+
+_MD_TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$")
+
+
+def _is_md_table_line(line: str) -> bool:
+    return "|" in line
+
+
+def _is_md_table_sep(line: str) -> bool:
+    return bool(_MD_TABLE_SEP_RE.match(line))
+
+
+def _split_md_row(line: str) -> List[str]:
+    """Split a markdown table row into trimmed cells, stripping outer pipes."""
+    s = line.strip()
+    if s.startswith("|"):
+        s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    return [c.strip() for c in s.split("|")]
+
+
+@dataclass
+class _MdTable:
+    header: List[str]
+    rows: List[List[str]]
+
+
+def _parse_md_tables(text: str) -> List:
+    """Segment text into a list of blocks: ('text', str) or ('table', _MdTable).
+
+    Keeps plain text blocks intact (preserving their newlines) so the caller
+    can render them as paragraphs; extracted markdown tables become _MdTable
+    objects to be rendered as native Word tables.
+    """
     lines = text.split("\n") if isinstance(text, str) else list(text)
-    for li, line in enumerate(lines):
-        if li > 0:
-            run = p.add_run()
-            run.add_break()
-        run = p.add_run(line)
-        run.bold = bold
+    blocks: List = []
+    i = 0
+    n = len(lines)
+    text_buf: List[str] = []
+
+    def flush_text() -> None:
+        if text_buf:
+            blocks.append(("text", "\n".join(text_buf)))
+            text_buf.clear()
+
+    while i < n:
+        line = lines[i]
+        # Detect table start: current line has a pipe AND next line is a separator
+        if (
+            _is_md_table_line(line)
+            and i + 1 < n
+            and _is_md_table_sep(lines[i + 1])
+        ):
+            flush_text()
+            header = _split_md_row(line)
+            i += 2  # skip header + separator
+            rows: List[List[str]] = []
+            while i < n and _is_md_table_line(lines[i]) and not _is_md_table_sep(lines[i]):
+                rows.append(_split_md_row(lines[i]))
+                i += 1
+            blocks.append(("table", _MdTable(header=header, rows=rows)))
+        else:
+            text_buf.append(line)
+            i += 1
+    flush_text()
+    return blocks
+
+
+def _render_md_table(cell, md: _MdTable, bold: bool = False) -> None:
+    """Append a native Word nested table inside `cell` for the markdown table."""
+    n_cols = max([len(md.header)] + [len(r) for r in md.rows])
+    n_rows = 1 + len(md.rows)  # header + data
+    tbl = cell.add_table(rows=n_rows, cols=n_cols)
+    tbl.style = "Table Grid"
+    tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+
+    def _write(w_row: int, w_col: int, value: str, is_header: bool) -> None:
+        if w_col >= n_cols:
+            return
+        c = tbl.cell(w_row, w_col)
+        # Clear the default empty paragraph then write text as a single run.
+        clear_cell(c)
+        para = c.paragraphs[0]
+        run = para.add_run(value)
+        run.bold = is_header or bold
+        run.font.size = Pt(9)
+        c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        if is_header:
+            # shade header row light blue for readability
+            _shade_cell(c, "D9E2F3")
+
+    # Header row
+    for ci, val in enumerate(md.header):
+        _write(0, ci, val, is_header=True)
+    # Data rows
+    for ri, row in enumerate(md.rows, start=1):
+        for ci, val in enumerate(row):
+            _write(ri, ci, val, is_header=False)
+
+
+def _shade_cell(cell, hex_fill: str) -> None:
+    """Apply a background fill color to a table cell."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), hex_fill)
+    tcPr.append(shd)
+
+
+def set_cell_text(cell, text: str, bold: bool = False) -> str:
+    """Replace cell content with multi-line text.
+
+    Markdown pipe-tables embedded in `text` are rendered as native Word nested
+    tables (each with a header row + data rows and Table Grid borders). Plain
+    text blocks between/around tables are rendered as paragraphs.
+    Cell formatting is otherwise inherited.
+
+    Status/emoji glyphs are stripped before rendering (formal disclosure).
+    Template boilerplate instruction hints (e.g. ACIP's "请对本交底书中提及的
+    关键术语..." or "（对于理解交底书中的技术方案有帮助的专利/论文/期刊）")
+    are also stripped from the start of the value so they do not leak into the
+    final deliverable.
+    Returns the cleaned text (for caller bookkeeping).
+    """
+    text = _strip_status_symbols(text)
+    text = _strip_boilerplate_hints(text)
+    clear_cell(cell)
+    blocks = _parse_md_tables(text)
+    first = True
+    for kind, payload in blocks:
+        if kind == "text":
+            # Render each text block as its own paragraph (newlines -> breaks).
+            lines = payload.split("\n") if payload else [""]
+            # Drop a single trailing empty line that arises from table detection.
+            if len(lines) > 1 and lines[-1] == "":
+                lines = lines[:-1]
+            p = cell.paragraphs[0] if first else cell.add_paragraph()
+            first = False
+            for li, line in enumerate(lines):
+                if li > 0:
+                    run = p.add_run()
+                    run.add_break()
+                run = p.add_run(line)
+                run.bold = bold
+        elif kind == "table":
+            # Table needs a paragraph anchor before it (python-docx requirement).
+            if not first:
+                cell.add_paragraph()
+            _render_md_table(cell, payload, bold=bold)
+            first = False
+    if first:
+        # No blocks at all (empty text); keep the single empty paragraph.
+        return text
+    return text
 
 
 # ===========================================================================
@@ -124,6 +394,7 @@ def set_cell_text(cell, text: str, bold: bool = False) -> None:
 class FillResult:
     filled_fields: List[str] = field(default_factory=list)
     skipped_fields: List[str] = field(default_factory=list)
+    figures_embedded: List[int] = field(default_factory=list)
     output_path: str = ""
 
 
@@ -132,8 +403,18 @@ def fill_template(
     content: Dict[str, str],
     output_path: str,
     skill_root: Optional[pathlib.Path] = None,
+    figures: Optional[Dict[int, str]] = None,
+    figures_width_inches: float = 5.5,
 ) -> FillResult:
-    """Open template .docx, fill cells per TEMPLATES[template_id], save."""
+    """Open template .docx, fill cells per TEMPLATES[template_id], save.
+
+    `figures` (optional): mapping {figure_number: image_file_path}. When
+    provided, the figure is appended inline at the END of the `details`
+    section cell (each figure as a centered paragraph + the PNG), after all
+    text/tables have been written. Figures whose path does not exist are
+    skipped with a warning. `figures_width_inches` controls the rendered
+    width (default 5.5" fits A4 content width).
+    """
     if template_id not in TEMPLATES:
         raise ValueError(
             f"Unknown template '{template_id}'. Registered: {list(TEMPLATES)}"
@@ -156,6 +437,7 @@ def fill_template(
     table = doc.tables[cfg["table_idx"]]
 
     result = FillResult(output_path=output_path)
+    figures_embedded: List[int] = []
     for field_name, (row, col) in cfg["fields"].items():
         if field_name not in content:
             result.skipped_fields.append(field_name)
@@ -173,14 +455,80 @@ def fill_template(
             continue
         set_cell_text(cells[col], str(value))
         result.filled_fields.append(field_name)
+        # Inline figure embedding: append figures to the `details` cell once
+        # its text/tables are written. Each figure is a centered paragraph
+        # (caption + image). Missing image files are reported, not fatal.
+        if field_name == "details" and figures:
+            embedded_now = _embed_figures_in_cell(
+                cells[col], figures, figures_width_inches
+            )
+            figures_embedded.extend(embedded_now)
 
+    result.figures_embedded = figures_embedded
     doc.save(output_path)
     return result
+
+
+def _embed_figures_in_cell(
+    cell, figures: Dict[int, str], width_inches: float
+) -> List[int]:
+    """Append all figures (sorted by figure number) inline at the end of `cell`.
+
+    Each figure renders as: a centered caption paragraph "图 N" followed by a
+    centered paragraph holding the PNG at `width_inches`. Returns the list of
+    figure numbers actually embedded (skipping missing files).
+    """
+    embedded: List[int] = []
+    # Spacing paragraph to separate figures from preceding text/table.
+    cell.add_paragraph()
+    for fig_num in sorted(figures.keys()):
+        img_path = figures[fig_num]
+        if not os.path.exists(img_path):
+            print(f"  [WARN] figure {fig_num} missing: {img_path}")
+            continue
+        # Caption paragraph (centered, bold).
+        cap = cell.add_paragraph()
+        cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cap_run = cap.add_run(f"图 {fig_num}")
+        cap_run.bold = True
+        cap_run.font.size = Pt(10)
+        # Image paragraph (centered).
+        pic_para = cell.add_paragraph()
+        pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        pic_run = pic_para.add_run()
+        try:
+            pic_run.add_picture(img_path, width=Inches(width_inches))
+            embedded.append(fig_num)
+        except Exception as e:
+            print(f"  [WARN] figure {fig_num} embed failed: {e}")
+            # Remove the now-empty picture paragraph to avoid blank space.
+            cell._tc.remove(pic_para._p)
+    return embedded
 
 
 def _default_skill_root() -> pathlib.Path:
     # scripts/ is one level below skill root
     return pathlib.Path(__file__).resolve().parent.parent
+
+
+def _discover_figures(figures_dir: str) -> Dict[int, str]:
+    """Scan `figures_dir` for files matching `fig<N>_*.png` and return a
+    mapping {N: absolute_path}, sorted by N. SVG companions are ignored
+    (Word cannot embed SVG inline; PNG is always preferred for embedding).
+    Files not matching the pattern are ignored. Raises if the directory
+    does not exist.
+    """
+    d = pathlib.Path(figures_dir)
+    if not d.is_dir():
+        raise FileNotFoundError(f"--figures-dir not found: {figures_dir}")
+    mapping: Dict[int, str] = {}
+    # fig1_..., fig2_... up to fig99. Capture the leading integer.
+    pat = re.compile(r"^fig(\d+)_.*\.png$", re.IGNORECASE)
+    for p in sorted(d.iterdir()):
+        m = pat.match(p.name)
+        if m:
+            mapping[int(m.group(1))] = str(p.resolve())
+    return mapping
 
 
 # ===========================================================================
@@ -299,6 +647,20 @@ def main():
     p_fill.add_argument("--content", help="Path to JSON file with field values")
     p_fill.add_argument("--output", required=True, help="Output .docx path")
     p_fill.add_argument("--skill-root", help="Override skill root directory")
+    p_fill.add_argument(
+        "--figures-dir",
+        help=(
+            "Directory containing figure image files (PNG). Figures named "
+            "fig<N>_*.png (e.g. fig1_system_architecture.png) are embedded "
+            "inline at the end of the 'details' section, ordered by N."
+        ),
+    )
+    p_fill.add_argument(
+        "--figure-width",
+        type=float,
+        default=5.5,
+        help="Rendered figure width in inches (default 5.5, A4 content width).",
+    )
 
     # inspect
     p_ins = sub.add_parser("inspect", help="Inspect a template's table layout")
@@ -326,11 +688,23 @@ def main():
         if args.content:
             with open(args.content, "r", encoding="utf-8") as f:
                 content = json.load(f)
-        result = fill_template(args.template, content, args.output, args.skill_root)
+        figures = _discover_figures(args.figures_dir) if args.figures_dir else None
+        result = fill_template(
+            args.template,
+            content,
+            args.output,
+            args.skill_root,
+            figures=figures,
+            figures_width_inches=args.figure_width,
+        )
         print(f"[OK] Saved: {result.output_path}")
         print(f"  Filled ({len(result.filled_fields)}): {result.filled_fields}")
         if result.skipped_fields:
             print(f"  Skipped ({len(result.skipped_fields)}): {result.skipped_fields}")
+        if result.figures_embedded:
+            print(f"  Figures embedded: {result.figures_embedded}")
+        elif figures is not None:
+            print("  Figures embedded: (none)")
 
 
 if __name__ == "__main__":

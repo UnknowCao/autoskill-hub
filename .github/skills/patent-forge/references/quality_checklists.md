@@ -33,7 +33,8 @@
 - [ ] 区别带来的技术效果已说明（与区别特征一一对应）
 - [ ] 创新点 vs 现有方案对比清晰
 - [ ] IPC/CPC 分类号二次检索已完成（含审计日志记录）
-- [ ] 检索审计日志完整（三计数：查询发送数 / 专利收到数 / 专利引用数）
+- [ ] 检索审计日志完整（三计数：查询发送数 / 专利收到数 / 专利引用数）+ **记录使用的工具层**（CNIPA.AI / SerpAPI / Exa.ai / anysearch / tavily / fetch_webpage）
+- [ ] **未调用 CNIPA.AI 撰写端点**（Anti-Pattern #19：仅用 CNIPA.AI 的 /patents/search 与 /patents/:id 检索，禁止 /patent-writing/analyze 与 /patent-writing/generate-claims）
 - [ ] **Phase 1 信息不足时未编造技术细节**（Anti-Pattern #17：4 要素不满足 ≥4/5 时触发 Checkpoint 1-warning，未自行编造核心技术特征/技术效果/实施场景填补空白）
 
 ---

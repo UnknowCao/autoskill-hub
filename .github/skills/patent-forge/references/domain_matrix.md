@@ -94,7 +94,11 @@
 
 ### 混合类（HW+SW）
 
-组合上述范式：硬件结构用机械/电子范式（含参考标号），控制方法用软件范式。两类权利要求都要写。
+组合上述范式：硬件结构用机械/电子范式（含参考标号），控制方法用软件范式。**两类权利要求都要写**。
+
+**判定子型**（重要）：除"系统+方法/装置+控制"显式配对词外，"硬件为常规载体 + 算法/控制逻辑为核心创新"也归混合类（如 BMS 算法、传感器信号处理+估计算法、电机驱动+控制策略）。
+
+完整 dogfood 示例：[`application_example_hybrid.md`](./application_example_hybrid.md)（BMS SOH 监测，14 条权利要求：硬件含参考标号 10-40 + 方法权利要求，4 实施例跨硬件配置×控制方法 2 维度）
 
 ### 不确定领域
 
@@ -143,4 +147,4 @@
 - Phase 1 Action 1（领域判定）→ `shared_workflow.md` § Phase 1
 - Phase 3A Action 3/5/6（加载本矩阵）→ `SKILL.md` § Phase 3A
 - Anti-Pattern #16（禁止跨领域套用）→ `anti_patterns.md` #16
-- 完整 dogfood 示例 → `application_example.md`（软件）+ `application_example_mechanical.md`（机械）
+- 完整 dogfood 示例 → `application_example.md`（软件）+ `application_example_mechanical.md`（机械）+ `application_example_hybrid.md`（混合类 HW+SW）

@@ -87,7 +87,7 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
    - 独立权利要求 1-3 条，二段式「前序部分 + 其特征在于」
    - 从属权利要求 10-20 条，覆盖优选实施方式与 fallback 位置
    - 引用基础正确（先行基础 / antecedent basis），用语在说明书中有支持
-   - **领域专属范式**：按 Phase 1 识别的技术领域，从 [`references/domain_matrix.md`](./references/domain_matrix.md) § 1 Claims 选取对应范式（软件/机械/电子/化学/混合/不确定 6 类，**禁止跨领域套用** Anti-Pattern #16）。完整 dogfood 示例：[`application_example.md`](./references/application_example.md)（软件）+ [`application_example_mechanical.md`](./references/application_example_mechanical.md)（机械）
+   - **领域专属范式**：按 Phase 1 识别的技术领域，从 [`references/domain_matrix.md`](./references/domain_matrix.md) § 1 Claims 选取对应范式（软件/机械/电子/化学/混合/不确定 6 类，**禁止跨领域套用** Anti-Pattern #16）。完整 dogfood 示例：[`application_example.md`](./references/application_example.md)（软件）+ [`application_example_mechanical.md`](./references/application_example_mechanical.md)（机械）+ [`application_example_hybrid.md`](./references/application_example_hybrid.md)（混合类 HW+SW：BMS SOH 监测，14 claims，硬件含参考标号 + 方法两类权利要求）
    - 🔴 **CHECKPOINT 3A-claims — 必须暂停**：草稿完成后向用户展示权利要求书，等待用户明确确认保护范围合理（避免过宽被驳回 / 过窄损失保护），获得反馈后定稿。**禁止在用户确认前继续撰写摘要和实施方式。**
 4. **Abstract Writing**: 撰写摘要，300 字以内，单段，不得包含权利要求式限定语；指明一幅最有代表性的摘要附图
 5. **Embodiments Creation**: Design at least 3 distinct embodiments (具体实施方式). **变化维度必须匹配 Phase 1 Action 1 识别的技术领域**——从 [`references/domain_matrix.md`](./references/domain_matrix.md) § 2 实施例变化维度 表中选取（软件/机械/电子/化学/混合/不确定 6 类各有专属维度，禁止跨领域套用 Anti-Pattern #16）。铁律：每个实施例至少变化 1 个维度；3 个实施例不能只变同一个维度
@@ -146,6 +146,7 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 - [`references/domain_matrix.md`](./references/domain_matrix.md) — **领域适配矩阵**: 6 领域 × (claims 范式 / 实施例维度 / 附图类型)，Phase 3A Action 3/5/6 加载
 - [`references/application_example.md`](./references/application_example.md) — dogfood 示例 · **软件/算法类**（Focus Period 推荐系统，14 claims）
 - [`references/application_example_mechanical.md`](./references/application_example_mechanical.md) — dogfood 示例 · **机械/结构类**（可折叠充电桩，14 claims，参考标号 10-83）
+- [`references/application_example_hybrid.md`](./references/application_example_hybrid.md) — dogfood 示例 · **混合类 HW+SW**（BMS SOH 监测，14 claims，硬件含参考标号 10-40 + 方法两类权利要求，4 实施例跨硬件配置×控制方法 2 维度）
 
 **� 依赖 skill**（跨 skill 调用，按需加载）
 - [`../markitdown-enhanced/SKILL.md`](../markitdown-enhanced/SKILL.md) — **文件转 Markdown**（Phase -1 M.2.1 文件转换集成）。用户提供富格式文件（.docx/.pdf/.pptx/.xlsx/.html/.epub/图片/音频）时，调用其 `scripts/_convert_core.py` 转 `.md` 后再读取。扩展名决策表 + 调用命令 + 失败兜底详见 [`shared_workflow.md`](./references/shared_workflow.md) § M.2.1

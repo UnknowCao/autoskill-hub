@@ -27,7 +27,7 @@
     "id": 5,
     "category": "boundary_all_search_fails",
     "prompt": "我有一个想法:一种基于量子隧穿效应的新型非易失性存储单元。帮我做成专利申请表。注:我没有 SerpAPI key,也没有 Exa.ai key。",
-    "expected": "Phase 2 Step 2.1 检测到 API key 缺失→自动走 WebSearch 兜底;Step 2.5 执行网页搜索;若所有搜索均 0 结果→标记'新颖性初步确认(无已知现有技术)',禁止断言'全球首创';Checkpoint 2 中建议委托专业检索机构;审计日志记录所有尝试方法;不应因 API key 缺失而跳过 Phase 2"
+    "expected": "Phase 2 Step 2.1 检测到所有 API key（CNIPA_API_KEY/SERPAPI_KEY/EXA_API_KEY）缺失→跳过 Optional 增强层，按搜索工具分层 fallback：首选 anysearch skill，不存在则 tavily skill，再不存在则 fetch_webpage 兜底（注意 fetch_webpage 仅能抓已知 URL，不能关键词检索，Checkpoint 2 中必须显式告知降级）;若所有可用方法均 0 结果→标记'新颖性初步确认(无已知现有技术)',禁止断言'全球首创';Checkpoint 2 中建议委托专业检索机构;审计日志记录所有尝试方法+使用的工具层;不应因 API key 缺失而跳过 Phase 2"
   },
   {
     "id": 6,
@@ -40,5 +40,17 @@
     "category": "edge_case_severely_incomplete_info",
     "prompt": "我想申请一个关于'智能推荐'的专利,帮我写一下。",
     "expected": "Phase 1 结构化访谈触发:发明描述极度模糊→追问 4 要素(技术领域/技术问题/技术方案/技术效果);最多 3 轮访谈→若仍不足 4/5 项→触发 Checkpoint 1-warning,展示已收集信息+缺失项清单,请用户选择①补充或②缩减范围继续;禁止在用户确认前进入 Phase 2;不应自行编造发明细节填补空白"
+  },
+  {
+    "id": 8,
+    "category": "cnipa_api_available_search_only",
+    "prompt": "我有一个发明想法:一种基于钙钛矿叠层的太阳能电池结构。环境里已配置 CNIPA_API_KEY。请帮我生成专利申请表。",
+    "expected": "doc-type=application;Phase 2 Step 2.1 检测到 CNIPA_API_KEY→启用 CNIPA.AI 作为首选专利检索 API(Method A),按 GET /v1/patents/search?q=... 调用(可用中英双语/IPC码 H01L);结果与主搜索层(若也启用)合并去重;审计日志记录 CNIPA.AI 为来源;⚠️ 红线:禁止调用 CNIPA.AI 撰写端点(/patent-writing/analyze、/patent-writing/generate-claims)生成权利要求(Anti-Pattern #19),权利要求必须由本 skill 按 Checkpoint 3A-claims 自行撰写并经用户确认"
+  },
+  {
+    "id": 9,
+    "category": "material_intake_with_file",
+    "prompt": "帮我写一份交底书。我有一份 .docx 技术方案文档可以提供。",
+    "expected": "Phase -1 (Material Intake) 必须作为技能启动第一步触发:用 vscode_askQuestions 合并提问(material-input + doc-type 两个 header);material-input 主动询问是否有现成材料(①有文件②有文字③从零);用户选①有文件后展示接受材料清单;用户提供 .docx 文件后,按 § M.2.1a 扩展名决策表 .docx 属于富格式→必须调用 markitdown-enhanced skill 的 _convert_core.py 转 .md(禁止用 read_file 直接读 .docx 得乱码),命令:python C:\\AI\\.github\\skills\\markitdown-enhanced\\scripts\\_convert_core.py <input> -o <output.md>;转换成功后 read_file 读产物→摘要→映射 4 要素;已覆盖要素不重复追问;Phase 1 Action 0 (Material Pre-load) 执行;⚠️ 红线:禁止忽略用户提供的文件直接访谈(Anti-Pattern #20);禁止 markitdown-enhanced 不可用时静默用 read_file 读富格式假装成功(M.2.1d 兜底:告知用户降级)"
   }
 ]

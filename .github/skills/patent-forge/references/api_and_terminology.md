@@ -1,6 +1,75 @@
 # Patent Forge Reference
 
-## SerpAPI Google Patents (Structured Search)
+> **工具分层说明**：本文件记录 3 个**专利检索专用 API**（Optional 增强层），叠加在主搜索工具之上（详见 `shared_workflow.md` § Phase 2 **搜索工具分层**）。
+> 主搜索工具按以下优先级探测：① `anysearch` skill（首选）→ ② `tavily` skill（次选）→ ③ `fetch_webpage` 内置工具（兜底，仅抓已知 URL）。
+>
+> **专利专用 API 优先级**（配置了对应 key 才启用，可叠加在任一主搜索层上）：
+> 1. **CNIPA.AI**（`CNIPA_API_KEY`）— **首选**，以中国专利为中心，中英双语自动翻译匹配，对中国专利覆盖最佳
+> 2. SerpAPI（`SERPAPI_KEY`）— Google Patents 关键词检索，全球专利覆盖
+> 3. Exa.ai（`EXA_API_KEY`）— 语义检索，适合概念模糊场景
+>
+> 未配置任何 key → 跳过本文件以下三节，仅用主搜索工具分层检索。
+
+## CNIPA.AI API（中国专利专用检索 — 首选 Optional 增强层）
+
+> **来源**：https://cnipa.ai/zh/api-docs（2026-07-23 抓取）。CNIPA.AI 是独立第三方工具，与中国国家知识产权局（CNIPA）无关联；专利数据来源于公开数据库。
+
+### 身份验证
+
+所有请求需在 `Authorization` 头以 Bearer 令牌形式携带 API 密钥。在 https://cnipa.ai/register 创建账户获取。
+
+### 检索端点（本 skill 仅使用以下 2 个检索端点）
+
+```
+GET https://api.cnipa.ai/v1/patents/search?q=<keywords>
+GET https://api.cnipa.ai/v1/patents/:id
+```
+
+### Search 参数（query string）
+
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `q` | 关键词（中英双语，系统自动翻译匹配）| `q=solid-state battery cathode material` |
+| 申请人 | 申请人过滤（文档未暴露 query 参数名，优先用 `q` 传公司名）| `q=Huawei` / `q=BYD` |
+| IPC 分类号 | 用 `q` 传 IPC 码配合关键词 | `q=H01M battery` / `q=G06F` |
+| 公开日范围 | UI 支持，API 参数名未公开 | 若需精确日期过滤，回退 SerpAPI |
+
+### Search 示例
+
+```bash
+curl -X GET "https://api.cnipa.ai/v1/patents/search?q=(solid-state%20battery)%20cathode%20material" \
+  -H "Authorization: Bearer ${CNIPA_API_KEY}" \
+  -H "Content-Type: application/json"
+```
+
+### 检索技巧（来自官方 Patent Search Guide）
+
+- **双语检索**：可输入英文，系统自动翻译并匹配中文专利（如 `electric vehicle battery` 自动匹配中文电动汽车电池专利）
+- **精确关键词**：`solid-state battery cathode material` 比 `battery` 更精确
+- **组合检索**：用空格分隔多个关键词
+- **IPC + 关键词组合**：如 `H01M battery` 提升准确度
+- 专利类型过滤：发明 / 实用新型 / 外观设计
+
+### Detail 端点
+
+`GET /patents/:id` 通过 ID 获取专利详情（权利要求、说明书、法律状态等），用于 Step 2.6 新颖性分析中深入对比最接近现有技术。
+
+### 本 skill 不使用的端点（红线声明）
+
+CNIPA.AI 另有 2 个**撰写端点**（`POST /patent-writing/analyze`、`POST /patent-writing/generate-claims`），本 skill **明确禁用**：
+- 权利要求撰写受 **Checkpoint 3A-claims + Anti-Pattern 红线**管控，必须由本 skill 按中国专利法实施细则规范自行撰写并经用户确认
+- 外部 AI 生成的权利要求存在不支持说明书、用语不规范（专利法 26.4）的风险
+- 详见 `anti_patterns.md` Anti-Pattern #19
+
+### 故障处理
+
+- HTTP 401/403 → key 无效或额度耗尽，告知用户检查 `CNIPA_API_KEY`，回退到 SerpAPI/Exa.ai 或主搜索分层
+- 0 结果 → 用同义词/IPC 码重试一次 → 仍 0 结果则回退 SerpAPI/Exa.ai + 主搜索分层
+- 429 限流 → 跳过 CNIPA.AI，审计日志记录状态
+
+---
+
+## SerpAPI Google Patents (Structured Search — Optional Enhancement Layer)
 
 ### Endpoint
 
