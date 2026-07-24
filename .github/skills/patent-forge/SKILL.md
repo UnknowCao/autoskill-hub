@@ -184,7 +184,7 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 
 ---
 
-## 🚫 Anti-Patterns（高频 6 条 · 完整 20 条见 references）
+## 🚫 Anti-Patterns（高频 7 条 · 完整 20 条见 references）
 
 **违反任一条 → 立即中止当前 Phase 并纠正。** 完整 20 条 Anti-Patterns + Error Handling Matrix 在 [`references/anti_patterns.md`](./references/anti_patterns.md)——**Checkpoint 4A / 4D 触发时强制加载**。
 
@@ -193,6 +193,7 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 | 1 | **在 `disclosure` 中撰写权利要求书** | 侵占代理师职责 → 文档作废 |
 | 2 | **在等待用户确认的 🔴 CHECKPOINT 处继续执行** | 未经确认的输出不可用 → 重做 |
 | 3 | **在 Phase 0 未确认 doc-type 时默认走 `application`**（发明内容描述中的词不算信号）| 文档类型错误 → 全部重做 |
+| 4 | **跳过 Phase 2 现有技术检索**（即使 API key 缺失也必须按搜索工具分层 fallback 执行）| 权利要求失去新颖性支撑 → 驳回风险 |
 | 17 | **在 Phase 1 信息不足时编造技术细节填补空白** | 说明书不支持权利要求 → 驳回（专利法 26.3/26.4）|
 | 18 | **在 `disclosure` 遇未注册代理机构时静默替换为 ACIP 模板** | 文档格式不匹配 → 退回重做 |
 | 20 | **在 Phase -1 用户提供文件后，Phase 1 跳过读取直接访谈，或忽略文件已覆盖要素反复追问** | 忽略用户提供的高质量材料 → 重复追问 + 关键细节丢失 → 文档质量下降 |

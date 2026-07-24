@@ -221,13 +221,14 @@ markitdown-enhanced 的 `_convert_core.py` 已内置自动修复，但 AI 须知
 2. **Problem Identification**: Define what technical problem is being solved (技术问题)
 3. **Solution Extraction**: Extract the proposed technical solution (技术方案)
 4. **Effect Assessment**: Determine the technical effects and advantages (技术效果)
-5. **Structured Interview** (when user description is vague): ask follow-up questions until each of the following is concrete:
-   - 核心技术特征（novel elements / modules / steps）
-   - 新颖性主张（what is believed new vs. existing solutions）
-   - 解决的问题与现有方案的差距（gap）
-   - 所有关键组件 / 步骤 / 数据流 / 触发条件
-   - 至少 3 个可区分的实施场景
-6. **Interview Guardrail（最多 3 轮）**：若经过 3 轮追问仍无法满足 5 项中的 ≥4 项：
+5. **Structured Interview** (when user description is vague): ask follow-up questions until each of the following is concrete。**本步的 5 个访谈项与 Action 1-4 的 4 要素对应关系**（消除术语歧义）：
+   - 核心技术特征（novel elements / modules / steps）↔ 技术方案
+   - 新颖性主张（what is believed new vs. existing solutions）↔ 技术效果（创新点依据）
+   - 解决的问题与现有方案的差距（gap）↔ 技术问题
+   - 所有关键组件 / 步骤 / 数据流 / 触发条件 ↔ 技术方案（细化）
+   - 至少 3 个可区分的实施场景 ↔ 技术方案 × 技术效果（验证）
+   - **技术领域**（Action 1 已收集）不计入 5 项访谈项
+6. **Interview Guardrail（最多 3 轮）**：若经过 3 轮追问仍无法满足 5 项中的 ≥4 项（等价于 4 要素中 ≥3 项不完整）：
    - 🔴 触发 **Checkpoint 1-warning**：向用户展示已收集的信息 + 缺失项清单，告知"当前信息不足以撰写可专利的完整文档"
    - 请用户选择：① 补充缺失信息后继续 / ② 缩减保护范围，基于现有信息继续（需用户明确确认风险）
    - **禁止在用户选择前继续 Phase 2**

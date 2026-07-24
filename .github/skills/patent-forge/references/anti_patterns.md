@@ -57,15 +57,16 @@
 
 ---
 
-## 高频违规 Top 6（SKILL.md 内嵌的快速警示）
+## 高频违规 Top 7（SKILL.md 内嵌的快速警示）
 
-以下 6 条是实测中 LLM 最易违反的，已内嵌在 SKILL.md 主体作为快速警示；完整 20 条见上表。
+以下 7 条是实测中 LLM 最易违反的，已内嵌在 SKILL.md 主体作为快速警示；完整 20 条见上表。
 
 | # | 一句话摘要 | 触发场景 |
 |---|---|---|
 | 1 | disclosure 不写权利要求书 | 交底书场景 |
 | 2 | CHECKPOINT 必须暂停 | 每个 🔴 标记处 |
 | 3 | doc-type 不默认 application | Phase 0 关键词过滤后仍歧义 |
+| 4 | 禁止跳过 Phase 2 检索（API key 缺失也要分层 fallback） | Phase 2 API 不可用时 |
 | 17 | 信息不足禁止编造 | Phase 1 访谈不足 |
 | 18 | 非 ACIP 代理必须 Checkpoint | 未注册代理机构 |
 | 20 | 用户提供的文件必须读取，禁止忽略 | Phase -1 提供文件后 Phase 1 跳过读取 |
