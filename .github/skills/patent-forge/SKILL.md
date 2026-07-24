@@ -17,14 +17,15 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
   │    ├─ 华进/ACIP → ACIP 专属模板
   │    ├─ 其他代理（三环/中科等）→ 触发 Checkpoint（Anti-Pattern #18）→ 用户选 ① ACIP 通用模板（文件名 -generic-）或 ② 暂停等放模板
   │    └─ 含 "--docx" → 填 .docx 模板；否则 → --md
-  └─ 含 "申请表/申请文件" 或无代理关键词 → application（申请表，含权利要求书）
-       └─ 产出: 权利要求 1-3 独立 + 10-20 从属 + 摘要 ≤300字 + 附图 ≥3 + 实施方式 ≥3
+  ├─ 含 "申请表/申请文件" → application（申请表，含权利要求书）
+  │    └─ 产出: 权利要求 1-3 独立 + 10-20 从属 + 摘要 ≤300字 + 附图 ≥3 + 实施方式 ≥3
+  └─ 无 doc-type 关键词（既无代理词也无"申请表/交底书"）→ 🔴 回退 askQuestions（禁止默认 application，Anti-Pattern #3）
 
 ⚠️ 关键规则：发明内容描述中的词不算 doc-type 信号！
   例："一种专利权利要求自动撰写的方法"中的 "权利要求" 是发明主题，不触发 application
   例："一种智能交底书生成系统"中的 "交底书" 是发明主题，不触发 disclosure
   仅用户显式意图关键词（"帮我写申请表"/"通过华进提交交底书"）才是信号
-  无法判定？→ askQuestions 询问用户
+  无法判定？→ askQuestions 询问用户（禁止默认 application）
 ```
 
 ## Doc-Type & Format（决策详见 Quick Decision + Phase 0）
@@ -45,11 +46,29 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 > `--doc-type application` 无代理机构专属模板，统一用 `--md`。
 
-## Phase 0-2 (Shared)
+## Phase -1 to 2 (Shared)
 
-**Phase 0** (文档类型选择) / **Phase 1** (理解发明 4 要素 + 结构化访谈 + 已知现有技术锚定 + Checkpoint 1) / **Phase 2** (现有技术检索 — SerpAPI + Exa.ai / WebSearch 兜底 + 日期纪律 + 新颖性分析 + IPC 分类 + IPC/CPC 二次检索 + 检索审计日志 + Checkpoint 2) — **全部定义在** [`references/shared_workflow.md`](./references/shared_workflow.md) § Phase 0 / Phase 1 / Phase 2。
+**Phase -1** (素材收集 Material Intake — 技能启动第一步，主动询问用户是否提供文件/文档，与 Phase 0 合并为一次 `vscode_askQuestions`) / **Phase 0** (文档类型选择) / **Phase 1** (理解发明 4 要素 + 素材预载 + 结构化访谈 + 已知现有技术锚定 + Checkpoint 1) / **Phase 2** (现有技术检索 — **搜索工具分层**：anysearch skill → tavily skill → fetch_webpage 三级 fallback + 专利 API 增强层 [CNIPA.AI 首选 → SerpAPI → Exa.ai] + 日期纪律 + 新颖性分析 + IPC 分类 + IPC/CPC 二次检索 + 检索审计日志 + Checkpoint 2) — **全部定义在** [`references/shared_workflow.md`](./references/shared_workflow.md) § Phase -1 / Phase 0 / Phase 1 / Phase 2。
 
-任一 doc-type 都必须先走完 Phase 0 → 1 → 2，再进入下文 Phase 3 分支。
+任一 doc-type 都必须先走完 Phase **-1** → 0 → 1 → 2，再进入下文 Phase 3 分支。
+
+## 开场提示模板（Phase -1 触发时使用）
+
+技能被触发后，**第一次** `vscode_askQuestions` 应合并以下两个问题（Token 优化，不分散成多轮）：
+
+**问题 1 — 素材收集**（Header: `material-input`）：
+> "你是否有现成的技术材料？提供文件能让交底书/申请表写得更准、更快。"
+> - ① **有文件，我来上传/给路径**（推荐）— 技术方案文档/需求规格/已有草稿/论文/对比专利/附图/实验数据/代码均可，支持 .md/.docx/.pdf/.xlsx/.png 等
+> - ② **有文字描述，直接粘贴**
+> - ③ **什么都没有，从零开始访谈**
+
+**问题 2 — 文档类型**（Header: `doc-type`，按 Quick Decision 卡片）：
+> "你需要哪种文档？"
+> - **专利申请表**（含权利要求书/摘要，公司内部直接申请用）
+> - **技术交底书**（发明人→代理师交底用，如华进 ACIP）
+
+> 用户选 ① → 展示接受材料清单（见 [`shared_workflow.md`](./references/shared_workflow.md) § M.2）→ 等待文件 → **按 § M.2.1 扩展名决策表转换**（纯文本 `read_file`；富格式 `.docx/.pdf/.xlsx/.pptx/图片/音频` 用 `markitdown-enhanced` skill 的 `_convert_core.py` 转 `.md`）→ 读取摘要 → 继续 Phase 0/1
+> 用户选 ②/③ → 直接进入 Phase 0/1（纯访谈模式）
 
 ## Phase 3: Generate Document
 
@@ -119,8 +138,8 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 
 ## Supporting Files（按类别分组）
 
-**📋 工作流与规范**（Phase 0-2 + 共通原则）
-- [`references/shared_workflow.md`](./references/shared_workflow.md) — **Single source of truth**: Phase 0/1/2 + Output Format + Output Layout 目录树 + 共通质量原则 + 语言规范
+**📋 工作流与规范**（Phase -1 to 2 + 共通原则）
+- [`references/shared_workflow.md`](./references/shared_workflow.md) — **Single source of truth**: Phase -1/0/1/2 + Output Format + Output Layout 目录树 + 共通质量原则 + 语言规范
 - [`references/api_and_terminology.md`](./references/api_and_terminology.md) — SerpAPI/Exa.ai 端点 + 中文专利术语 + Language Conventions
 
 **🎯 领域适配**
@@ -128,8 +147,13 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 - [`references/application_example.md`](./references/application_example.md) — dogfood 示例 · **软件/算法类**（Focus Period 推荐系统，14 claims）
 - [`references/application_example_mechanical.md`](./references/application_example_mechanical.md) — dogfood 示例 · **机械/结构类**（可折叠充电桩，14 claims，参考标号 10-83）
 
-**🛡️ 合规与禁令**
-- [`references/anti_patterns.md`](./references/anti_patterns.md) — **完整 18 条 Anti-Patterns + Error Handling Matrix**（Checkpoint 4A/4D 强制加载）
+**� 依赖 skill**（跨 skill 调用，按需加载）
+- [`../markitdown-enhanced/SKILL.md`](../markitdown-enhanced/SKILL.md) — **文件转 Markdown**（Phase -1 M.2.1 文件转换集成）。用户提供富格式文件（.docx/.pdf/.pptx/.xlsx/.html/.epub/图片/音频）时，调用其 `scripts/_convert_core.py` 转 `.md` 后再读取。扩展名决策表 + 调用命令 + 失败兜底详见 [`shared_workflow.md`](./references/shared_workflow.md) § M.2.1
+- [`../patent-figforge/SKILL.md`](../patent-figforge/SKILL.md) — **专利附图生成**（Phase 3A Action 6 / Phase 3D Action 6）。生成流程图/框图/架构图，自动双输出 svg+png
+
+
+**�🛡️ 合规与禁令**
+- [`references/anti_patterns.md`](./references/anti_patterns.md) — **完整 20 条 Anti-Patterns + Error Handling Matrix**（Checkpoint 4A/4D 强制加载）
 - [`references/quality_checklists.md`](./references/quality_checklists.md) — 清单 A (application) + 清单 D (disclosure)，Checkpoint 4A/4D 加载
 
 **📝 模板与脚本**
@@ -141,7 +165,7 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 - [`scripts/fill_acip_template.py`](./scripts/fill_acip_template.py) — `--docx` 填充工具（subcommands: `fill` / `inspect` / `list`）
 
 **🧪 测试**
-- [`references/test-prompts.json`](./references/test-prompts.json) — 7 个测试 prompt（P1 happy-path / P2 disclosure-docx / P3 doc-type 歧义 / P4 机械结构 / P5 全搜索失败 / P6 非 ACIP 代理 / P7 信息严重不足）
+- [`references/test-prompts.json`](./references/test-prompts.json) — 9 个测试 prompt（P1 happy-path / P2 disclosure-docx / P3 doc-type 歧义 / P4 机械结构 / P5 全搜索失败 / P6 非 ACIP 代理 / P7 信息严重不足 / P8 CNIPA.AI 检索 / P9 素材收集+文件输入）
 
 ## Output File Organization（输出目录结构）
 
@@ -159,9 +183,9 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 
 ---
 
-## 🚫 Anti-Patterns（高频 5 条 · 完整 18 条见 references）
+## 🚫 Anti-Patterns（高频 6 条 · 完整 20 条见 references）
 
-**违反任一条 → 立即中止当前 Phase 并纠正。** 完整 18 条 Anti-Patterns + Error Handling Matrix 在 [`references/anti_patterns.md`](./references/anti_patterns.md)——**Checkpoint 4A / 4D 触发时强制加载**。
+**违反任一条 → 立即中止当前 Phase 并纠正。** 完整 20 条 Anti-Patterns + Error Handling Matrix 在 [`references/anti_patterns.md`](./references/anti_patterns.md)——**Checkpoint 4A / 4D 触发时强制加载**。
 
 | # | 禁止 | 一句话后果 |
 |---|------|---------|
@@ -170,5 +194,6 @@ Filename 命名规则详见 [`references/shared_workflow.md`](./references/share
 | 3 | **在 Phase 0 未确认 doc-type 时默认走 `application`**（发明内容描述中的词不算信号）| 文档类型错误 → 全部重做 |
 | 17 | **在 Phase 1 信息不足时编造技术细节填补空白** | 说明书不支持权利要求 → 驳回（专利法 26.3/26.4）|
 | 18 | **在 `disclosure` 遇未注册代理机构时静默替换为 ACIP 模板** | 文档格式不匹配 → 退回重做 |
+| 20 | **在 Phase -1 用户提供文件后，Phase 1 跳过读取直接访谈，或忽略文件已覆盖要素反复追问** | 忽略用户提供的高质量材料 → 重复追问 + 关键细节丢失 → 文档质量下降 |
 
-> 完整 18 条（含 #4 跳过检索、#5 产品名、#6 引用基础、#8 模糊限定语、#13 日期纪律、#14 IPC 二次检索、#15 文献清单、#16 领域套用 等）+ 8 行 Error Handling Matrix → [`references/anti_patterns.md`](./references/anti_patterns.md)
+> 完整 20 条（含 #4 跳过检索、#5 产品名、#6 引用基础、#8 模糊限定语、#13 日期纪律、#14 IPC 二次检索、#15 文献清单、#16 领域套用、#19 CNIPA.AI 撰写端点 等）+ Error Handling Matrix → [`references/anti_patterns.md`](./references/anti_patterns.md)

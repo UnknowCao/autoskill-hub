@@ -1,8 +1,8 @@
-# Shared Workflow (Phase 0-2 + Output Format + Principles)
+# Shared Workflow (Phase -1 to 2 + Output Format + Principles)
 
 > **用途**: 此文件包含 `application`（专利申请表）与 `disclosure`（技术交底书）两种输出格式**共同需要**的工作流内容。
-> SKILL.md 中的 Phase 0 / Phase 1 / Phase 2 / 输出格式说明 / 共通质量原则以此文件为单一事实源。
-> 任一 doc-type 都必须先走完 Phase 0 → Phase 1 → Phase 2，再在 Phase 3 分支。
+> SKILL.md 中的 Phase -1 / Phase 0 / Phase 1 / Phase 2 / 输出格式说明 / 共通质量原则以此文件为单一事实源。
+> 任一 doc-type 都必须先走完 Phase **-1** → 0 → 1 → 2，再在 Phase 3 分支。
 >
 > **位置**: `references/shared_workflow.md`（相对于 skill 根目录）。同目录还有 `api_and_terminology.md`（SerpAPI/Exa.ai + 中文专利术语）、`application_example.md`（申请表示例）、`test-prompts.json`（3 条测试 prompt）。模板位于 `../assets/templates/`，原始 .docx 位于 `../assets/raw_templates/`。
 
@@ -22,9 +22,27 @@ Parse `$ARGUMENTS` to determine output format:
 Save the generated document as a local Markdown file:
 - Filename pattern:
   - `application` → `Patent-[ShortTitle]-[YYYYMMDD].md`
-  - `disclosure` → `Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].md`
+  - `disclosure`（注册代理，如 ACIP/华进）→ `Disclosure-[Agency]-[ShortTitle]-[YYYYMMDD].md`（例：`Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].md`）
+  - `disclosure`（**未注册代理**，经 Checkpoint #18 用户选 ① 通用模板后）→ `Disclosure-[Agency]-generic-[ShortTitle]-[YYYYMMDD].md`（`-generic-` 标记不可省略，Anti-Pattern #18）
 - 保存到 `docs/` 或 `patents/` 目录；若两者均不存在，使用当前工作目录
 - 附图由 `patent-figforge` skill 生成 SVG/PNG，文末标注"正式申请/提交需替换为专利制图 / Visio (.vsd) 原图"
+
+#### `--md` 强制后处理（保存前必跑）
+
+交付的 `.md` 不能含内部工作流符号（🔴🟠🟡🟢⚠️✅❌ 等），且需把附图内嵌为 Markdown 图片（而非仅文字清单）。保存前**必须**对 .md 跑 [`scripts/postprocess_md.py`](../scripts/postprocess_md.py)：
+
+```bash
+python scripts/postprocess_md.py final/Disclosure-ACIP-X-YYYYMMDD.md \
+    --output final/Disclosure-ACIP-X-YYYYMMDD.md \
+    --figures-dir 04-diagrams \
+    --inplace
+```
+
+该脚本做两件事：
+1. **剥离 emoji/状态符号** — 与 `fill_acip_template.py` 的剥离规则字节一致（同一正则），保证 `.md` 与 `.docx` 同步。
+2. **内嵌附图** — 扫描 `04-diagrams/` 下 `fig<N>_*.png`，在每条图题（如 `- 图 1：...`）下方插入 `![图 N](path)` Markdown 图片。
+
+注：postprocess 只作用于**最终交付的 .md**（`final/` 下），不应用于内部草稿（如 `01-phase1-understanding/`），草稿中可保留 emoji 以辅助评审。
 
 ### Output Layout（输出目录结构）
 
@@ -57,6 +75,118 @@ patent-forge-output/
 
 ---
 
+## Phase -1: Material Intake（素材收集，技能启动第一步）
+
+> **位置**：在 Phase 0（文档类型选择）之前。这是技能与用户的**第一次交互**。
+> **目的**：明确告知用户可以提供文件/文档作为输入，而不只是文字描述。一份好的原始材料能让后续 Phase 1-3 的质量提升数倍，且大幅减少访谈轮次。
+> **原则**：可选——用户可跳过（"我没有文件，直接聊"），但必须**主动询问一次**，禁止假定用户只能用对话输入。
+
+### M.1 主动询问（与 Phase 0 合并为一次 `vscode_askQuestions`）
+
+技能被触发后，**立即**用 `vscode_askQuestions` 向用户发起第一次询问，**把"素材收集"和"文档类型选择"合并到同一次提问**（Token 优化原则：不分散成多轮打断）。问题结构：
+
+| Header | Question | Options（`allowFreeformInput: true`） |
+|--------|----------|--------------------------------------|
+| `material-input` | "你是否有现成的技术材料可以提供？这会让交底书/申请表写得更准、更快。" | ① **有文件，我来上传/给路径**（推荐）<br>② **有文字描述，直接粘贴**<br>③ **什么都没有，从零开始访谈** |
+
+- 选 ① → 进入 M.2（等待用户提供文件路径或附件）
+- 选 ② → 用户在 freeform 框粘贴文字，进入 Phase 0
+- 选 ③ → 直接进入 Phase 0（纯访谈模式）
+
+> **同一轮**的第二个问题（Header `doc-type`）按 Phase 0 § Actions 3 提出。两个问题合并到一次 `vscode_askQuestions` 调用。
+
+### M.2 接受的文件类型（用户选 ① 时展示）
+
+若用户选择"有文件"，向用户展示以下**接受材料清单**（用文字 + 表格，不用 askQuestions），并等待用户提供路径或附件：
+
+| 材料类型 | 文件格式 | 用途（skill 如何使用）|
+|---------|---------|---------------------|
+| **技术方案文档** | `.md` / `.docx` / `.pdf` / `.txt` | 提取发明 4 要素（技术领域/问题/方案/效果），直接进入 Phase 1，跳过大部分访谈 |
+| **需求规格/设计文档** | `.md` / `.docx` / `.xlsx` / `.pdf` | 提取技术细节（参数、流程、数据结构），填充第四节详细阐述 |
+| **已有专利草稿/交底书** | `.md` / `.docx` | 作为基础改写/扩充，保留已确认的内容 |
+| **会议纪要/技术评审记录** | `.md` / `.docx` / `.txt` | 提取发明点讨论、技术决策依据 |
+| **论文/期刊文章** | `.pdf` / `.md` | 提取技术背景 + 作为 Phase 2 现有技术锚点 |
+| **已知对比专利** | 公开号/申请号（文字）或 `.pdf` | 作为 Phase 2 最接近现有技术锚点（命中率提升 3-5 倍）|
+| **附图/草图** | `.png` / `.jpg` / `.svg` / `.vsd` | 作为第四节附图参考；若可编辑(.svg/.vsd)直接采用 |
+| **实验数据/测试报告** | `.xlsx` / `.csv` / `.pdf` | 提取技术效果量化数据（第五节）|
+| **代码/算法实现** | `.py` / `.c` / `.cpp` / `.m` / `.md` | 提取算法步骤细节（软件/算法类发明）|
+
+> **处理方式**：按下方 **M.2.1 文件转换集成** 的扩展名决策表选择处理器（`read_file` 纯文本 / `markitdown-enhanced` skill 富格式），提取结构化信息后纳入 Phase 1 的 4 要素提炼。
+
+### M.2.1 文件转换集成（File Conversion Integration，单一事实源）
+
+> **目的**：把"何时用 `read_file`、何时调用 `markitdown-enhanced` skill、怎么调用、失败怎么办"固化为一处规范，供 Phase -1 M.3、Phase 1 Action 0、Anti-Pattern #20 统一引用。
+> **关联 skill**：[`markitdown-enhanced`](../../markitdown-enhanced/SKILL.md)（基于 markitdown 0.1.6，支持 .docx/.pdf/.pptx/.xlsx/.html/.csv/.json/.xml/图片(OCR)/音频/YouTube/EPub，含公式转义修复 + 加密文件解密 + 表格结构校验）。
+
+#### M.2.1a 扩展名 → 处理器决策表（必查）
+
+| 文件扩展名 | 处理器 | 理由 |
+|-----------|--------|------|
+| `.md` `.txt` `.csv` `.json` `.xml` `.py` `.c` `.cpp` `.h` `.java` `.js` `.ts` `.m` `.svg` `.dot` `.gv` | **`read_file`**（内置工具）| 纯文本/代码/矢量源码，无需格式转换 |
+| `.docx` `.doc` `.pdf` `.pptx` `.xlsx` `.xls` `.html` `.htm` `.epub` | **`markitdown-enhanced` skill** | 富格式（二进制/排版/表格/公式），需 markitdown 引擎转换 |
+| `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp` `.tiff` | **`markitdown-enhanced` skill**（含 OCR）| 图片需 OCR 提取文字（附图/扫描件/截图）|
+| `.mp3` `.wav` `.m4a` | **`markitdown-enhanced` skill**（含转录）| 音频需转录（如会议录音）|
+| `.vsd` `.vsdx` | **`markitdown-enhanced` skill** 或提示用户导出 `.svg` | Visio 图档；附图场景优先请用户导出可编辑 `.svg` |
+| 其他/未知扩展名 | **`read_file`** 尝试；失败 → `markitdown-enhanced` 兜底 | 二次尝试策略 |
+
+#### M.2.1b 调用命令（markitdown-enhanced skill）
+
+当决策表指向 `markitdown-enhanced` 时，用以下命令把文件转成 `.md`，再用 `read_file` 读取产物：
+
+```bash
+# 单文件转换（含公式修复 + 表格检测 + 元数据头，全管线自动）
+# 退出码：0 = 干净；1 = 检测到表格问题（已写 .errors.md 旁车文件，按下方 M.2.1c 自动修复）
+python C:\AI\.github\skills\markitdown-enhanced\scripts\_convert_core.py <input_file> -o <output.md>
+```
+
+**示例**（用户提供 `技术方案.docx`）：
+```bash
+python C:\AI\.github\skills\markitdown-enhanced\scripts\_convert_core.py "C:\path\to\技术方案.docx" -o "C:\AI\patent-forge-output\01-phase1-understanding\技术方案.md"
+# 转换成功后用 read_file 读取产物，纳入 4 要素提炼
+```
+
+> **加密文件**：若 `_convert_core.py` 检测到加密文件（.docx/.xlsx），它会自动通过 `keyring` 查密码；若无密码则弹 Windows CredUI 对话框让用户输入。密码经 `keyring` 存储，**绝不经 chat 明文传递**（详见 markitdown-enhanced SKILL.md §Encrypted File Handling + 仓库记忆 `keyring-vs-cmdkey-pitfall.md`）。若用 `--no-prompt` 则只查 keyring 不弹窗（CI/无人值守场景）。
+
+#### M.2.1c 转换后处理（markitdown 已知缺陷自动修复）
+
+markitdown-enhanced 的 `_convert_core.py` 已内置自动修复，但 AI 须知晓以下已知缺陷（转换后若 sidecar `.errors.md` 存在，按此处理）：
+
+| 缺陷 | 现象 | 处理 |
+|------|------|------|
+| **公式错误转义** | `$I = C * dV/dt$` 被转义成 `$I = C \* dV/dt$` | `_convert_core.py` 已自动用 `fix_formula_escaping.py` 修复；若仍见残留，单独跑 `python scripts/fix_formula_escaping.py <output.md>` |
+| **纵向合并表格列错位** | rowspan 被丢弃，合并行数据左移 | sidecar `.errors.md` 会标注；AI 需对照原文件人工核对数据列（后处理无法区分纵向合并缺列 vs 横向合并少列）|
+| **旧版 .doc** | markitdown 不直接支持 | 先用 Word COM 转 `.docx` 再跑 `_convert_core.py` |
+
+> 完整缺陷清单 + 边界条件见 markitdown-enhanced SKILL.md §"⛔ Do NOT" + 仓库记忆 `markitdown-docx-test-pattern.md` / `markitdown-encrypted-table-detect-bug.md`。
+
+#### M.2.1d 失败兜底（Fallback）
+
+| 场景 | 兜底动作 |
+|------|---------|
+| `markitdown-enhanced` skill 不存在（`C:\AI\.github\skills\markitdown-enhanced\` 缺失）| 告知用户"富格式转换 skill 不可用"，请用户：(1) 把文件另存为 `.md`/`.txt` 后重新提供，或 (2) 直接在 chat 粘贴关键内容。**禁止强行用 `read_file` 读 .docx/.pdf**（会得到乱码二进制）|
+| `_convert_core.py` 报错（依赖缺失/文件损坏）| 读 stderr，告知用户具体错误；建议 `pip install "markitdown[all]" msoffcrypto-tool keyring mammoth pywin32` |
+| 转换产物为空 / 明显残缺 | 退回 M.4 无文件兜底，用 Phase 1 访谈补齐；告知用户"文件转换失败，将改用访谈收集信息" |
+
+> **红线**：禁止在 `markitdown-enhanced` 不可用时静默用 `read_file` 读取富格式文件并假装成功（会产出乱码，污染 4 要素提炼）。必须显式告知用户降级。
+
+### M.3 读取与摘要（用户提供文件后）
+
+用户提供文件后，技能执行：
+1. **读取**：按 **M.2.1a 扩展名决策表** 选择处理器——纯文本扩展名用 `read_file`；富格式扩展名(.docx/.pdf/.pptx/.xlsx/.html/.epub/图片/音频)用 **M.2.1b 的 `_convert_core.py` 命令**转换为 `.md` 后再 `read_file` 读取产物
+2. **摘要**：对每个文件生成 ≤200 字摘要，标注"来源：[文件名]"
+3. **映射**：将摘要内容映射到 Phase 1 的 4 要素（技术领域/技术问题/技术方案/技术效果），标注哪些要素已"由文件覆盖"、哪些仍需访谈
+4. **进入 Phase 0**：带着已摘要的材料，继续文档类型选择 + 后续流程
+
+> ⚠️ **保密提示**：若文件含敏感商业信息，技能应在摘要前提示用户"文件内容仅用于本会话生成交底书/申请表，不会上传外部"。用户确认后继续。
+
+### M.4 无文件兜底（用户选 ② 或 ③）
+
+用户无文件时，进入 Phase 0 正常流程，Phase 1 的结构化访谈将承担全部信息收集职责（访谈深度更深，可能触发 Interview Guardrail 最多 3 轮）。
+
+**Output**: 已读取的材料摘要清单（若有） + 进入 Phase 0。
+
+---
+
 ## Phase 0: Document Type Selection
 
 **Goal**: Determine which document type the user needs before any work begins.
@@ -86,7 +216,8 @@ patent-forge-output/
 **Goal**: Extract core technical elements from the user's invention description.
 
 **Actions**:
-1. **Domain Analysis**: Identify the technical field (技术领域) AND classify into one of: **软件/算法、机械/结构、电子/电路、化学/材料、混合**。此分类将驱动 Phase 3 的实施例变化维度和附图类型选择
+0. **Material Pre-load（素材预载）**：若 Phase -1（Material Intake）中用户提供了文件，**必须先按 § M.2.1 文件转换集成的扩展名决策表选择处理器**读取并摘要这些文件（纯文本用 `read_file`；富格式 .docx/.pdf/.xlsx/.pptx/图片/音频用 `markitdown-enhanced` skill 的 `_convert_core.py` 转 `.md` 后读取），再进入下述 Action 1-7。已由文件覆盖的要素（技术领域/问题/方案/效果）可直接采用，访谈只针对文件未覆盖的空白项。**禁止忽略已提供的文件直接进入访谈**（Anti-Pattern #20）。若用户未提供文件，跳过本步，Action 1-7 的访谈承担全部信息收集。
+1. **Domain Analysis**: Identify the technical field (技术领域) AND classify into one of **6 类**（与 [`domain_matrix.md`](./domain_matrix.md) § 领域判定单一事实源一致）：**软件/算法、机械/结构、电子/电路、化学/材料、混合（HW+SW）、不确定领域**。此分类将驱动 Phase 3 的实施例变化维度和附图类型选择。**混合类判定补充**：除"系统+方法/装置+控制"显式配对词外，"硬件为常规载体 + 算法/控制逻辑为核心创新"（如 BMS 算法、传感器信号处理+估计算法）也归混合类——两类权利要求（硬件含参考标号 + 方法）都要写
 2. **Problem Identification**: Define what technical problem is being solved (技术问题)
 3. **Solution Extraction**: Extract the proposed technical solution (技术方案)
 4. **Effect Assessment**: Determine the technical effects and advantages (技术效果)
@@ -118,23 +249,54 @@ patent-forge-output/
 
 **Goal**: Validate novelty by searching existing patents and technical documentation.
 
+**搜索工具分层（关键）**——在 Step 2.1 之前，按以下优先级**探测并选定本会话使用的搜索工具**。检索全程使用同一工具层，不混用：
+
+| 层级 | 工具 | 探测方式 | 能力 | 用于哪些 Step |
+|------|------|---------|------|--------------|
+| **Layer 1（首选）** | `anysearch` skill | 检查 `.github/skills/anysearch/SKILL.md` 是否存在 | 多引擎关键词检索 + 内容提取（最全面）| 2.2-2.7 全部 |
+| **Layer 2（次选）** | `tavily` skill | anysearch 不存在时，检查 `.github/skills/tavily/SKILL.md` 是否存在 | Tavily 关键词检索 + URL 内容提取 | 2.2-2.7 全部 |
+| **Layer 3（兜底）** | `fetch_webpage`（内置工具）| 上述两个 skill 均不存在时使用 | **仅能抓取已知 URL，不能关键词检索** | 仅 2.5（已知 URL） |
+| **Optional 增强（专利 API，优先级递减）** | ① **CNIPA.AI**（首选，中国专利中心）→ ② SerpAPI → ③ Exa.ai | 检测 `CNIPA_API_KEY` / `SERPAPI_KEY` / `EXA_API_KEY` 环境变量（可多选叠加）| 专利专用 API，CNIPA.AI 中国专利覆盖最佳 | 叠加在任一主搜索层上，增强 2.2/2.7.1 |
+
+**探测顺序**（必须严格执行，禁止跳级）：
+1. 先查 `anysearch` skill 是否存在 → 存在则选定 Layer 1，跳到 Step 2.1
+2. 再查 `tavily` skill 是否存在 → 存在则选定 Layer 2，跳到 Step 2.1
+3. 两个 skill 均不存在 → 选定 Layer 3（`fetch_webpage`），**必须在 Checkpoint 2 中显式告知用户「当前仅有 fetch_webpage 兜底，无法做关键词检索，新颖性分析基于有限已知来源，强烈建议委托专业专利检索」**
+4. **专利专用 API 探测**（与上面主搜索层独立，可叠加）：按优先级检测 `CNIPA_API_KEY`（首选）→ `SERPAPI_KEY` → `EXA_API_KEY`，**有 key 则启用对应 API 作为增强层**（可多个同时启用，CNIPA.AI 优先调用）。端点详见 [`api_and_terminology.md`](./api_and_terminology.md) § CNIPA.AI / SerpAPI / Exa.ai
+
+**禁止行为**：
+- 禁止跳过探测直接假定某 skill 或 API key 存在
+- 禁止在 Layer 3（仅 fetch_webpage）下声称做了「关键词检索」——fetch_webpage 只能抓 URL
+- 禁止因为某个 skill 或 API key 不存在就跳过 Phase 2（违反 Anti-Pattern #4）
+- **禁止调用 CNIPA.AI 的撰写端点**（`/patent-writing/analyze`、`/patent-writing/generate-claims`）—— 仅用其检索端点（Anti-Pattern #19）
+
 **Actions**:
 
 ### Step 2.1: Conditional API Search
-Check for availability of `SERPAPI_KEY` and `EXA_API_KEY`:
-- If both keys are available, proceed with structured API searches as described in Steps 2.2-2.5
-- If keys are missing, inform the user briefly and automatically proceed with WebSearch as a fallback
+Check for availability of `CNIPA_API_KEY` / `SERPAPI_KEY` / `EXA_API_KEY`（按优先级，CNIPA.AI 首选）:
+- If any key is available, the corresponding API (Step 2.2) is layered ON TOP of whichever search tool layer (1/2/3) was selected above — it does NOT replace the layer selection. **CNIPA.AI 若可用则优先调用**（中国专利覆盖最佳），其次 SerpAPI，再次 Exa.ai
+- If keys are missing, skip Step 2.2 entirely; the selected search-tool layer (1/2/3) handles Steps 2.3-2.7 alone
 
-### Step 2.2: API Patent Search (Conditional)
-Execute only if API keys are available:
+### Step 2.2: API Patent Search (Optional Enhancement, only if API keys present)
+Execute only if API keys are available. **调用顺序：CNIPA.AI → SerpAPI → Exa.ai**（按可用性，全部结果合并去重）。CNIPA.AI 作为首选因其中国专利覆盖最佳；SerpAPI 补全球覆盖；Exa.ai 补语义模糊场景：
 
-**Method A: SerpAPI Google Patents** (Keyword-based)
+**Method A（首选）: CNIPA.AI**（中英双语自动翻译匹配，中国专利中心）— 端点详见 [`api_and_terminology.md`](./api_and_terminology.md) § CNIPA.AI
+```bash
+# Example: Search for AR gesture recognition patents (英文输入自动匹配中文专利)
+curl -X GET "https://api.cnipa.ai/v1/patents/search?q=(augmented%20reality)%20gesture%20recognition" \
+  -H "Authorization: Bearer ${CNIPA_API_KEY}" \
+  -H "Content-Type: application/json"
+# 可加 IPC 码：q=G06F gesture recognition
+# 详情：GET /patents/:id 获取权利要求/说明书/法律状态
+```
+
+**Method B: SerpAPI Google Patents** (Keyword-based, 全球专利补覆盖)
 ```bash
 # Example: Search for AR gesture recognition patents
 curl -s "https://serpapi.com/search.json?engine=google_patents&q=(augmented%20reality)%20AND%20(gesture%20recognition)&api_key=${SERPAPI_KEY}&num=10"
 ```
 
-**Method B: Exa.ai** (Semantic)
+**Method C: Exa.ai** (Semantic, 概念模糊场景)
 ```bash
 # Example: Semantic search for similar inventions
 curl -X POST 'https://api.exa.ai/search' \
@@ -151,27 +313,32 @@ curl -X POST 'https://api.exa.ai/search' \
 
 ### Step 2.3: API Failure Handling
 
+**When CNIPA.AI returns 0 results or HTTP 401/403/429**:
+1. **Retry once** with synonym-expanded keywords 或加 IPC 码（如 `q=H01M battery`）
+2. **HTTP 401/403** → key 无效或额度耗尽 → 告知用户检查 `CNIPA_API_KEY` → 降级到 Method B/C（SerpAPI/Exa.ai）
+3. **0 结果重试仍失败 / HTTP 429** → 跳过 CNIPA.AI，继续调用 SerpAPI/Exa.ai（若可用）+ Step 2.4 主搜索层。审计日志记录 CNIPA.AI 状态
+
 **When SerpAPI returns 0 results or rate-limit error (HTTP 429)**:
 1. **Retry once** with synonym-expanded keywords and `num=50`
-2. **If still 0 results after retry** → inform user with diagnostic (keywords tried + API status) → fall through to Step 2.4 (WebSearch) automatically
-3. **If rate-limit persists (HTTP 429 after retry)** → skip SerpAPI, proceed with Exa.ai only (if available) + Step 2.4 WebSearch
+2. **If still 0 results after retry** → inform user with diagnostic (keywords tried + API status) → fall through to Step 2.4 (current search-tool layer) automatically
+3. **If rate-limit persists (HTTP 429 after retry)** → skip SerpAPI, proceed with Exa.ai only (if available) + Step 2.4 (current search-tool layer)
 
 **When Exa.ai returns 0 results**:
 1. Attempt `type: "fast"` retry with shorter query (first 5 terms only)
-2. **If still 0 results** → inform user → fall through to Step 2.4 WebSearch
+2. **If still 0 results** → inform user → fall through to Step 2.4 (current search-tool layer)
 
-**When both SerpAPI and Exa.ai are unavailable or both return 0 results**:
-- Automatically proceed to Step 2.5 (Parallel Web Search) and Step 2.6 (Novelty Analysis)
-- In the Checkpoint 2 report, note that novelty analysis is based solely on web search results, and recommend professional patent search for filing
+**When all patent APIs (CNIPA.AI + SerpAPI + Exa.ai) are unavailable or all return 0 results**:
+- Automatically proceed to Step 2.5 (Parallel Search via current search-tool layer) and Step 2.6 (Novelty Analysis)
+- In the Checkpoint 2 report, note that novelty analysis is based solely on the selected search-tool layer results (not patent-specific API), and recommend professional patent search for filing
 
-### Step 2.4: WebSearch Fallback (Used when APIs unavailable)
-When API keys are not available, automatically use the available web search tool (e.g. `WebSearch` / `tavily_search` / `mcp_playwright_browser`):
-- Search for relevant patent and technical information using a general web search tool
-- Query format: "[user's invention description] prior art patent search comparative analysis"
-- Example: search for "[specific technical concept] prior art patent 2025"
+### Step 2.4: Search-Tool Layer Fallback (replaces old "WebSearch Fallback")
+This step uses the search-tool layer selected in the **搜索工具分层** block above (not a generic `WebSearch`):
+- **Layer 1 (anysearch skill)**: 调用 anysearch skill 执行关键词检索；query format: `"[user's invention description] prior art patent search comparative analysis"`
+- **Layer 2 (tavily skill)**: 调用 tavily skill 执行关键词检索；query format 同上
+- **Layer 3 (fetch_webpage)**: **不能做关键词检索**——只能抓取用户已知/已提供的 URL（如 Phase 1 锚定的已知现有技术专利链接）。若用户未提供任何 URL，此层只能基于 Phase 1 访谈内容进行推理，必须在 Checkpoint 2 中显式标注「未执行关键词检索」
 
-### Step 2.5: Parallel Web Search
-Perform web searches to gather comprehensive context regardless of API availability:
+### Step 2.5: Parallel Search (using selected layer)
+Using the search-tool layer selected above (Layer 1/2 only; Layer 3 跳过本步并标注降级), gather comprehensive context:
 
 1. **Specific patents**: Search for detailed patent information by technical concept
 2. **Technical implementations**: Search for how the solution works in practice
@@ -233,7 +400,7 @@ Search query patterns (customize based on invention):
 2. 选取出现频次最高的 1-2 个分类号，**在所有可用搜索源中再跑一次分类号限定检索**
 3. 若分类号检索发现新对比文件 → 并入 Step 2.6 新颖性分析，在 Step 2.8 中标注来源为"IPC/CPC 二次检索"
 4. 若分类号检索未发现新对比文件 → 记录在审计日志（Step 2.9）："IPC/CPC 二次检索无新增对比文件"（这是正面信号，说明关键词检索覆盖较全）
-5. **不可跳过此步**——即使 API key 缺失，也需通过 WebSearch 以 `"[分类号] patent"` 格式完成。Anti-Pattern #14 对应
+5. **不可跳过此步**——即使 API key 缺失，也需通过当前搜索工具层（Layer 1/2）以 `"[分类号] patent"` 格式完成；Layer 3（fetch_webpage）下无法执行关键词分类号检索，审计日志显式标注降级。Anti-Pattern #14 对应
 
 ### Step 2.8: Novelty Articulation
 
@@ -254,13 +421,13 @@ Search query patterns (customize based on invention):
 |---|---------|------|------|-----------|-----------|------|
 | 1 | (ML) AND (recommendation) | SerpAPI | 关键词 | 10 | 3 | ✅ |
 | 2 | neural calendar scheduling | Exa.ai | 语义 | 8 | 2 | ✅ |
-| 3 | focus time recommendation prior art | WebSearch | 网页 | 5 | 1 | ✅ |
-| 4 | IPC:G06F3/01 patent | WebSearch | 分类号二次 | 7 | 2 | ✅ |
+| 3 | focus time recommendation prior art | anysearch/tavily | 关键词 | 5 | 1 | ✅ |
+| 4 | IPC:G06F3/01 patent | anysearch/tavily | 分类号二次 | 7 | 2 | ✅ |
 
 **审计要求**：
-- 每条查询记录来源 + 类型（关键词 / 语义 / 分类号二次）
-- 至少包含一次分类号二次检索（Step 2.7.1）
-- 在 Checkpoint 2 中向用户报告三计数摘要：「共发送 N 条查询，收到 M 条结果，最终引用 K 条对比文件」
+- 每条查询记录来源 + 类型（关键词 / 语义 / 分类号二次）+ **使用的工具层**（Layer 1 anysearch / Layer 2 tavily / Layer 3 fetch_webpage / Optional SerpAPI / Optional Exa.ai）
+- 至少包含一次分类号二次检索（Step 2.7.1）—— Layer 3（fetch_webpage）下若无法执行分类号检索，审计日志必须显式标注「IPC 二次检索因工具能力降级未执行」
+- 在 Checkpoint 2 中向用户报告三计数摘要：「共发送 N 条查询，收到 M 条结果，最终引用 K 条对比文件」+ **本次会话使用的搜索工具层**
 - 此审计日志同时作为「现有技术文献清单」（Phase 3A Action 8）的数据源
 
 ---
