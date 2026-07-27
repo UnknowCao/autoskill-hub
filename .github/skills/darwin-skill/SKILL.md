@@ -111,12 +111,27 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 ### Phase 0: 初始化
 
 ```
+0. 🔴 红灯扫描（gate，先于一切）：对范围内每个 SKILL.md 跑
+   grep -nE "(在 Claude Code|Claude Code skill|Claude Code 用户|Cursor only|Codex 中|^\[!\[Claude Code|~/\.claude/skills/[a-z]|/plugin install\b)" SKILL.md README.md 2>/dev/null
+   输出非空 → 强制把 Phase 2 第一轮定为 P0 runtime drift 修复（results.tsv note 列记 runtime_warn=N），先修再评。
+   判定红线 vs 合法引用：合法 = frontmatter 触发词 / 花叔生态内部 skill 名 / 明确标注 runtime-specific 章节 / commit message / 例外清单（见 references/runtime-neutrality.md）。
+
 1. 确认优化范围：
-   - 全部skills → 扫描 .claude/skills/*/SKILL.md
+   - 全部skills → 扫描所有 SKILL.md，runtime-neutral 三层路径（任选其一自动探测）：
+       a) Claude Code     → .claude/skills/*/SKILL.md
+       b) Codex / Cursor  → .codex/skills/*/SKILL.md  或  ~/.cursor/skills/*/SKILL.md
+       c) OpenClaw / 其它 → skills/*/SKILL.md  或  .agent/skills/*/SKILL.md
+     实现：用 glob `**/{.claude,.codex,.cursor,.agent,skills}/skills/*/SKILL.md` 一次扫全
    - 指定skills → 用户指定列表
-2. 创建 git 分支：auto-optimize/YYYYMMDD-HHMM
-3. 初始化 results.tsv（如不存在）
-4. 读取现有 results.tsv 了解历史优化记录
+2. git root 范围检查（反 monorepo 误伤，本机 2026-07-27 真实教训）：
+   git_root=$(git rev-parse --show-toplevel)
+   若 git_root != skill 目录（即 monorepo）：
+     - 提交用 `git add <skill相对路径>/SKILL.md` 单文件，禁止 `git stash`（会波及无关 skill）
+     - 回滚用文件级备份 `cp SKILL.md SKILL.md.bak.YYYYMMDD-HHMM` 替代 `git revert`，除非工作树干净
+   若 git_root == skill 目录（局部仓库）：可自由 stash/branch/revert
+3. 创建 git 分支：auto-optimize/YYYYMMDD-HHMM
+4. 初始化 results.tsv（如不存在）
+5. 读取现有 results.tsv 了解历史优化记录
 ```
 
 ### Phase 0.5: 测试Prompt设计
@@ -298,7 +313,10 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 ```
 
 新增 `eval_mode` 列：`full_test`（跑了 `runSubagent` 子 agent 测试）或 `dry_run`（模拟推演）。
-文件位置：`.claude/skills/darwin-skill/results.tsv`
+文件位置（runtime-neutral，相对本 skill 目录）：`results.tsv`  ← 即 `<skill 目录>/results.tsv`
+- Claude Code:    `.claude/skills/darwin-skill/results.tsv`
+- Codex / Cursor: `.codex/skills/darwin-skill/results.tsv` 或 `~/.cursor/skills/darwin-skill/results.tsv`
+- 其它 runtime:   `<runtime skills root>/darwin-skill/results.tsv`
 
 ---
 
@@ -353,6 +371,7 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 | 场景 | 触发条件 | 处理动作 |
 |---|---|---|
 | 不在 git 仓库 | `git rev-parse` 失败 | 询问用户：执行 `git init` 或回退到文件备份；用户选后者则 `cp SKILL.md SKILL.md.bak.YYYYMMDD-HHMM` 代替 revert |
+| **git root 是 monorepo**（git_root != skill 目录）| `git rev-parse --show-toplevel` 返回值 ≠ skill 目录 | **禁止 `git stash`/`git stash push -u`**（会波及无关 skill 的工作树改动）；提交只用 `git add <skill相对路径>` 单路径；回滚优先文件级备份 `cp ... .bak`，`git revert` 仅当工作树干净且 `git status --short <skill>` 为 0 脏度时用。本机 2026-07-27 真实案例：`C:\AI` monorepo 下 stash 失败但留下幽灵 stash 条目，多个 skill 显示为 "D" 删除 |
 | results.tsv 缺失 | 文件不存在 | 新建并写表头行（9列：含 eval_mode） |
 | results.tsv 损坏 | 列数不匹配 / 非TSV | 备份为 `.bak.YYYYMMDD-HHMM` 后重建，告知用户 |
 | 分支已存在 | `git checkout -b` 失败 | 分支名末尾加 `-2` / `-3`；第3次失败则切回现有分支并询问继续还是新起 |
@@ -481,8 +500,12 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
    - data-field="date" → 当前日期
 3. 随机选择风格：hash 设为 swiss/terminal/newspaper 之一
 4. 用 scripts/screenshot.mjs 截图（2x 高清，只截 .card 元素，自动 open 图片）：
-   node .claude/skills/darwin-skill/scripts/screenshot.mjs \
+   node <skill 目录>/scripts/screenshot.mjs \
      /abs/path/to/card.html /abs/path/to/output.png
+   runtime-neutral 路径示例（任选其一）：
+     - Claude Code:     node .claude/skills/darwin-skill/scripts/screenshot.mjs ...
+     - Codex / Cursor:  node .codex/skills/darwin-skill/scripts/screenshot.mjs ...
+     - 其它 runtime:    node <runtime skills root>/darwin-skill/scripts/screenshot.mjs ...
    # 回退方案（脚本失败时）：
    npx playwright screenshot "file:///path/to/card.html#[theme]" \
      output.png --viewport-size=960,1280 --wait-for-timeout=2000
