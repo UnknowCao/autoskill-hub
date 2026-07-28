@@ -1,0 +1,13 @@
+element_id,element_name,calculation,unit_cost_usd,pct_of_total,notes
+01,Direct Material (BOM),Sum of component costs x qty / (1-scrap),__FILL__,50-70,Largest block; query authorized distributors (Digi-Key/Mouser/Arrow)
+02,Direct Labor,cycle_time_hours x loaded_rate,__FILL__,5-15,Loaded rate includes 30-40% benefits
+03,Manufacturing Overhead,direct_labor x 2_to_4,__FILL__,variable,2-4x of direct labor in electronic assembly
+04,Equipment Usage,purchase_price / (deprec_years x utilization x annual_hours),__FILL__,variable,Per-hour equipment cost; SMT-dominant
+05,NRE One-time Tooling,tooling_cost / expected_volume,__FILL__,low_at_scale,Engineering samples / first article / process validation
+06,Supplier Profit,markup on subtotal,__FILL__,5-15,EMS 5-15% / PCB 10-15% / Passives 15-20%
+07,Other (Logistics/Tariff/Cert),packing + freight + tariff + cert_amort + fx,__FILL__,3-8,Include currency risk for imported parts
+,TOTAL SHOULD-COST,sum of 01-07,__FILL__,100,
+,,,,
+,Will-Cost (Quoted),Supplier actual quote,__FILL__,,From supplier quote sheet
+,GAP = Will - Should,Will-Cost - TOTAL,__FILL__,,Positive = negotiation room
+,GAP %,Gap / Will x 100,__FILL__,,<5% ok / 5-15% negotiate / 15-30% SC+2nd / >30% force 2nd

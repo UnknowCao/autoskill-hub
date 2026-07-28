@@ -1,0 +1,18 @@
+part_number,description,qty_per_unit,unit_cost,scrap_rate,strategic_importance,category,vendor,lead_time_weeks,single_source
+MCU-STM32F103RET6,Main MCU LQFP-64,1,4.50,0.01,high,IC,ST,26,yes
+PMIC-TPS653853A,Multi-rail power IC,1,3.20,0.01,high,IC,TI,18,yes
+CAN-SN65HVD230,CAN transceiver SOIC-8,2,0.95,0.02,high,IC,TI,12,no
+CONN-AMP-1-480705-0,Main connector 32-pin,1,2.80,0.03,high,Connector,TE,8,no
+LDO-LM317,5V regulator,3,0.35,0.02,med,IC,TI,6,no
+CAP-100NF-0603,100nF X7R capacitor,24,0.012,0.05,low,Passive,Murata,4,no
+CAP-10UF-0805,10uF X5R capacitor,8,0.045,0.05,low,Passive,Murata,4,no
+RES-10K-0603,10K resistor 1%,12,0.008,0.03,low,Passive,Yageo,4,no
+RES-4K7-0603,4.7K resistor 1%,6,0.008,0.03,low,Passive,Yageo,4,no
+LED-BLUE-0805,Blue indicator LED,2,0.15,0.02,low,Opto,Kingbright,6,no
+DIODE-1N4148,Switching diode,4,0.04,0.03,low,Discrete,Vishay,4,no
+MOS-IRLML2502,N-channel MOSFET,3,0.28,0.02,med,Discrete,Infineon,8,no
+XTAL-8MHZ,8 MHz crystal,1,0.42,0.02,med,Passive,Epson,8,no
+PCB-4L-100X80,4-layer FR4 PCB,1,1.80,0.05,med,PCB,Local,2,no
+LABEL-SN,Serial number label,1,0.02,0.10,low,Mechanical,3M,2,no
+BOX-PLASTIC,Plastic enclosure,1,1.50,0.02,med,Mechanical,Custom,6,no
+SCREW-M3,M3 mounting screw,4,0.03,0.05,low,Mechanical,Generic,2,no

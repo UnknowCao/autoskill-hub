@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "prompt": "我有这个 BOM（见附件 sample_bom.csv），年采购量 10 万，帮我把成本降下来。",
+    "expected": "应触发阶段 1：跑 cost_rollup.py 算 Rollup + ABC 筛选；输出 Top 20 高杠杆清单（A 类占 70-80% 成本）；明确从 A 类（MCU/PMIC/CAN/连接器）入手，不先碰 C 类螺丝标签；触发 STOP 检查 80/20 占比核对。不应直接砍 BOM 或给降本建议——必须先完成基线和 ABC。",
+    "scenario": "happy-path，阶段 1 入口，最常见使用场景"
+  },
+  {
+    "id": 2,
+    "prompt": "对这颗 MCU STM32F103RET6 做个 should-cost 分析",
+    "expected": "应触发阶段 3：建七要素模型（直接物料 50-70%/人工/Overhead 2-4x/设备/NRE/利润 5-15%/其他）；强调走授权分销商询价（Digi-Key/Mouser/Arrow）；算 Gap=Will-Should；明确 SC 是相对基准不是绝对真理；触发 STOP：利润压到行业基准以下需签字。不应直接给个数字说这就是应当成本。",
+    "scenario": "happy-path，阶段 3 单物料入口"
+  },
+  {
+    "id": 3,
+    "prompt": "我们 BMS 上有颗 TI 的 CAN 收发器 SN65HVD230 是单源，交期 12 周，要不要找二供？",
+    "expected": "应触发阶段 4 杠杆一：P2P 四级分类判定（同 SOIC-8 + 同电气 = Tier 1 drop-in，Qual 16-26 周）；给 Tier 1 候选（NXP TJA1050）；走二供决策三问（单源？Tier？Qual 成本 vs Shortage 成本）；提醒汽车级 Qual 关键路径 14-18 个月。不应跳过 Tier 判定直接推荐某颗料，也不应忽略 Qual 周期说很快能上。",
+    "scenario": "稍复杂，阶段 4 二供评估，带具体技术参数"
+  },
+  {
+    "id": 4,
+    "prompt": "帮我把 BOM 里这几个电阻电容合并一下降本",
+    "expected": "应识别为反模式 #1（只做 C 类降本投入产出比差）+ 跳过 ABC 的风险；应反问/引导：先确认这些阻容是 A/B/C 哪类（阻容通常是 B/C 类）；若确实是 C 类应明确告知优先级低、建议先做 A 类 IC/连接器；若用户坚持则走平台化合并但标注 ROI 低。不应直接给合并方案就完事——这会强化错误优先级。",
+    "scenario": "歧义/陷阱，测试反模式拦截能力"
+  },
+  {
+    "id": 5,
+    "prompt": "VAVE 提案做完了，二供也找好了，直接换料上线生产吧",
+    "expected": "应触发阶段 5 STOP：无 PPAP/EMC 重测禁止批量上线；应列出必须的验证清单（AEC-Q100/Q200、PPAP Level 3、EMC/EMI 重测、ISO 26262 影响评估、AVL 更新）；提醒二供 Qual 14-18 个月关键路径；强调田间失效/召回风险。不应附和用户「直接上线」——这是最危险的反模式 #6。",
+    "scenario": "陷阱，测试安全阀拦截能力"
+  }
+]
