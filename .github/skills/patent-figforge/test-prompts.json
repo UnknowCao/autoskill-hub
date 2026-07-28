@@ -1,17 +1,17 @@
 [
   {
     "id": 1,
-    "prompt": "帮我画一个BMS电池管理系统的系统框图，包含电压传感器、温度传感器、主控MCU、存储器、CAN通信模块、显示面板",
-    "expected": "生成B&W框图，6个box组件用不同线型区分（sensor solid, MCU solid, storage dashed, display bold），阿拉伯数字标签在box外用虚线引出，\"图1\"在下方"
+    "prompt": "我要申请专利，权利要求是一种电池管理系统（BMS）的监控方法，包含以下步骤：接收电芯电压信号；当电压超过过压阈值时进入保护模式；否则继续采样。帮我画一个专利方法流程图。",
+    "expected": "调用 PatentDiagramGenerator.create_flowchart，输出含 start/采样/判定/保护/end 的 SVG，节点带 (10)(20)(30) 参考号，黑底白字，splines=polyline 正交布线"
   },
   {
     "id": 2,
-    "prompt": "画一个充电控制流程图：开始→检测连接→判断是否连接成功（是→启动充电，否→返回检测）→监测充满→判断是否充满（是→停止充电→结束，否→继续充电）",
-    "expected": "生成TB流程图，椭圆起止、矩形步骤、菱形判断、箭头带是/否标签，符合w/h比例规范"
+    "prompt": "为这个系统画个框图：一个 BMS 由电压采集单元(10)、主控MCU(20)、通信模块(30)、均衡驱动(40)组成，电压采集连到MCU，MCU连通信和均衡驱动。要能用于 CNIPA 递交。",
+    "expected": "调用 create_block_diagram rankdir=LR，4 个 box 带 ref 编号，黑框白底，含 SimHei 中文渲染无乱码，输出 SVG+PNG（PDF 不支持，需外部转换）"
   },
   {
     "id": 3,
-    "prompt": "画一个三层系统架构图：感知层(传感器+数据采集)→决策层(域控制器+算法)→执行层(电机+制动)",
-    "expected": "生成分层架构图，用rank=same对齐同层，层间箭头连接，B&W sharp box"
+    "prompt": "画一个充放电管理判定流程图：开始→读取SOC→判断SOC>80%?是则停止充电→结束，否再判断SOC<20%?是则停止放电→结束，否则正常充放电→回到读取SOC循环。每步带专利编号(10开始/20/30/40/50/60结束)。给发明人看的草稿。",
+    "expected": "create_flowchart 含 2 个 diamond 判定 + 循环回流边 + start/end ellipse + 每步 ref 编号；验证回流不与主流向引线交叉"
   }
 ]

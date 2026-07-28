@@ -1,0 +1,14 @@
+# patent-figforge 局部忽略规则
+# 自动备份文件（darwin/skill-creator 优化期产生）
+*.bak.*
+*.bak
+
+# Python 编译缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 测试输出
+*_output
+*_output.png
+*_output.svg

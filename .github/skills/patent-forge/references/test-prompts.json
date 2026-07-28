@@ -9,7 +9,7 @@
     "id": 2,
     "category": "disclosure_acip_docx",
     "prompt": "帮我把这个想法做成华进 ACIP 的技术交底书,要 --docx 输出,内容是:一种基于多摄像头融合的 AR 眼睛疲劳检测系统,硬件含三颗 IR 摄像头+一颗 RGB,软件含眼睑闭合度 PERCLOS 算法+头部姿态补偿。",
-    "expected": "应识别华进/ACIP 关键词→doc-type=disclosure;--docx 模式;走 acip 模板 9 节结构;第四节详细阐述占 ≥60% 篇幅,分硬件结构+控制方法两个维度;每张图都有文字描述;调用 scripts/fill_acip_template.py"
+    "expected": "应识别华进/ACIP 关键词→doc-type=disclosure;disclosure 默认且唯一常规输出为 .docx（不再走 md）;走 acip 模板 9 节结构;第四节详细阐述占 ≥60% 篇幅,分硬件结构+控制方法两个维度;每张图都有文字描述;调用 scripts/fill_acip_template.py fill 生成 .docx"
   },
   {
     "id": 3,
@@ -27,19 +27,19 @@
     "id": 5,
     "category": "boundary_all_search_fails",
     "prompt": "我有一个想法:一种基于量子隧穿效应的新型非易失性存储单元。帮我做成专利申请表。注:我没有 SerpAPI key,也没有 Exa.ai key。",
-    "expected": "Phase 2 Step 2.1 检测到所有 API key（CNIPA_API_KEY/SERPAPI_KEY/EXA_API_KEY）缺失→跳过 Optional 增强层，按搜索工具分层 fallback：首选 anysearch skill，不存在则 tavily skill，再不存在则 fetch_webpage 兜底（注意 fetch_webpage 仅能抓已知 URL，不能关键词检索，Checkpoint 2 中必须显式告知降级）;若所有可用方法均 0 结果→标记'新颖性初步确认(无已知现有技术)',禁止断言'全球首创';Checkpoint 2 中建议委托专业检索机构;审计日志记录所有尝试方法+使用的工具层;不应因 API key 缺失而跳过 Phase 2"
+    "expected": "Phase 2 Step 2.1 检测到所有 API key（CNIPA_API_KEY/SERPAPI_KEY/EXA_API_KEY）缺失→跳过 Optional 增强层，按搜索工具分层 fallback 探测：①若 anysearch skill 存在→选定 Layer 1 跑完不降级告知;②若 anysearch 缺失但 tavily 存在→退到 Layer 2;③若两者均缺失→退到 Layer 3 fetch_webpage（仅能抓已知 URL,不能关键词检索,Checkpoint 2 中必须显式告知降级）。注意:本测试 prompt 假设环境 anysearch/tavily 存在即走 Layer 1/2 不触发降级告知,需模拟两者均缺失的场景才能验证 Layer 3 降级路径;若所有可用方法均 0 结果→标记'新颖性初步确认(无已知现有技术)',禁止断言'全球首创';Checkpoint 2 中建议委托专业检索机构;审计日志记录所有尝试方法+使用的工具层;不应因 API key 缺失而跳过 Phase 2"
   },
   {
     "id": 6,
     "category": "disclosure_other_agency",
     "prompt": "我要通过三环专利代理所提交一个发明:一种基于联邦学习的车载语音助手个性化训练方法。请生成技术交底书。",
-    "expected": "识别'三环专利代理所'→doc-type=disclosure;若 template_registry.md 中有三环模板则加载,若无则触发 Checkpoint(Anti-Pattern #18,禁止静默替换)→用户选 ① ACIP 通用模板(文件名含 -generic-)或 ② 暂停等放入专属模板;9 节结构;第四节详细阐述占 ≥60%;不应在交底书中撰写权利要求书(Anti-Pattern #1)"
+    "expected": "识别'三环专利代理所'→doc-type=disclosure;若 template_registry.md 中有三环模板则加载并输出 .docx,若无则触发 Checkpoint(Anti-Pattern #18,禁止静默替换,不再提供通用模板 fallback)→**仅允许暂停**等用户放入 `<agency>_invention_disclosure.docx` 后重试（不再生成 -generic- 文档）;9 节结构;第四节详细阐述占 ≥60%;不应在交底书中撰写权利要求书(Anti-Pattern #1)"
   },
   {
     "id": 7,
     "category": "edge_case_severely_incomplete_info",
     "prompt": "我想申请一个关于'智能推荐'的专利,帮我写一下。",
-    "expected": "Phase 1 结构化访谈触发:发明描述极度模糊→追问 4 要素(技术领域/技术问题/技术方案/技术效果);最多 3 轮访谈→若仍不足 4/5 项→触发 Checkpoint 1-warning,展示已收集信息+缺失项清单,请用户选择①补充或②缩减范围继续;禁止在用户确认前进入 Phase 2;不应自行编造发明细节填补空白"
+    "expected": "Phase 0 doc-type 询问前置触发(prompt 仅含'申请'模糊词,非'申请表/交底书'显式信号,按 Quick Decision ⚠️ 区块规则 + Anti-Pattern #3 必须先 vscode_askQuestions,禁止默认 application)→假设用户确认 application 后进入 Phase 1:结构化访谈触发(发明描述极度模糊)→追问 4 要素(技术领域/技术问题/技术方案/技术效果);最多 3 轮访谈→若仍不足 4/5 项→触发 Checkpoint 1-warning,展示已收集信息+缺失项清单,请用户选择①补充或②缩减范围继续;禁止在用户确认前进入 Phase 2;不应自行编造发明细节填补空白(Anti-Pattern #17)"
   },
   {
     "id": 8,

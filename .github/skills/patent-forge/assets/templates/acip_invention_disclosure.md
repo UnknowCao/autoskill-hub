@@ -187,9 +187,13 @@
 
 ## 输出模式适配
 
-### `--md` 模式
-- 文件名：`Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].md`
-- 附图：由 `patent-figforge` skill 生成 SVG/PNG，文末标注"正式提交需替换为 Visio (.vsd) 原图"
-- 公式：用 KaTeX（`$...$` 或 `$$...$$`）
+disclosure 默认且唯一常规输出为 `.docx`（通过 `scripts/fill_acip_template.py fill` 填充 `assets/raw_templates/acip_invention_disclosure.docx`）。
+
+- **`.docx`**（默认）
+  - 文件名：`Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].docx`
+  - 附图：由 `patent-figforge` skill 生成 SVG/PNG，文末标注"正式提交需替换为 Visio (.vsd) 原图"
+  - 公式：用 KaTeX（`$...$` 或 `$$...$$`）
+- **`.md`**（仅作 `.docx` 生成失败的异常兜底，详见 `references/docx_mode.md` § 3）
+  - 文件名：`Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].md`（不加 `-generic-` 后缀）
 
 

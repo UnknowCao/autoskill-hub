@@ -7,10 +7,10 @@
 
 ## 已注册模板
 
-| Template ID | 名称 | 适用场景 | 输出本质 | 支持 `--docx` | 文件位置 |
-|-------------|------|---------|---------|-------------|---------|
-| `standard` ⭐ | 标准专利申请表 | 公司内部直接申请，含权利要求书/摘要 | 最终专利申请文件 | ❌（仅 `--md`） | `assets/templates/standard_application.md` |
-| `acip` | ACIP（华进）技术交底书 | 通过华进知识产权代理申请 | 发明人 → 代理师的交底材料 | ✅（`fill_acip_template.py`） | `assets/templates/acip_invention_disclosure.md` |
+| Template ID | 名称 | 适用场景 | 输出本质 | 输出格式 | 文件位置 |
+|-------------|------|---------|---------|----------|---------|
+| `standard` ⭐ | 标准专利申请表 | 公司内部直接申请，含权利要求书/摘要 | 最终专利申请文件 | **`.md`**（唯一） | `assets/templates/standard_application.md` |
+| `acip` | ACIP（华进）技术交底书 | 通过华进知识产权代理申请 | 发明人 → 代理师的交底材料 | **`.docx`**（唯一常规路径，由 `fill_acip_template.py` 填充；`.md` 仅作 docx 失败异常兜底） | `assets/templates/acip_invention_disclosure.md` + `assets/raw_templates/acip_invention_disclosure.docx` |
 
 ⭐ `standard` 为默认模板，未指定 `--template` 时使用。
 
@@ -24,10 +24,10 @@
        ├─ 提到具体代理机构名称？
        │     ├─ 是 → 检查是否在下方"代理机构映射表"中
        │     │     ├─ 在表中 → 使用对应 template
-       │     │     └─ 不在表中 → **触发 Checkpoint**（Anti-Pattern #18，禁止静默替换）：
-       │     │           「[agency] 专属模板未注册。将使用 ACIP 通用交底书模板生成，
-       │     │             输出文件名标注为 Disclosure-[Agency]-generic-[ShortTitle]-[YYYYMMDD].md。」
-       │     │           用户选择：① 继续用通用模板 / ② 暂停，等用户放入专属 .docx 后重试
+       │     │     └─ 不在表中 → **触发 Checkpoint**（Anti-Pattern #18，禁止静默替换，**禁止提供通用模板 fallback**）：
+       │     │           「[agency] 专属 .docx 模板未注册。请手动放入 `<agency>_invention_disclosure.docx`
+       │     │             到 `assets/raw_templates/` 后重试。」
+       │     │           **仅允许暂停**，不再生成 `-generic-` 文档
        │     └─ 否 ↓
        │
        ├─ 文档用途明确？
@@ -46,9 +46,9 @@
 
 | 关键词（不区分大小写） | 模板 |
 |---------------------|------|
-| 华进 / ACIP / 华进知识产权 / 华进联合知识产权 | `acip` |
-| 标准申请 / 内部申请 / 直接申请 | `standard` |
-| _（其他代理机构，如三环/中科/超凡等）_ | _回退 `acip` + 触发 Checkpoint（Anti-Pattern #18）_ |
+| 华进 / ACIP / 华进知识产权 / 华进联合知识产权 | `acip`（输出 `.docx`） |
+| 标准申请 / 内部申请 / 直接申请 | `standard`（输出 `.md`） |
+| _（其他代理机构，如三环/中科/超凡等）_ | _**仅允许暂停**等用户放入专属 .docx 后重试（Anti-Pattern #18：不再提供通用模板 fallback）_ |
 
 ---
 
@@ -74,7 +74,8 @@
    - 与该模板章节一一对应的检查项
 
 5. **输出模式适配**
-   - `--md` 模式的文件命名与附图处理
+   - `application` (`standard`)：`.md` 文件命名与附图处理
+   - `disclosure`：`.docx` 模板填充（通过 `fill_acip_template.py`），`.md` 仅作 docx 生成失败的异常兜底
 
 ---
 

@@ -8,30 +8,40 @@
 
 ---
 
-## Output Format (`--md` / `--docx`)
+## Output Format（按 doc-type 强制分流）
 
-Parse `$ARGUMENTS` to determine output format:
+**输出格式由 doc-type 唯一决定，不再由用户参数 `--md` / `--docx` 选择：**
 
-| Argument | Mode | Output | When to Use |
-|----------|------|--------|-------------|
-| `--md` (default) | Local Markdown | Save as `.md` file | 内部审阅、版本控制 |
-| `--docx` | **Word（填充模板）** | Save as `.docx` by filling an agency template | **提交给外部代理机构时优先使用** —— 格式 100% 匹配对方模板 |
+| doc-type | 输出格式 | Filename pattern | 何时用 |
+|----------|----------|------------------|--------|
+| `application` | **`.md`**（唯一路径）| `Patent-[ShortTitle]-[YYYYMMDD].md` | 公司内部申请表（无代理机构专属模板）|
+| `disclosure` | **`.docx`**（唯一常规路径）| `Disclosure-[Agency]-[ShortTitle]-[YYYYMMDD].docx`（例：`Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].docx`） | 提交外部代理机构，100% 匹配对方 .docx 版式 |
 
-### `--md` Mode（共通）
+### `application` → `--md` Mode
 
 Save the generated document as a local Markdown file:
-- Filename pattern:
-  - `application` → `Patent-[ShortTitle]-[YYYYMMDD].md`
-  - `disclosure`（注册代理，如 ACIP/华进）→ `Disclosure-[Agency]-[ShortTitle]-[YYYYMMDD].md`（例：`Disclosure-ACIP-[ShortTitle]-[YYYYMMDD].md`）
-  - `disclosure`（**未注册代理**，经 Checkpoint #18 用户选 ① 通用模板后）→ `Disclosure-[Agency]-generic-[ShortTitle]-[YYYYMMDD].md`（`-generic-` 标记不可省略，Anti-Pattern #18）
+- Filename pattern：`Patent-[ShortTitle]-[YYYYMMDD].md`
 - 保存到 `docs/` 或 `patents/` 目录；若两者均不存在，使用当前工作目录
 - 附图由 `patent-figforge` skill 生成 SVG/PNG，文末标注"正式申请/提交需替换为专利制图 / Visio (.vsd) 原图"
 
-#### `--md` 强制后处理（保存前必跑）
+### `disclosure` → `--docx` Mode（强制）
+
+**disclosure 不再有常规 md 输出**。用户即使未显式说 `--docx`，disclosure 一律填充代理机构 .docx 模板生成。详细步骤见 [`docx_mode.md`](./docx_mode.md)。
+
+**唯一例外**：`.docx` 生成失败（`fill_acip_template.py` 报错）时，按 `docx_mode.md` § 3 错误矩阵处理后的最终兜底输出为 `.md`（filename: `Disclosure-[Agency]-[ShortTitle]-[YYYYMMDD].md`，**不加 `-generic-` 后缀** —— 该后缀随 Anti-Pattern #18 修改已废止）。
+
+#### `.md` 强制后处理（保存前必跑，适用范围：application 常规输出 + disclosure 异常兜底输出）
 
 交付的 `.md` 不能含内部工作流符号（🔴🟠🟡🟢⚠️✅❌ 等），且需把附图内嵌为 Markdown 图片（而非仅文字清单）。保存前**必须**对 .md 跑 [`scripts/postprocess_md.py`](../scripts/postprocess_md.py)：
 
 ```bash
+# application 常规输出
+python scripts/postprocess_md.py final/Patent-X-YYYYMMDD.md \
+    --output final/Patent-X-YYYYMMDD.md \
+    --figures-dir 04-diagrams \
+    --inplace
+
+# disclosure 异常兜底输出（仅当 .docx 生成失败时）
 python scripts/postprocess_md.py final/Disclosure-ACIP-X-YYYYMMDD.md \
     --output final/Disclosure-ACIP-X-YYYYMMDD.md \
     --figures-dir 04-diagrams \
@@ -87,7 +97,7 @@ patent-forge-output/
 
 | Header | Question | Options（`allowFreeformInput: true`） |
 |--------|----------|--------------------------------------|
-| `material-input` | "你是否有现成的技术材料可以提供？这会让交底书/申请表写得更准、更快。" | ① **有文件，我来上传/给路径**（推荐）<br>② **有文字描述，直接粘贴**<br>③ **什么都没有，从零开始访谈** |
+| `material-input` | "你是否有现成的技术材料可以提供？这会让交底书/申请表写得更准、更快。" | ① **有文件，我来上传/给路径**<br>② **有文字描述，直接粘贴**<br>③ **什么都没有，从零开始访谈**<br><br>⚠️ 三个选项平等呈现，**禁止预设**用户走①（Anti-Pattern #21）|
 
 - 选 ① → 进入 M.2（等待用户提供文件路径或附件）
 - 选 ② → 用户在 freeform 框粘贴文字，进入 Phase 0
