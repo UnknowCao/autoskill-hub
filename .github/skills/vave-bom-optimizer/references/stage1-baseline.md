@@ -2,7 +2,9 @@
 
 > 阶段目标：从原始 BOM 建立可量化、可对比的成本基线，锁定 VAVE 高杠杆物料。
 
-## 1.1 BOM Cost Rollup 公式（来自 openBOM）
+## 1.1 BOM Cost Rollup 公式（教学综合公式，来自 openBOM blog）
+
+> ⚠️ **公式准确性澄清（2026-07 调研修正）**：openBOM **原生产品**的 Rollup 只做 `Qty × Cost`；下列含 Yield/Scrap/Labor/Overhead 的完整公式来自 openBOM **教学 blog**，是 VAVE 实践中的「应该这么做」的综合公式，不是 openBOM 软件内置功能。实施时需在 ERP/自建脚本中自行扩展。
 
 ```
 Total BOM Cost = Σ(Component Qty × Unit Cost × Yield/Scrap Factor)
