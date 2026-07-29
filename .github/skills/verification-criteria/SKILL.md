@@ -1,6 +1,6 @@
 ---
 name: verification-criteria
-description: "Generate, audit, and trace verification criteria (VC) for functional system requirements. Three modes: VC Generation (5-element + SMARTR-OC + Source Depth), VC Quality Audit (8-point rubric + CK checklist), Coverage Audit (traceability matrix + orphan detection). ASPICE SYS.2 BP5, ISO/IEC 29148, VC-First. Use when: 生成VC, 验证标准, 审核VC, SMARTR-OC, 覆盖率, traceability, VC质量, VC评分, 需求验证, 测试标准, verification criteria, coverage audit."
+description: "Generate, audit, and trace verification criteria (VC) for functional system requirements. Makes any AI agent write VC that passes ASPICE auditor review — testable, traceable, SMARTR-OC-graded. Three modes: VC Generation (5-element + SMARTR-OC + Source Depth), VC Quality Audit (8-point rubric + CK checklist), Coverage Audit (traceability matrix + orphan detection). ASPICE SYS.2 BP5, ISO/IEC 29148, VC-First. Battle-tested on 5,000 BMS requirements. Use when: 生成VC, 验证标准, 审核VC, SMARTR-OC, 覆盖率, traceability, VC质量, VC评分, 需求验证, 测试标准, verification criteria, coverage audit, ASPICE VC, acceptance criteria, requirements verification, testable requirements."
 ---
 
 # Verification Criteria Generator & Auditor
