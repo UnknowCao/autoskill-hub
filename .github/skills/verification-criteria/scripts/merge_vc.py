@@ -102,9 +102,12 @@ SMARTR_RE = re.compile(
 SOURCE_TAG_RE = re.compile(r"\[([RDSSEA])\b")
 
 # Linked Requirement ID inside the VC table row: `| VC-X | BMS-123 | ... |`
-# We capture the second column.
+# The second column may contain a description in parentheses, e.g.:
+#   | VC-BMS-0001 | BMS-0001 (单体电压采集) | Test | ...
+# We capture the requirement ID prefix (e.g. BMS-0001) without requiring
+# the table-cell terminator `|` immediately after it.
 LINKED_REQ_RE = re.compile(
-    r"^\|\s*VC-\S+\s*\|\s*([A-Za-z0-9\-]+)\s*\|",
+    r"^\|\s*VC-\S+\s*\|\s*([A-Za-z0-9\-]+)",
     re.MULTILINE,
 )
 
