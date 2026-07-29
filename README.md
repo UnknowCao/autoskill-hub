@@ -5,7 +5,7 @@
 **The open skill repository that walks the entire automotive V-model, mapped to ASPICE.**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
-[![Skills: 1](https://img.shields.io/badge/Skills-1-green.svg)](./skills)
+[![Skills: 3](https://img.shields.io/badge/Skills-3-green.svg)](./skills)
 [![skills.sh](https://skills.sh/b/UnknowCao/autoskill-hub)](https://skills.sh/UnknowCao/autoskill-hub)
 [![ASPICE](https://img.shields.io/badge/ASPICE-v4.0-orange.svg)](#-v-model--aspice-mapping)
 [![ISO 26262](https://img.shields.io/badge/ISO-26262-green.svg)](#-v-model--aspice-mapping)
@@ -56,6 +56,8 @@ connect* upstream/downstream.
 | Skill | V-Model Phase | ASPICE | What it does |
 |---|---|---|---|
 | 🎯 [**verification-criteria**](./skills/verification-criteria/) | SYS.2 / SYS.5 / SWE.1 / SWE.6 | **SYS.2 BP5** · SYS.5 · SWE.6 | Generate, audit, and trace Verification Criteria; VC-First + SMARTR-OC + Source Depth + 100 % coverage |
+| 📜 [**patent-forge**](./skills/patent-forge/) | Cross-cutting (IP / SUP.10) | **SUP.10** · CNIPA 专利法 26 条 · 审查指南 2023 | Draft Chinese patent documents — 专利申请表 (filing-ready) / 技术交底书 (for patent agents); 4-phase workflow with prior-art search, 禁用词 gate, ACIP .docx fill |
+| 🎨 [**patent-figforge**](./skills/patent-figforge/) | Cross-cutting (IP / SUP.10) | **SUP.10** · CNIPA / USPTO / EPO filing | Generate patent-style technical diagrams (flowcharts / block diagrams / system architectures) with automatic reference numbering; dual SVG+PNG output, CJK auto-resolution |
 | _More skills coming soon_ | — | — | _Requirements authoring, HARA, AUTOSAR, OEM standards forensics…_ |
 
 > Want a skill that's not listed? Open an [issue](https://github.com/UnknowCao/autoskill-hub/issues)
@@ -78,8 +80,18 @@ into your agent — no build step, no dependencies.
 
 ### Via skills.sh CLI (recommended)
 
+Install a single skill:
+
 ```bash
-npx skills add UnknowCao/autoskill-hub --skill verification-criteria
+npx skills add UnknowCao/autoskill-hub@verification-criteria
+npx skills add UnknowCao/autoskill-hub@patent-forge
+npx skills add UnknowCao/autoskill-hub@patent-figforge
+```
+
+Or install all three in one shot:
+
+```bash
+npx skills add UnknowCao/autoskill-hub
 ```
 
 ### Manual install
@@ -99,6 +111,10 @@ Then just ask in natural language — each skill auto-routes based on keywords. 
 
 ```
 为 BMS_System_Requirements.md 生成验证标准（verification-criteria skill 自动激活）
+
+把这个 AR 手势识别方案写成华进 ACIP 交底书（patent-forge skill 自动激活）
+
+给这个 BMS 均衡方法画一张方法流程图和系统框图，带参考标号（patent-figforge skill 自动激活）
 ```
 
 ## 🤝 Contributing
@@ -143,8 +159,10 @@ ISO 26262 规定"做到多安全"。然而通用 LLM 经常混淆 SYS.3 系统�
 **覆盖范围**：
 - **左翼（设计↓）**：SYS.1/SYS.2 需求 → SYS.3/SYS.4 架构 → SWE.1/SWE.2/SWE.3 软件设计
 - **右翼（验证↑）**：SWE.4 单元 → SWE.5 集成 → SYS.5/SWE.6 系统验收
-- **横切**：ISO 26262 功能安全、MAN.x 管理过程、SUP.x 支持过程
+- **横切**：ISO 26262 功能安全、MAN.x 管理过程、SUP.x 支持过程、**知识产权产出**（`patent-forge` 专利文档撰写 + `patent-figforge` 专利附图生成，对齐 SUP.10 变更/配置管理之外的 IP 产出）
 - **全程**：左右翼追溯关系、验证标准（VC）、安全案例（Safety Case）
+
+> 已收录的 3 个 skill：🎯 `verification-criteria`（VC 生成/审核/覆盖追溯）· 📜 `patent-forge`（中国专利申请表/技术交底书撰写）· 🎨 `patent-figforge`（专利附图生成）。其余方向（需求撰写、HARA、AUTOSAR、OEM 标准取证）陆续上线，欢迎在 [issue](https://github.com/UnknowCao/autoskill-hub/issues) 提需求。
 
 **适合谁？** 系统工程师、软件架构师、功能安全经理、需求工程师、测试工程师、ASPICE 评估协调人，
 以及任何想把 AI 变成"懂流程"的开发搭档的从业者。
