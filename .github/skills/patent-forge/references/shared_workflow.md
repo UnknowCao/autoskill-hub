@@ -4,7 +4,7 @@
 > SKILL.md 中的 Phase -1 / Phase 0 / Phase 1 / Phase 2 / 输出格式说明 / 共通质量原则以此文件为单一事实源。
 > 任一 doc-type 都必须先走完 Phase **-1** → 0 → 1 → 2，再在 Phase 3 分支。
 >
-> **位置**: `references/shared_workflow.md`（相对于 skill 根目录）。同目录还有 `api_and_terminology.md`（SerpAPI/Exa.ai + 中文专利术语）、`application_example.md`（申请表示例）、`test-prompts.json`（3 条测试 prompt）。模板位于 `../assets/templates/`，原始 .docx 位于 `../assets/raw_templates/`。
+> **位置**: `references/shared_workflow.md`（相对于 skill 根目录）。同目录还有 `patent_search_apis.md`（专利检索 API 端点）、`language_conventions.md`（撰写语言规范）、`application_example.md` / `application_example_mechanical.md` / `application_example_hybrid.md`（申请表 dogfood 示例：软件 / 机械 / 混合 HW+SW 三类）、`test-prompts.json`（9 条测试 prompt）。模板位于 `../assets/templates/`，原始 .docx 位于 `../assets/raw_templates/`。
 
 ---
 
@@ -273,7 +273,7 @@ markitdown-enhanced 的 `_convert_core.py` 已内置自动修复，但 AI 须知
 1. 先查 `anysearch` skill 是否存在 → 存在则选定 Layer 1，跳到 Step 2.1
 2. 再查 `tavily` skill 是否存在 → 存在则选定 Layer 2，跳到 Step 2.1
 3. 两个 skill 均不存在 → 选定 Layer 3（`fetch_webpage`），**必须在 Checkpoint 2 中显式告知用户「当前仅有 fetch_webpage 兜底，无法做关键词检索，新颖性分析基于有限已知来源，强烈建议委托专业专利检索」**
-4. **专利专用 API 探测**（与上面主搜索层独立，可叠加）：按优先级检测 `CNIPA_API_KEY`（首选）→ `SERPAPI_KEY` → `EXA_API_KEY`，**有 key 则启用对应 API 作为增强层**（可多个同时启用，CNIPA.AI 优先调用）。端点详见 [`api_and_terminology.md`](./api_and_terminology.md) § CNIPA.AI / SerpAPI / Exa.ai
+4. **专利专用 API 探测**（与上面主搜索层独立，可叠加）：按优先级检测 `CNIPA_API_KEY`（首选）→ `SERPAPI_KEY` → `EXA_API_KEY`，**有 key 则启用对应 API 作为增强层**（可多个同时启用，CNIPA.AI 优先调用）。端点详见 [`patent_search_apis.md`](./patent_search_apis.md) § CNIPA.AI / SerpAPI / Exa.ai
 
 **禁止行为**：
 - 禁止跳过探测直接假定某 skill 或 API key 存在
@@ -291,7 +291,7 @@ Check for availability of `CNIPA_API_KEY` / `SERPAPI_KEY` / `EXA_API_KEY`（按�
 ### Step 2.2: API Patent Search (Optional Enhancement, only if API keys present)
 Execute only if API keys are available. **调用顺序：CNIPA.AI → SerpAPI → Exa.ai**（按可用性，全部结果合并去重）。CNIPA.AI 作为首选因其中国专利覆盖最佳；SerpAPI 补全球覆盖；Exa.ai 补语义模糊场景：
 
-**Method A（首选）: CNIPA.AI**（中英双语自动翻译匹配，中国专利中心）— 端点详见 [`api_and_terminology.md`](./api_and_terminology.md) § CNIPA.AI
+**Method A（首选）: CNIPA.AI**（中英双语自动翻译匹配，中国专利中心）— 端点详见 [`patent_search_apis.md`](./patent_search_apis.md) § CNIPA.AI
 ```bash
 # Example: Search for AR gesture recognition patents (英文输入自动匹配中文专利)
 curl -X GET "https://api.cnipa.ai/v1/patents/search?q=(augmented%20reality)%20gesture%20recognition" \
@@ -466,7 +466,7 @@ Search query patterns (customize based on invention):
 适用于所有 doc-type 与输出格式：
 
 - **Grantability**: Focus on technical solutions, not abstract ideas
-- **Precision**: Avoid vague marketing terms; use precise technical descriptions from `api_and_terminology.md`
+- **Precision**: Avoid vague marketing terms; use precise technical descriptions from `language_conventions.md`
 - **Honesty**: Explicitly list potential defects and alternatives
 - **Completeness**: All required sections must be present and substantive
 
@@ -474,4 +474,4 @@ Search query patterns (customize based on invention):
 
 ## Language Conventions
 
-语言规范（避免使用的产品名/UI 术语/品牌名/口语化列表、应使用的设备/通用术语/专利表述列表、Standard Phrases 如 "一种..." / "用于..." / "其特征在于..." 等）的**单一事实源**在 [`api_and_terminology.md`](./api_and_terminology.md) § Language Conventions。两种 doc-type 都必须遵循，此处不再重复以避免漂移。
+语言规范（避免使用的产品名/UI 术语/品牌名/口语化列表、应使用的设备/通用术语/专利表述列表、Standard Phrases 如 "一种..." / "用于..." / "其特征在于..." 等）的**单一事实源**在 [`language_conventions.md`](./language_conventions.md)。两种 doc-type 都必须遵循，此处不再重复以避免漂移。
