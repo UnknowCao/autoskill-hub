@@ -4,7 +4,7 @@
 > SKILL.md 中的 Phase -1 / Phase 0 / Phase 1 / Phase 2 / 输出格式说明 / 共通质量原则以此文件为单一事实源。
 > 任一 doc-type 都必须先走完 Phase **-1** → 0 → 1 → 2，再在 Phase 3 分支。
 >
-> **位置**: `references/shared_workflow.md`（相对于 skill 根目录）。同目录还有 `patent_search_apis.md`（专利检索 API 端点）、`language_conventions.md`（撰写语言规范）、`application_example.md` / `application_example_mechanical.md` / `application_example_hybrid.md`（申请表 dogfood 示例：软件 / 机械 / 混合 HW+SW 三类）、`test-prompts.json`（9 条测试 prompt）。模板位于 `../assets/templates/`，原始 .docx 位于 `../assets/raw_templates/`。
+> **位置**: `references/shared_workflow.md`（相对于 skill 根目录）。同目录还有 `patent_search_apis.md`（专利检索 API 端点）、`language_conventions.md`（撰写语言规范）、`application_example.md` / `application_example_mechanical.md` / `application_example_hybrid.md`（申请表 dogfood 示例：软件 / 机械 / 混合 HW+SW 三类）。模板位于 `../assets/templates/`，原始 .docx 位于 `../assets/raw_templates/`。
 
 ---
 

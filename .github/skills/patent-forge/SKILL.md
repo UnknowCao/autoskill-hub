@@ -84,7 +84,7 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 **Actions**:
 1. **Structure Setup**: Follow the exact format specified in `assets/templates/standard_application.md`
-2. **Language Precision** (🔴 **强制加载** [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions): Use formal Chinese patent terminology; obey 禁用词清单 (§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制)、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号）、§ 5 法条驳回依据映射。
+2. **Language Precision** (🔴 **强制加载** [`references/language_conventions.md`](./references/language_conventions.md)): Use formal Chinese patent terminology; obey 禁用词清单 (§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制)、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号）、§ 5 法条驳回依据映射。
 3. **Claims Drafting** (关键章节): Draft the 权利要求书 section
    - 独立权利要求 1-3 条，二段式「前序部分 + 其特征在于」
    - 从属权利要求 10-20 条，覆盖优选实施方式与 fallback 位置
@@ -131,7 +131,7 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
    - 软硬结合案件典型附图清单：整体三维结构图、工作原理图、参数标注图、性能曲线图、电路图、控制流程图
    - **所有附图生成均由 `patent-figforge` skill 负责**——调用该 skill 生成 SVG/PNG 专利附图，本 skill 仅指定图类型和内容要求，不直接绘制图形。附图文末标注"正式提交需提供 Visio (.vsd) 可编辑原图"
 7. **Consistency Check**: 同一对象使用同一术语（专利法"清楚"要求）
-8. **Language Precision Compliance**（**强制**，对齐 Phase 3A Action 2）: 🔴 **撰写草稿前必须加载** [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions——禁用词清单（§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制）、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号/术语一致性）、§ 5 法条驳回依据映射。**草稿完成后必须 grep 自检**禁用词（`大约|约|大概|左右|优选|良好|快速|稳定|高效|适当|合适|必要|基本|大致|充分|显著|突破|革命|领先`），逐条分类：🟢 合规引用（作为方法论描述禁用词清单本身）/ 🟡 数值或主观效果违规（必须修复为量化表达）/ 🔴 权利要求违规（必须修复）。自检通过后再进入 CHECKPOINT 3D-draft。
+8. **Language Precision Compliance**（**强制**，对齐 Phase 3A Action 2）: 🔴 **撰写草稿前必须加载** [`references/language_conventions.md`](./references/language_conventions.md)——禁用词清单（§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制）、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号/术语一致性）、§ 5 法条驳回依据映射。**草稿完成后必须 grep 自检**禁用词（`大约|约|大概|左右|优选|良好|快速|稳定|高效|适当|合适|必要|基本|大致|充分|显著|突破|革命|领先`），逐条分类：🟢 合规引用（作为方法论描述禁用词清单本身）/ 🟡 数值或主观效果违规（必须修复为量化表达）/ 🔴 权利要求违规（必须修复）。自检通过后再进入 CHECKPOINT 3D-draft。
 
 🔴 **CHECKPOINT 3D-draft — 必须暂停**：在草稿完成**且通过 Action 8 语言规范自检**后，向用户预览交底书结构（特别是第四节详细阐述是否符合"公开充分"），等待用户明确确认通过后定稿。**禁止在用户确认前继续。**
 
@@ -149,7 +149,8 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 **📋 工作流与规范**（Phase -1 to 2 + 共通原则）
 - [`references/shared_workflow.md`](./references/shared_workflow.md) — **Single source of truth**: Phase -1/0/1/2 + Output Format + Output Layout 目录树 + 共通质量原则 + 语言规范
-- [`references/api_and_terminology.md`](./references/api_and_terminology.md) — SerpAPI/Exa.ai 端点 + 中文专利术语 + **Language Conventions**（禁用词清单 + 法条驳回依据 + 各章节语言规范）—— **Phase 3A Action 2 / Phase 3D Action 8 强制加载**，草稿后必须 grep 自检
+- [`references/patent_search_apis.md`](./references/patent_search_apis.md) — **专利检索 API 端点**（CNIPA.AI/SerpAPI/Exa.ai），Phase 2 Step 2.1-2.7 加载
+- [`references/language_conventions.md`](./references/language_conventions.md) — **撰写语言规范单一事实源**（禁用词清单 + Standard Phrases + 各章节语言规范 + 法条驳回依据映射）—— **Phase 3A Action 2 / Phase 3D Action 8 强制加载**，草稿后必须 grep 自检
 
 **🎯 领域适配**
 - [`references/domain_matrix.md`](./references/domain_matrix.md) — **领域适配矩阵**: 6 领域 × (claims 范式 / 实施例维度 / 附图类型)，Phase 3A Action 3/5/6 加载
@@ -174,9 +175,6 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 - [`references/docx_mode.md`](./references/docx_mode.md) — **`--docx` 模式详细步骤** + 错误处理 + 新代理接入 4 步
 - [`scripts/fill_acip_template.py`](./scripts/fill_acip_template.py) — `--docx` 填充工具（subcommands: `fill` / `inspect` / `list`）
 
-**🧪 测试**
-- [`references/test-prompts.json`](./references/test-prompts.json) — 9 个测试 prompt（P1 happy-path / P2 disclosure-docx / P3 doc-type 歧义 / P4 机械结构 / P5 全搜索失败 / P6 非 ACIP 代理 / P7 信息严重不足 / P8 CNIPA.AI 检索 / P9 素材收集+文件输入）
-
 ## Output File Organization（输出目录结构）
 
 每次运行产出按 6 级目录组织（`01-phase1-understanding/` → `02-phase2-prior-art/` → `03-phase3-document/` → `04-diagrams/` → `05-compliance/` → `final/`），完整目录树见 [`shared_workflow.md`](./references/shared_workflow.md) § Output Layout。
@@ -189,7 +187,7 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 - **清单 A**（`--doc-type application`）：结构完整性 + 法律合规性 + 新颖性与创造性（含 Anti-Pattern #17 编造禁令双重校验）—— 完整项数见 [`references/quality_checklists.md`](./references/quality_checklists.md)
 - **清单 D**（`--doc-type disclosure`）：9 节结构完整性 + 软硬结合专项 + 质量原则（含 Anti-Pattern #17 编造禁令 + #18 非 ACIP 确认双重校验）—— 完整项数见 [`references/quality_checklists.md`](./references/quality_checklists.md)
-- **共通质量原则 + 语言规范**：见 [`references/shared_workflow.md`](./references/shared_workflow.md) § 共通质量原则 + [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions
+- **共通质量原则 + 语言规范**：见 [`references/shared_workflow.md`](./references/shared_workflow.md) § 共通质量原则 + [`references/language_conventions.md`](./references/language_conventions.md)
 
 ---
 
