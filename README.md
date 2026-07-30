@@ -5,7 +5,7 @@
 **The open skill repository that walks the entire automotive V-model, mapped to ASPICE.**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
-[![Skills: 3](https://img.shields.io/badge/Skills-3-green.svg)](./skills)
+[![Skills: 4](https://img.shields.io/badge/Skills-4-green.svg)](./skills)
 [![skills.sh](https://skills.sh/b/UnknowCao/autoskill-hub)](https://skills.sh/UnknowCao/autoskill-hub)
 [![ASPICE](https://img.shields.io/badge/ASPICE-v4.0-orange.svg)](#-v-model--aspice-mapping)
 [![ISO 26262](https://img.shields.io/badge/ISO-26262-green.svg)](#-v-model--aspice-mapping)
@@ -58,6 +58,7 @@ connect* upstream/downstream.
 | 🎯 [**verification-criteria**](./skills/verification-criteria/) | SYS.2 / SYS.5 / SWE.1 / SWE.6 | **SYS.2 BP5** · SYS.5 · SWE.6 | Generate, audit, and trace Verification Criteria; VC-First + SMARTR-OC + Source Depth + 100 % coverage |
 | 📜 [**patent-forge**](./skills/patent-forge/) | Cross-cutting (IP / SUP.10) | **SUP.10** · CNIPA 专利法 26 条 · 审查指南 2023 | Draft Chinese patent documents — 专利申请表 (filing-ready) / 技术交底书 (for patent agents); 4-phase workflow with prior-art search, 禁用词 gate, ACIP .docx fill |
 | 🎨 [**patent-figforge**](./skills/patent-figforge/) | Cross-cutting (IP / SUP.10) | **SUP.10** · CNIPA / USPTO / EPO filing | Generate patent-style technical diagrams (flowcharts / block diagrams / system architectures) with automatic reference numbering; dual SVG+PNG output, CJK auto-resolution |
+| 📄 [**markitdown-enhanced**](./skills/markitdown-enhanced/) | Cross-cutting (toolchain / SUP.8) | **SUP.8** Configuration Mgmt · **SUP.10** · document work-product intake | Convert any office/document file (DOCX / PDF / PPTX / XLSX / HTML / CSV / JSON / …) to clean, LLM-ready Markdown with auto XLSX-formula eval, formula-escaping fix, two-stage table auto-repair, and encrypted-file decryption; single-file / parallel batch / size-aware resumable batch |
 | _More skills coming soon_ | — | — | _Requirements authoring, HARA, AUTOSAR, OEM standards forensics…_ |
 
 > Want a skill that's not listed? Open an [issue](https://github.com/UnknowCao/autoskill-hub/issues)
@@ -86,6 +87,7 @@ Install a single skill:
 npx skills add UnknowCao/autoskill-hub@verification-criteria
 npx skills add UnknowCao/autoskill-hub@patent-forge
 npx skills add UnknowCao/autoskill-hub@patent-figforge
+npx skills add UnknowCao/autoskill-hub@markitdown-enhanced
 ```
 
 Or install all three in one shot:
@@ -162,7 +164,7 @@ ISO 26262 规定"做到多安全"。然而通用 LLM 经常混淆 SYS.3 系统�
 - **横切**：ISO 26262 功能安全、MAN.x 管理过程、SUP.x 支持过程、**知识产权产出**（`patent-forge` 专利文档撰写 + `patent-figforge` 专利附图生成，对齐 SUP.10 变更/配置管理之外的 IP 产出）
 - **全程**：左右翼追溯关系、验证标准（VC）、安全案例（Safety Case）
 
-> 已收录的 3 个 skill：🎯 `verification-criteria`（VC 生成/审核/覆盖追溯）· 📜 `patent-forge`（中国专利申请表/技术交底书撰写）· 🎨 `patent-figforge`（专利附图生成）。其余方向（需求撰写、HARA、AUTOSAR、OEM 标准取证）陆续上线，欢迎在 [issue](https://github.com/UnknowCao/autoskill-hub/issues) 提需求。
+> 已收录的 4 个 skill：🎯 `verification-criteria`（VC 生成/审核/覆盖追溯）· 📜 `patent-forge`（中国专利申请表/技术交底书撰写）· 🎨 `patent-figforge`（专利附图生成）· 📄 `markitdown-enhanced`（任意办公/文档文件转 LLM 可用 Markdown，带 XLSX 公式求值、公式转义修复、两阶段表格自动修复、加密文件解密）。其余方向（需求撰写、HARA、AUTOSAR、OEM 标准取证）陆续上线，欢迎在 [issue](https://github.com/UnknowCao/autoskill-hub/issues) 提需求。
 
 **适合谁？** 系统工程师、软件架构师、功能安全经理、需求工程师、测试工程师、ASPICE 评估协调人，
 以及任何想把 AI 变成"懂流程"的开发搭档的从业者。

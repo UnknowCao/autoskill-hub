@@ -1,0 +1,191 @@
+[
+  {
+    "id": 1,
+    "scenario": "single_docx_happy_path_with_formula_fix",
+    "prompt": "把这个 docx 技术文件转成 markdown：<input>.docx",
+    "expected": "调用 _convert_core.py 转换；自动修复 $...$ 公式转义错误(D1)；输出带 Source/Format metadata 头的 .md；结束时给一行简短摘要。不询问用户是否修复公式。",
+    "assert_criteria": [
+      "调用的是 _convert_core.py（单文件入口），不是 batch_convert / dynamic",
+      "输出 .md 首部包含 '# ' 标题、**Source**:、**Format**:、--- 分隔符",
+      "$...$ 数学段内不出现 \\* / \\_ / \\^ 三个逃逸符",
+      "只给一行总结，没有逐表询问"
+    ],
+    "rubric_dim": "dim8 happy path — covers formula fix (D1) auto pipeline"
+  },
+  {
+    "id": 2,
+    "scenario": "single_complex_table_stage1_sidecar_contract",
+    "prompt": "转换这个带复杂表格的文档，转换完帮我把表格问题处理掉：<input>.docx",
+    "expected": "转换后 exit code 1 触发；agent 自动读 .errors.md sidecar；按 AUTO-FIX POLICY 对 D2 列错位 / nested 静默修复；修复后删 sidecar；只给一行总结。nested 写 body blockquote 描述 + 保留扁平表 + AI-describe 注释。",
+    "assert_criteria": [
+      "exit code 1（sidecar 存在的信号）被识别为 Stage-2 入口，而非当作转换失败",
+      "sidecar 包含 CAUSE / MD_LOCATION / HTML_REFERENCE / CURRENT_MD 四节",
+      "D2(nested) 被静默修复（无逐表询问），修复后 sidecar 被删除",
+      "nested 用 body blockquote 描述（不是只留 HTML 注释）",
+      "末尾一行总结，无多段状态报告"
+    ],
+    "rubric_dim": "dim4 检查点 + dim8 stage-2 auto-fix policy 是否被遵循"
+  },
+  {
+    "id": 3,
+    "scenario": "single_encrypted_missing_credential_keyring_routing",
+    "prompt": "转换这个加密的 docx：<input>.docx",
+    "expected": "识别为加密文件；通过 keyring(service='markitdown-enhanced', name='<stem>') 取密码；若取不到，给出明确的一行 keyring.set_password 命令让用户自己跑后再继续；不把密码写进聊天记录。",
+    "assert_criteria": [
+      "走 keyring(service='markitdown-enhanced', name=文件stem) 而非 cmdkey",
+      "缺失凭证时给的是 keyring.set_password 一行命令，不是「打开凭证管理器」",
+      "agent 自己从不读取 / 不在对话里复述明文密码",
+      "用 --no-prompt 避免 CredUI 在 chat 上下文弹出"
+    ],
+    "rubric_dim": "dim3 失败模式编码 — credential-missing fallback (keyring vs cmdkey trap)"
+  },
+  {
+    "id": 4,
+    "scenario": "single_xlsx_formula_nan_to_value_c4_guard",
+    "prompt": "这个 xlsx 里有些单元格是公式，转出来显示成 NaN 了，帮我处理：<input>.xlsx",
+    "expected": "转换前自动用 formulas 库求值把 <v> 写回；输出里公式单元显示真实数值而非 NaN。若 formulas 未装则明确提示 pip install formulas（graceful no-op 不能假装成功）。",
+    "assert_criteria": [
+      "转换前先调 _xlsx_formula_eval 把公式求值写回 <v>",
+      "输出 .md 表格单元里不出现 NaN",
+      "formulas 库缺失时明确 STOP/提示 pip install，不静默吐 NaN"
+    ],
+    "rubric_dim": "dim8 实测 — XLSX 公式求值增强是否真生效（C-4 修复验证）"
+  },
+  {
+    "id": 5,
+    "scenario": "single_unknown_defect_two_level_triage",
+    "prompt": "转换一个文件后 sidecar 报了一个不在已知缺陷列表里的表格问题，但 sidecar 里有完整的 HTML_REFERENCE 块。帮我处理掉。",
+    "expected": "按 AUTO-FIX POLICY 三分支处理：CAUSE 不匹配 {vertical_merge,nested_table} → Unknown；但 HTML_REFERENCE 存在且可用 → best-effort 静默修复，标注 <!-- AI-uncertain: verify -->，不停下来问；末尾总结里高亮该 uncertain 修复。只有 HTML_REFERENCE 缺失/损坏时才 🔴 STOP。",
+    "assert_criteria": [
+      "issue_type 非 vertical_merge/nested_table 时被正确判为 Unknown",
+      "HTML_REFERENCE 存在 → best-effort 静默修复 + <!-- AI-uncertain: verify --> 注释，而非 STOP 询问",
+      "仅在 HTML_REFERENCE 缺失/损坏时才停下问用户（唯一 STOP 情形）",
+      "uncertain 修复在末尾一行总结里被显式列出"
+    ],
+    "rubric_dim": "dim4 + dim8 — Unknown two-level triage: quiet best-effort when ground-truth exists"
+  },
+  {
+    "id": 6,
+    "scenario": "batch_parallel_mixed_format_exit0",
+    "prompt": "把这个文件夹里的所有 docx/html/csv/json 一起转成 markdown：<dir>",
+    "expected": "调用 batch_convert.py（不是单文件入口）；按 --extensions 过滤；并行转完给汇总；无表格的文件 exit 0 全部成功；每个输入都有对应 .md。",
+    "assert_criteria": [
+      "入口选 batch_convert.py（非 _convert_core / dynamic）",
+      "--extensions 过滤生效（指定之外的扩展名被忽略）",
+      "每个输入文件都有对应 .md 输出",
+      "无表格文档批次 exit 0"
+    ],
+    "rubric_dim": "dim2 入口选择 + dim8 批次聚合是否正确"
+  },
+  {
+    "id": 7,
+    "scenario": "batch_sidecar_aggregation_exit1",
+    "prompt": "批量转换这个目录，里面有些 docx 带复杂表格：<dir>",
+    "expected": "批次里任一文件产生 sidecar → 整体 exit 1；agent 应收集所有 sidecar（或 _sidecars 文件）并按 Stage-2 政策逐个修；失败/跳过的文件不阻断其余转换。",
+    "assert_criteria": [
+      "任一 sidecar 存在则批次 exit code = 1（聚合正确）",
+      "sidecar 列表被收集（batch 聚合 _sidecars 标记 / dynamic 写 _sidecars.txt）",
+      "某个文件失败/跳过后批次继续，不整体中止"
+    ],
+    "rubric_dim": "dim3 失败聚合 + dim8 sidecar 收集行为"
+  },
+  {
+    "id": 8,
+    "scenario": "batch_encrypted_skip_continues",
+    "prompt": "批量转 <dir> ，里面混了一个加密的 docx 但我暂时不想输密码。",
+    "expected": "加密文件被跳过（不阻断批次）；其余文件正常转出；加 --no-prompt 让 keyring-only；末尾总结里点出哪个文件被跳过及一行 keyring.set_password 恢复命令。",
+    "assert_criteria": [
+      "加密文件被跳过且没产生 .md（非静默写入）",
+      "批次不因加密文件失败而中止",
+      "--no-prompt 让 keyring-only，无 CredUI 弹窗",
+      "跳过文件在总结里被点名 + 给出 keyring 恢复一行命令"
+    ],
+    "rubric_dim": "dim3 失败模式 + dim9 反例：加密跳过不污染其余批次"
+  },
+  {
+    "id": 9,
+    "scenario": "batch_xlsx_formula_eval_across_set",
+    "prompt": "批量转这个目录里的 xlsx，注意公式单元别出 NaN：<dir>",
+    "expected": "批次里每个 xlsx 都走公式求值；输出的 .md 表格里公式单元显示真实值；若 formulas 库缺失则在总结里降级说明哪几个 xlsx 有 NaN 风险，不静默。",
+    "assert_criteria": [
+      "批次中每个 xlsx 都经过 _xlsx_formula_eval",
+      "输出表格单元无 NaN（formulas 可用时）",
+      "formulas 缺失时总结里显式降级声明，而非 exit 0 假装成功"
+    ],
+    "rubric_dim": "dim8 批级 xlsx-formula 一致性（C-4 防回归）"
+  },
+  {
+    "id": 10,
+    "scenario": "batch_lockfile_skip_edge",
+    "prompt": "我在 Word 里打开着几个文档，能不能直接批量转这个目录？",
+    "expected": "agent 识别 ~$*.docx 是 MS Office 锁文件并跳过（不报错不产出）；正常文档照常转。",
+    "assert_criteria": [
+      "输入目录里的 ~$* 锁文件被跳过",
+      "锁文件没有产出 .md",
+      "锁文件不被当作转换失败（不进失败日志）"
+    ],
+    "rubric_dim": "dim3 边缘情况编码 + dim9 反例：锁文件误判"
+  },
+  {
+    "id": 11,
+    "scenario": "dynamic_large_set_background_task_not_foreground",
+    "prompt": "这个网络盘上有几千个法规文件要批量转 markdown，帮我跑。",
+    "expected": "agent MUST 识别这是大集合 → 选 batch_convert_dynamic.py 且以 VS Code 背景任务启动（isBackground:true），绝不放前台终端；用 get_task_output 轮询进度；末尾用一行总结。",
+    "assert_criteria": [
+      "入口选 batch_convert_dynamic.py（非 batch_convert / _convert_core）",
+      "以背景任务（isBackground:true / background VS Code task）启动，非前台终端",
+      "用 get_task_output 轮询，不当面阻塞会话",
+      "[N/M] 进度行每 ~10 个文件打印一次（可见 ok/skip/fail/timeout/sidecars/eta）"
+    ],
+    "rubric_dim": "dim9 反例清单 row 12：大集合放前台会楔住会话（最高危反模式）"
+  },
+  {
+    "id": 12,
+    "scenario": "dynamic_resume_skip_existing",
+    "prompt": "之前批量转一半被打断了，从同样的命令重跑能接着上次的进度吗？",
+    "expected": "重跑同一命令（新 task label）；脚本自动跳过 .md 已存在的文件；只转剩下的；不重复转换也不覆盖已有输出。",
+    "assert_criteria": [
+      "重跑前先确认没有遗留的 batch_convert_dynamic / convert_single_enhanced 进程在同 --outdir 上写",
+      "已存在 .md 的文件被跳过（[INFO] Already done : N）",
+      "已存在 .md 不被覆盖",
+      "重跑用新 task label，旧 label 不可复用"
+    ],
+    "rubric_dim": "dim3 恢复路径 + dim9 反例：双驱动同写 outdir"
+  },
+  {
+    "id": 13,
+    "scenario": "dynamic_encrypted_predecrypt_single_prompt",
+    "prompt": "几千个文件里有不少加密的 docx，我不想每个都输一次密码。",
+    "expected": "保持 pre-decrypt 开启（不加 --no-predecrypt）；驱动在主进程里一次性收集密码（_PASSWORD_CACHE / keyring 共享），所有加密文件共用一次凭证解析；产出 .__dec_* 临时文件在结束时清理。",
+    "assert_criteria": [
+      "未加 --no-predecrypt（pre-decrypt 开启）",
+      "同一密码在所有文件间只解析一次（不逐文件弹 CredUI）",
+      "结束后 outdir 里无残留 .__dec_* 临时文件"
+    ],
+    "rubric_dim": "dim9 反例 row 13：--no-predecrypt 导致 N 次弹窗"
+  },
+  {
+    "id": 14,
+    "scenario": "dynamic_heavy_file_concurrency_cap",
+    "prompt": "这批里有几个 50MB 的大 PDF，跑 batch_dynamic 时候别把机器卡死。",
+    "expected": "用 --heavy-max 限制 >=10MB 大文件并发；小文件优先排序在前；大文件按 size→timeout 梯度给足够超时但小文件快速失败；不卡死。",
+    "assert_criteria": [
+      "--heavy-max 被设置（默认 3，可由用户指定）",
+      "HEAVY_THRESHOLD=10MB 的大文件被算入 heavy 桶限并发",
+      "小文件先排（small-files-first），size→timeout 梯度生效"
+    ],
+    "rubric_dim": "dim5 可执行具体性 — 大文件并发与超时梯度参数化"
+  },
+  {
+    "id": 15,
+    "scenario": "dynamic_no_table_detect_speed_opt",
+    "prompt": "我只是要把这些文件快速过一遍纯文本，不需要表格结构检查。",
+    "expected": "agent 给 batch_convert_dynamic.py 加 --no-table-detect；不产 sidecar；批次 exit 0（无 sidecar 触发 exit 1）；速度更快。",
+    "assert_criteria": [
+      "--no-table-detect 被传入（每个 subprocess 继承）",
+      "不产生 .errors.md sidecar",
+      "无 sidecar 时批次 exit 0（即使有表格也不触发 Stage-2）"
+    ],
+    "rubric_dim": "dim5 工具参数 — 性能优化标志正确传播"
+  }
+]
