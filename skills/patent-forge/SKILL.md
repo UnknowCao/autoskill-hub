@@ -84,7 +84,7 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 **Actions**:
 1. **Structure Setup**: Follow the exact format specified in `assets/templates/standard_application.md`
-2. **Language Precision** (🔴 **强制加载** [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions): Use formal Chinese patent terminology; obey 禁用词清单 (§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制)、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号）、§ 5 法条驳回依据映射。
+2. **Language Precision** (🔴 **强制加载** [`references/language_conventions.md`](./references/language_conventions.md)): Use formal Chinese patent terminology; obey 禁用词清单 (§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制)、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号）、§ 5 法条驳回依据映射。
 3. **Claims Drafting** (关键章节): Draft the 权利要求书 section
    - 独立权利要求 1-3 条，二段式「前序部分 + 其特征在于」
    - 从属权利要求 10-20 条，覆盖优选实施方式与 fallback 位置
@@ -119,7 +119,8 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
    - 软硬结合案件必须分硬件结构 + 控制方法两个维度
    - **每张图必须有对应的文字描述**（不允许"裸图"）
    - 所有公式用 `**【公式 N】**` 编号
-   - 所有附图用 `**【图 N】**` 编号 + 完整图题
+   - 所有附图用 `**【图 N】**` 编号 + 完整图题（**图题仅用于附图下方**）
+   - 🔴 正文图引用用简洁 `如图N`（禁用 `**如图N所示**` / `**【图N】**示出了` / `图N(a)`，详见 [`language_conventions.md`](./references/language_conventions.md) § 4.6）
    - 公开充分：把代理师当研发新人，提供可实施的细节
 4. **Terminology Table (Section 7)**: 列出所有英文缩写 + 英文全称 + 中文注释。
    - 🔴 **ACIP 表结构硬性规则（2 列）**：`术语/缩略语` + `解释说明`（英文全称 + 中文注释**合并在同一单元格**，用逗号分隔，如 `Wireless Power Transfer，无线电能传输`）。**禁止拆成 3 列**（术语 / 英文全称 / 中文解释）——这是 ACIP 模板原始结构，违反会被代理师退回。详见 `assets/templates/acip_invention_disclosure.md` § 七
@@ -131,7 +132,7 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
    - 软硬结合案件典型附图清单：整体三维结构图、工作原理图、参数标注图、性能曲线图、电路图、控制流程图
    - **所有附图生成均由 `patent-figforge` skill 负责**——调用该 skill 生成 SVG/PNG 专利附图，本 skill 仅指定图类型和内容要求，不直接绘制图形。附图文末标注"正式提交需提供 Visio (.vsd) 可编辑原图"
 7. **Consistency Check**: 同一对象使用同一术语（专利法"清楚"要求）
-8. **Language Precision Compliance**（**强制**，对齐 Phase 3A Action 2）: 🔴 **撰写草稿前必须加载** [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions——禁用词清单（§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制）、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号/术语一致性）、§ 5 法条驳回依据映射。**草稿完成后必须 grep 自检**禁用词（`大约|约|大概|左右|优选|良好|快速|稳定|高效|适当|合适|必要|基本|大致|充分|显著|突破|革命|领先`），逐条分类：🟢 合规引用（作为方法论描述禁用词清单本身）/ 🟡 数值或主观效果违规（必须修复为量化表达）/ 🔴 权利要求违规（必须修复）。自检通过后再进入 CHECKPOINT 3D-draft。
+8. **Language Precision Compliance**（**强制**，对齐 Phase 3A Action 2）: 🔴 **撰写草稿前必须加载** [`references/language_conventions.md`](./references/language_conventions.md)——禁用词清单（§ 1.1 权利要求禁用词 / § 1.2 说明书允许但需克制）、§ 2 Standard Phrases、§ 3 各章节语言规范、§ 4 表达级规范（数值/单位/公式/参考标号/术语一致性）、§ 5 法条驳回依据映射。**草稿完成后必须 grep 自检**禁用词（`大约|约|大概|左右|优选|良好|快速|稳定|高效|适当|合适|必要|基本|大致|充分|显著|突破|革命|领先`），逐条分类：🟢 合规引用（作为方法论描述禁用词清单本身）/ 🟡 数值或主观效果违规（必须修复为量化表达）/ 🔴 权利要求违规（必须修复）。自检通过后再进入 CHECKPOINT 3D-draft。
 
 🔴 **CHECKPOINT 3D-draft — 必须暂停**：在草稿完成**且通过 Action 8 语言规范自检**后，向用户预览交底书结构（特别是第四节详细阐述是否符合"公开充分"），等待用户明确确认通过后定稿。**禁止在用户确认前继续。**
 
@@ -149,7 +150,8 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 **📋 工作流与规范**（Phase -1 to 2 + 共通原则）
 - [`references/shared_workflow.md`](./references/shared_workflow.md) — **Single source of truth**: Phase -1/0/1/2 + Output Format + Output Layout 目录树 + 共通质量原则 + 语言规范
-- [`references/api_and_terminology.md`](./references/api_and_terminology.md) — SerpAPI/Exa.ai 端点 + 中文专利术语 + **Language Conventions**（禁用词清单 + 法条驳回依据 + 各章节语言规范）—— **Phase 3A Action 2 / Phase 3D Action 8 强制加载**，草稿后必须 grep 自检
+- [`references/patent_search_apis.md`](./references/patent_search_apis.md) — **专利检索 API 端点**（CNIPA.AI/SerpAPI/Exa.ai），Phase 2 Step 2.1-2.7 加载
+- [`references/language_conventions.md`](./references/language_conventions.md) — **撰写语言规范单一事实源**（禁用词清单 + Standard Phrases + 各章节语言规范 + 法条驳回依据映射）—— **Phase 3A Action 2 / Phase 3D Action 8 强制加载**，草稿后必须 grep 自检
 
 **🎯 领域适配**
 - [`references/domain_matrix.md`](./references/domain_matrix.md) — **领域适配矩阵**: 6 领域 × (claims 范式 / 实施例维度 / 附图类型)，Phase 3A Action 3/5/6 加载
@@ -174,14 +176,13 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 - [`references/docx_mode.md`](./references/docx_mode.md) — **`--docx` 模式详细步骤** + 错误处理 + 新代理接入 4 步
 - [`scripts/fill_acip_template.py`](./scripts/fill_acip_template.py) — `--docx` 填充工具（subcommands: `fill` / `inspect` / `list`）
 
-**🧪 测试**
-- [`references/test-prompts.json`](./references/test-prompts.json) — 9 个测试 prompt（P1 happy-path / P2 disclosure-docx / P3 doc-type 歧义 / P4 机械结构 / P5 全搜索失败 / P6 非 ACIP 代理 / P7 信息严重不足 / P8 CNIPA.AI 检索 / P9 素材收集+文件输入）
-
 ## Output File Organization（输出目录结构）
 
-每次运行产出按 6 级目录组织（`01-phase1-understanding/` → `02-phase2-prior-art/` → `03-phase3-document/` → `04-diagrams/` → `05-compliance/` → `final/`），完整目录树见 [`shared_workflow.md`](./references/shared_workflow.md) § Output Layout。
+每次运行产出按 **主题目录 + 6 级子目录** 组织。**禁止跨发明主题共用同一个 `04-diagrams/`**——每个发明主题必须创建独立的顶层主题目录（`patent-forge-output/<TopicSlug>/`），其下才是 6 级子目录（`01-phase1-understanding/` → `02-phase2-prior-art/` → `03-phase3-document/` → `04-diagrams/` → `05-compliance/` → `final/`），完整目录树 + 主题目录命名规则 + 强制创建时机见 [`shared_workflow.md`](./references/shared_workflow.md) § Output Layout + § Phase -1 主题目录创建步骤。
 
-**强制最低产物**：`final/`（最终文档）+ `02-phase2-prior-art/`（检索审计日志）两个目录必须生成，其余子目录按 Phase 进度填充。
+**强制最低产物**：`<TopicSlug>/final/`（最终文档）+ `<TopicSlug>/02-phase2-prior-art/`（检索审计日志）两个目录必须生成，其余子目录按 Phase 进度填充。
+
+🔴 主题目录隔离是硬性规则——`fill_acip_template.py` 的 `_discover_figures()` 按文件名前缀匹配 `fig<N>_*.png`，不校验内容归属，跨主题共用目录会导致上一份交底书的遗留附图被错误嵌入新文档（详见 Anti-Pattern #22）。
 
 ## Quality Checklist
 
@@ -189,13 +190,13 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 
 - **清单 A**（`--doc-type application`）：结构完整性 + 法律合规性 + 新颖性与创造性（含 Anti-Pattern #17 编造禁令双重校验）—— 完整项数见 [`references/quality_checklists.md`](./references/quality_checklists.md)
 - **清单 D**（`--doc-type disclosure`）：9 节结构完整性 + 软硬结合专项 + 质量原则（含 Anti-Pattern #17 编造禁令 + #18 非 ACIP 确认双重校验）—— 完整项数见 [`references/quality_checklists.md`](./references/quality_checklists.md)
-- **共通质量原则 + 语言规范**：见 [`references/shared_workflow.md`](./references/shared_workflow.md) § 共通质量原则 + [`references/api_and_terminology.md`](./references/api_and_terminology.md) § Language Conventions
+- **共通质量原则 + 语言规范**：见 [`references/shared_workflow.md`](./references/shared_workflow.md) § 共通质量原则 + [`references/language_conventions.md`](./references/language_conventions.md)
 
 ---
 
-## 🚫 Anti-Patterns（高频 8 条 · 完整 21 条见 references）
+## 🚫 Anti-Patterns（高频 9 条 · 完整 22 条见 references）
 
-**违反任一条 → 立即中止当前 Phase 并纠正。** 完整 21 条 Anti-Patterns + Error Handling Matrix 在 [`references/anti_patterns.md`](./references/anti_patterns.md)——**Checkpoint 4A / 4D 触发时强制加载**。
+**违反任一条 → 立即中止当前 Phase 并纠正。** 完整 22 条 Anti-Patterns + Error Handling Matrix 在 [`references/anti_patterns.md`](./references/anti_patterns.md)——**Checkpoint 4A / 4D 触发时强制加载**。
 
 | # | 禁止 | 一句话后果 |
 |---|------|---------|
@@ -207,5 +208,6 @@ You are **Patent Forge**, a senior patent engineer. Execute these phases sequent
 | 18 | **在 `disclosure` 遇未注册代理机构时提供 ACIP 通用模板 fallback** | 必须暂停等用户放入专属 .docx → 不再生成 `-generic-` 文档 |
 | 20 | **在 Phase -1 用户提供文件后，Phase 1 跳过读取直接访谈，或忽略文件已覆盖要素反复追问** | 忽略用户提供的高质量材料 → 重复追问 + 关键细节丢失 → 文档质量下降 |
 | 21 | **用"提醒新颖性风险""建议检索"代替实际执行 Phase 2 检索**（提醒 ≠ 执行）| 提醒不产出检索证据 → 权利要求失去新颖性支撑（等同 Anti-Pattern #4）|
+| 22 | **跨发明主题共用同一个 `04-diagrams/` 目录**（或扁平 `patent-forge-output/04-diagrams/` 下堆放多份交底书附图）| `_discover_figures()` 按前缀匹配不校验内容 → 上一份交底书的遗留附图（如图4）被错误嵌入新文档 → 打开 .docx 才发现"图X 是别的内容" → 重做 |
 
-> 完整 21 条（含 #4 跳过检索、#5 产品名、#6 引用基础、#8 模糊限定语、#13 日期纪律、#14 IPC 二次检索、#15 文献清单、#16 领域套用、#19 CNIPA.AI 撰写端点、#21 提醒≠执行检索 等）+ Error Handling Matrix → [`references/anti_patterns.md`](./references/anti_patterns.md)
+> 完整 22 条（含 #4 跳过检索、#5 产品名、#6 引用基础、#8 模糊限定语、#13 日期纪律、#14 IPC 二次检索、#15 文献清单、#16 领域套用、#19 CNIPA.AI 撰写端点、#21 提醒≠执行检索、#22 主题目录隔离 等）+ Error Handling Matrix → [`references/anti_patterns.md`](./references/anti_patterns.md)

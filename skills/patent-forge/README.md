@@ -154,7 +154,8 @@ patent-forge/
 ├── README.md                           # You are here
 ├── references/                         # Loaded on-demand by phase/step
 │   ├── shared_workflow.md              #   Phase -1/0/1/2 + Output Layout + 共通质量原则
-│   ├── api_and_terminology.md          #   CNIPA.AI/SerpAPI/Exa.ai + Language Conventions ⚖️
+│   ├── patent_search_apis.md           #   CNIPA.AI/SerpAPI/Exa.ai 专利检索 API 🔍
+│   ├── language_conventions.md         #   撰写语言规范（禁用词/句式/法条映射）⚖️
 │   ├── domain_matrix.md                #   6 领域 × (claims 范式 / 实施例维度 / 附图类型)
 │   ├── application_example.md          #   dogfood · 软件类（Focus Period，14 claims）
 │   ├── application_example_mechanical.md #  dogfood · 机械类（可折叠充电桩，14 claims）

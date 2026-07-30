@@ -4,7 +4,7 @@
 > SKILL.md 中的 Phase -1 / Phase 0 / Phase 1 / Phase 2 / 输出格式说明 / 共通质量原则以此文件为单一事实源。
 > 任一 doc-type 都必须先走完 Phase **-1** → 0 → 1 → 2，再在 Phase 3 分支。
 >
-> **位置**: `references/shared_workflow.md`（相对于 skill 根目录）。同目录还有 `api_and_terminology.md`（SerpAPI/Exa.ai + 中文专利术语）、`application_example.md`（申请表示例）、`test-prompts.json`（3 条测试 prompt）。模板位于 `../assets/templates/`，原始 .docx 位于 `../assets/raw_templates/`。
+> **位置**: `references/shared_workflow.md`（相对于 skill 根目录）。同目录还有 `patent_search_apis.md`（专利检索 API 端点）、`language_conventions.md`（撰写语言规范）、`application_example.md` / `application_example_mechanical.md` / `application_example_hybrid.md`（申请表 dogfood 示例：软件 / 机械 / 混合 HW+SW 三类）。模板位于 `../assets/templates/`，原始 .docx 位于 `../assets/raw_templates/`。
 
 ---
 
@@ -56,32 +56,64 @@ python scripts/postprocess_md.py final/Disclosure-ACIP-X-YYYYMMDD.md \
 
 ### Output Layout（输出目录结构）
 
-每次运行产出按 6 级目录组织，确保产物可追溯：
+每次运行产出按 **主题目录 + 6 级子目录** 组织，确保产物可追溯且**跨主题物理隔离**：
 
 ```
 patent-forge-output/
-├── 01-phase1-understanding/
-│   └── invention_4_elements.md          # Phase 1: 4 要素提炼 + 用户确认记录
-├── 02-phase2-prior-art/
-│   ├── search_audit_log.md              # 检索审计日志（三计数）
-│   ├── closest_prior_art.md             # 最接近现有技术分析
-│   └── ipc_classification.md            # IPC/CPC 分类号及候选理由
-├── 03-phase3-document/
-│   ├── claims_draft_v1.md               # (application) 权利要求书草案
-│   ├── specification_full.md            # 说明书全文
-│   └── prior_art_reference_list.md      # 现有技术文献清单
-├── 04-diagrams/
-│   ├── fig1_architecture.svg            # 整体架构图（patent-figforge 生成）
-│   ├── fig2_method_flow.svg             # 方法流程图（patent-figforge 生成）
-│   └── fig3_key_module.svg              # 关键模块示意图（patent-figforge 生成）
-├── 05-compliance/
-│   ├── checklist_A_or_D.md              # 清单 A/D 逐项核对结果
-│   └── compliance_report.md             # 合规审查报告
-└── final/
-    └── Patent-[ShortTitle]-[YYYYMMDD].md   # 最终输出
+├── <TopicSlug>/                              # 🔴 主题目录（每发明一份，禁止共用）
+│   ├── 01-phase1-understanding/
+│   │   └── invention_4_elements.md          # Phase 1: 4 要素提炼 + 用户确认记录
+│   ├── 02-phase2-prior-art/
+│   │   ├── search_audit_log.md              # 检索审计日志（三计数）
+│   │   ├── closest_prior_art.md             # 最接近现有技术分析
+│   │   └── ipc_classification.md            # IPC/CPC 分类号及候选理由
+│   ├── 03-phase3-document/
+│   │   ├── claims_draft_v1.md               # (application) 权利要求书草案
+│   │   ├── specification_full.md            # 说明书全文
+│   │   └── prior_art_reference_list.md      # 现有技术文献清单
+│   ├── 04-diagrams/                         # 🔴 仅放本主题附图
+│   │   ├── fig1_architecture.svg            # 整体架构图（patent-figforge 生成）
+│   │   ├── fig2_method_flow.svg             # 方法流程图（patent-figforge 生成）
+│   │   └── fig3_key_module.svg              # 关键模块示意图（patent-figforge 生成）
+│   ├── 05-compliance/
+│   │   ├── checklist_A_or_D.md              # 清单 A/D 逐项核对结果
+│   │   └── compliance_report.md             # 合规审查报告
+│   └── final/
+│       └── Patent-[ShortTitle]-[YYYYMMDD].md   # 最终输出
+└── <另一主题>/                                # 不同发明主题物理隔离
+    └── ...
 ```
 
-> SKILL.md § Output File Organization 引用本节。强制最低产物：`final/` + `02-phase2-prior-art/` 必须生成，其余按 Phase 进度填充。
+#### `<TopicSlug>` 命名规则
+
+- **来源**：发明核心装置/方法英文简称（Short Title 的 PascalCase 或连字符小写形式）
+- **示例**：`OtoOXY-WPT` / `VC-SMARTR-OC` / `BMS-SOH-Monitor`
+- **禁止**：纯日期戳（`20260730` 无辨识度）、纯序号（`case1` 无辨识度）、含空格/中文
+- **冲突处理**：若同名主题目录已存在，追加 `-v2` / `-v3`，不覆盖
+
+#### 强制创建时机（Phase -1 启动第一步）
+
+技能触发后，**在任何写入文件之前**必须先创建主题目录：
+
+1. **从 Phase 1 已知信息推导**：在 Phase 1 完成 4 要素提炼后，取技术领域 + 核心装置作为 TopicSlug（如本发明 → `OtoOXY-WPT`）
+2. **路径**：`<工作区>/patent-forge-output/<TopicSlug>/`（工作区根由 CWD 决定）
+3. **预检查**：创建前 `os.path.exists()` 检查——若目录已存在且非空，**暂停询问用户**是「继续追加到该主题目录」还是「换新主题名」
+4. **创建全部 6 级子目录**：`mkdir -p <TopicSlug>/{01-phase1-understanding,02-phase2-prior-art,03-phase3-document,04-diagrams,05-compliance,final}`
+5. **所有后续产出路径**均以 `<TopicSlug>/` 为根——包括 `fill_acip_template.py` 的 `--output`、`--figures-dir`、`--content` 参数
+
+> SKILL.md § Output File Organization 引用本节。强制最低产物：`<TopicSlug>/final/` + `<TopicSlug>/02-phase2-prior-art/` 必须生成，其余按 Phase 进度填充。
+
+#### 🔴 `fill_acip_template.py` 调用必须显式传本主题路径
+
+调用 `fill` 子命令时，`--figures-dir` **必须显式传 `<TopicSlug>/04-diagrams/` 绝对路径**，不依赖脚本默认发现逻辑（脚本默认发现的 `<skill_root>/../04-diagrams/` 是历史扁平共享目录，正是 Anti-Pattern #22 要消除的污染源）。示例：
+
+```bash
+python scripts/fill_acip_template.py fill \
+    --template acip \
+    --content <TopicSlug>/03-phase3-document/invention_content.json \
+    --output  <TopicSlug>/final/Disclosure-ACIP-<TopicSlug>-YYYYMMDD.docx \
+    --figures-dir <abs-path-to-workspace>/patent-forge-output/<TopicSlug>/04-diagrams
+```
 
 ---
 
@@ -273,7 +305,7 @@ markitdown-enhanced 的 `_convert_core.py` 已内置自动修复，但 AI 须知
 1. 先查 `anysearch` skill 是否存在 → 存在则选定 Layer 1，跳到 Step 2.1
 2. 再查 `tavily` skill 是否存在 → 存在则选定 Layer 2，跳到 Step 2.1
 3. 两个 skill 均不存在 → 选定 Layer 3（`fetch_webpage`），**必须在 Checkpoint 2 中显式告知用户「当前仅有 fetch_webpage 兜底，无法做关键词检索，新颖性分析基于有限已知来源，强烈建议委托专业专利检索」**
-4. **专利专用 API 探测**（与上面主搜索层独立，可叠加）：按优先级检测 `CNIPA_API_KEY`（首选）→ `SERPAPI_KEY` → `EXA_API_KEY`，**有 key 则启用对应 API 作为增强层**（可多个同时启用，CNIPA.AI 优先调用）。端点详见 [`api_and_terminology.md`](./api_and_terminology.md) § CNIPA.AI / SerpAPI / Exa.ai
+4. **专利专用 API 探测**（与上面主搜索层独立，可叠加）：按优先级检测 `CNIPA_API_KEY`（首选）→ `SERPAPI_KEY` → `EXA_API_KEY`，**有 key 则启用对应 API 作为增强层**（可多个同时启用，CNIPA.AI 优先调用）。端点详见 [`patent_search_apis.md`](./patent_search_apis.md) § CNIPA.AI / SerpAPI / Exa.ai
 
 **禁止行为**：
 - 禁止跳过探测直接假定某 skill 或 API key 存在
@@ -291,7 +323,7 @@ Check for availability of `CNIPA_API_KEY` / `SERPAPI_KEY` / `EXA_API_KEY`（按�
 ### Step 2.2: API Patent Search (Optional Enhancement, only if API keys present)
 Execute only if API keys are available. **调用顺序：CNIPA.AI → SerpAPI → Exa.ai**（按可用性，全部结果合并去重）。CNIPA.AI 作为首选因其中国专利覆盖最佳；SerpAPI 补全球覆盖；Exa.ai 补语义模糊场景：
 
-**Method A（首选）: CNIPA.AI**（中英双语自动翻译匹配，中国专利中心）— 端点详见 [`api_and_terminology.md`](./api_and_terminology.md) § CNIPA.AI
+**Method A（首选）: CNIPA.AI**（中英双语自动翻译匹配，中国专利中心）— 端点详见 [`patent_search_apis.md`](./patent_search_apis.md) § CNIPA.AI
 ```bash
 # Example: Search for AR gesture recognition patents (英文输入自动匹配中文专利)
 curl -X GET "https://api.cnipa.ai/v1/patents/search?q=(augmented%20reality)%20gesture%20recognition" \
@@ -466,7 +498,7 @@ Search query patterns (customize based on invention):
 适用于所有 doc-type 与输出格式：
 
 - **Grantability**: Focus on technical solutions, not abstract ideas
-- **Precision**: Avoid vague marketing terms; use precise technical descriptions from `api_and_terminology.md`
+- **Precision**: Avoid vague marketing terms; use precise technical descriptions from `language_conventions.md`
 - **Honesty**: Explicitly list potential defects and alternatives
 - **Completeness**: All required sections must be present and substantive
 
@@ -474,4 +506,4 @@ Search query patterns (customize based on invention):
 
 ## Language Conventions
 
-语言规范（避免使用的产品名/UI 术语/品牌名/口语化列表、应使用的设备/通用术语/专利表述列表、Standard Phrases 如 "一种..." / "用于..." / "其特征在于..." 等）的**单一事实源**在 [`api_and_terminology.md`](./api_and_terminology.md) § Language Conventions。两种 doc-type 都必须遵循，此处不再重复以避免漂移。
+语言规范（避免使用的产品名/UI 术语/品牌名/口语化列表、应使用的设备/通用术语/专利表述列表、Standard Phrases 如 "一种..." / "用于..." / "其特征在于..." 等）的**单一事实源**在 [`language_conventions.md`](./language_conventions.md)。两种 doc-type 都必须遵循，此处不再重复以避免漂移。

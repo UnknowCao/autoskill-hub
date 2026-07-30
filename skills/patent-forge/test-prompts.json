@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "category": "happy_path_application",
+    "prompt": "我有一个发明想法:基于电池内阻实时估计的 SOH 健康度在线监测方法,通过交流注入+EKF 估算内阻,再通过内阻-容量映射表推导 SOH。帮我生成完整的中国专利申请文件。",
+    "expected": "应自动判定 doc-type=application,执行 Phase 1-3,产出含权利要求书+摘要+说明书附图+具体实施方式的完整申请表;权利要求独立 1-3 条+从属 10-20 条;附图参考标号统一编排;显式标记 Checkpoint 复述确认"
+  },
+  {
+    "id": 2,
+    "category": "disclosure_acip_docx",
+    "prompt": "帮我把这个想法做成华进 ACIP 的技术交底书,要 --docx 输出,内容是:一种基于多摄像头融合的 AR 眼睛疲劳检测系统,硬件含三颗 IR 摄像头+一颗 RGB,软件含眼睑闭合度 PERCLOS 算法+头部姿态补偿。",
+    "expected": "应识别华进/ACIP 关键词→doc-type=disclosure;disclosure 默认且唯一常规输出为 .docx（不再走 md）;走 acip 模板 9 节结构;第四节详细阐述占 ≥60% 篇幅,分硬件结构+控制方法两个维度;每张图都有文字描述;调用 scripts/fill_acip_template.py fill 生成 .docx"
+  },
+  {
+    "id": 3,
+    "category": "edge_case_no_doc_type_specified",
+    "prompt": "我想保护一个发明:一种用 LLM 做专利权利要求自动撰写的方法。请帮我生成专利文档。",
+    "expected": "doc-type 未指定且无代理机构关键词→Phase 0 必须显式 askQuestions 询问 application vs disclosure,不应直接默认走 application;用户确认后才加载对应模板"
+  },
+  {
+    "id": 4,
+    "category": "domain_mechanical_structure",
+    "prompt": "帮我写一份专利申请表:一种可折叠的电动汽车充电桩结构,包括底座、升降立柱、折叠臂和充电枪收纳槽,折叠臂展开后充电枪可覆盖左右各 45° 范围,收纳时整体高度不超过 80cm。",
+    "expected": "应自动判定 application;Phase 1 识别机械结构类发明(非纯软件);Phase 3A 附图须含结构示意图(非纯流程图);具体实施方式覆盖至少 3 个实施例(不同折叠机构/驱动方式);权利要求应覆盖结构特征(底座/立柱/折叠臂/收纳槽的机械连接关系);不应强制要求软件/算法类权利要求"
+  },
+  {
+    "id": 5,
+    "category": "boundary_all_search_fails",
+    "prompt": "我有一个想法:一种基于量子隧穿效应的新型非易失性存储单元。帮我做成专利申请表。注:我没有 SerpAPI key,也没有 Exa.ai key。",
+    "expected": "Phase 2 Step 2.1 检测到所有 API key（CNIPA_API_KEY/SERPAPI_KEY/EXA_API_KEY）缺失→跳过 Optional 增强层，按搜索工具分层 fallback 探测：①若 anysearch skill 存在→选定 Layer 1 跑完不降级告知;②若 anysearch 缺失但 tavily 存在→退到 Layer 2;③若两者均缺失→退到 Layer 3 fetch_webpage（仅能抓已知 URL,不能关键词检索,Checkpoint 2 中必须显式告知降级）。注意:本测试 prompt 假设环境 anysearch/tavily 存在即走 Layer 1/2 不触发降级告知,需模拟两者均缺失的场景才能验证 Layer 3 降级路径;若所有可用方法均 0 结果→标记'新颖性初步确认(无已知现有技术)',禁止断言'全球首创';Checkpoint 2 中建议委托专业检索机构;审计日志记录所有尝试方法+使用的工具层;不应因 API key 缺失而跳过 Phase 2"
+  },
+  {
+    "id": 6,
+    "category": "disclosure_other_agency",
+    "prompt": "我要通过三环专利代理所提交一个发明:一种基于联邦学习的车载语音助手个性化训练方法。请生成技术交底书。",
+    "expected": "识别'三环专利代理所'→doc-type=disclosure;若 template_registry.md 中有三环模板则加载并输出 .docx,若无则触发 Checkpoint(Anti-Pattern #18,禁止静默替换,不再提供通用模板 fallback)→**仅允许暂停**等用户放入 `<agency>_invention_disclosure.docx` 后重试（不再生成 -generic- 文档）;9 节结构;第四节详细阐述占 ≥60%;不应在交底书中撰写权利要求书(Anti-Pattern #1)"
+  },
+  {
+    "id": 7,
+    "category": "edge_case_severely_incomplete_info",
+    "prompt": "我想申请一个关于'智能推荐'的专利,帮我写一下。",
+    "expected": "Phase 0 doc-type 询问前置触发(prompt 仅含'申请'模糊词,非'申请表/交底书'显式信号,按 Quick Decision ⚠️ 区块规则 + Anti-Pattern #3 必须先 vscode_askQuestions,禁止默认 application)→假设用户确认 application 后进入 Phase 1:结构化访谈触发(发明描述极度模糊)→追问 4 要素(技术领域/技术问题/技术方案/技术效果);最多 3 轮访谈→若仍不足 4/5 项→触发 Checkpoint 1-warning,展示已收集信息+缺失项清单,请用户选择①补充或②缩减范围继续;禁止在用户确认前进入 Phase 2;不应自行编造发明细节填补空白(Anti-Pattern #17)"
+  },
+  {
+    "id": 8,
+    "category": "cnipa_api_available_search_only",
+    "prompt": "我有一个发明想法:一种基于钙钛矿叠层的太阳能电池结构。环境里已配置 CNIPA_API_KEY。请帮我生成专利申请表。",
+    "expected": "doc-type=application;Phase 2 Step 2.1 检测到 CNIPA_API_KEY→启用 CNIPA.AI 作为首选专利检索 API(Method A),按 GET /v1/patents/search?q=... 调用(可用中英双语/IPC码 H01L);结果与主搜索层(若也启用)合并去重;审计日志记录 CNIPA.AI 为来源;⚠️ 红线:禁止调用 CNIPA.AI 撰写端点(/patent-writing/analyze、/patent-writing/generate-claims)生成权利要求(Anti-Pattern #19),权利要求必须由本 skill 按 Checkpoint 3A-claims 自行撰写并经用户确认"
+  },
+  {
+    "id": 9,
+    "category": "material_intake_with_file",
+    "prompt": "帮我写一份交底书。我有一份 .docx 技术方案文档可以提供。",
+    "expected": "Phase -1 (Material Intake) 必须作为技能启动第一步触发:用 vscode_askQuestions 合并提问(material-input + doc-type 两个 header);material-input 主动询问是否有现成材料(①有文件②有文字③从零);用户选①有文件后展示接受材料清单;用户提供 .docx 文件后,按 § M.2.1a 扩展名决策表 .docx 属于富格式→必须调用 markitdown-enhanced skill 的 _convert_core.py 转 .md(禁止用 read_file 直接读 .docx 得乱码),命令:python C:\\AI\\.github\\skills\\markitdown-enhanced\\scripts\\_convert_core.py <input> -o <output.md>;转换成功后 read_file 读产物→摘要→映射 4 要素;已覆盖要素不重复追问;Phase 1 Action 0 (Material Pre-load) 执行;⚠️ 红线:禁止忽略用户提供的文件直接访谈(Anti-Pattern #20);禁止 markitdown-enhanced 不可用时静默用 read_file 读富格式假装成功(M.2.1d 兜底:告知用户降级)"
+  }
+]

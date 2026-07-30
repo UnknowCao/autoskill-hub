@@ -60,7 +60,8 @@
 - [ ] 硬件结构与控制方法两个维度均详细阐述
 - [ ] 每张图都有对应的文字描述（无"裸图"）
 - [ ] 所有公式用 `**【公式 N】**` 编号
-- [ ] 所有附图用 `**【图 N】**` 编号 + 完整图题
+- [ ] 所有附图用 `**【图 N】**` 编号 + 完整图题（图题仅用于附图下方）
+- [ ] 正文图引用用简洁 `如图N`（禁用 `**如图N所示**` / `**【图N】**示出了` / `图N(a)`，详见 language_conventions § 4.6）
 
 **质量原则**
 - [ ] 同一对象使用同一术语（无前后不一致，专利法"清楚"要求）
@@ -78,4 +79,4 @@
 **Grantability / Precision / Honesty / Completeness** 四原则、避免使用的产品名/UI 术语/品牌名/口语化列表、应使用的设备/通用术语/专利表述列表、Standard Phrases（一种... / 用于... / 其特征在于... 等）—— **两种 doc-type 共用**，单一事实源见：
 
 - [`shared_workflow.md`](./shared_workflow.md) § 共通质量原则
-- [`api_and_terminology.md`](./api_and_terminology.md) § Language Conventions
+- [`language_conventions.md`](./language_conventions.md)
