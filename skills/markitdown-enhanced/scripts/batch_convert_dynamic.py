@@ -102,6 +102,29 @@ HEAVY_THRESHOLD = 10 * 1024 * 1024   # files >= 10 MB count as "heavy"
 RETRY_MULTIPLIER = 3                 # timed-out file retried at 3x its timeout
 RETRY_MIN_BYTES = 2 * 1024 * 1024    # retry only files >= 2MB (small hangs are deterministic)
 
+# --- Cold-start-aware timeout floor (2026-08-06) ---------------------------
+# markitdown's import chain pulls in heavy, lazily-imported deps per FORMAT
+# (mammoth for docx, openpyxl for xlsx, python-pptx for pptx ...). Each converted
+# file runs in its OWN subprocess (convert_single_enhanced.py), so with N workers
+# there are N simultaneous cold-start imports competing for CPU/disk. On a slow
+# machine a single small docx was measured at **~31s** (just the import, before
+# any parsing); the <0.5MB→8s band then misfires — every office file is killed
+# mid-cold-start even though it would finish ~2s later.
+#
+# Two safeguards (both applied in ``classify_size``):
+#   1. HEAVY_IMPORT_TIMEOUT_FLOOR — for office formats, raise the effective
+#      timeout to at least this floor. PDF is INTENTIONALLY excluded: the
+#      1382-record calibration showed small PDFs that time out are genuinely
+#      hung (scanned → OCR trigger), not slow-to-import, so fast-fail must
+#      stay (do NOT add ".pdf" here without re-running the failure analysis).
+#   2. timeout_mult — a global CLI multiplier (--timeout-mult) for a slow
+#      machine where even the cold start of lighter formats (csv/html) or PDF
+#      exceeds the calibrated band. Default 1.0 (off).
+# A normal/fast machine is unaffected: a 6s-cold-start docx still clears the
+# 40s floor handily, and csv/html bands are untouched.
+HEAVY_IMPORT_EXTS = {".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt"}
+HEAVY_IMPORT_TIMEOUT_FLOOR = 40   # seconds; office cold-start floor
+
 
 def safe_stem(name: str) -> str:
     base = os.path.splitext(os.path.basename(name))[0]
@@ -112,16 +135,36 @@ def safe_stem(name: str) -> str:
     return base or "unnamed"
 
 
-def classify_size(path: str) -> tuple[int, int]:
-    """Return (size_bytes, timeout_seconds) for a path. Missing file -> 0."""
+def classify_size(path: str, timeout_mult: float = 1.0) -> tuple[int, int]:
+    """Return (size_bytes, timeout_seconds) for a path. Missing file -> 0.
+
+    Applies two corrections on top of ``SIZE_TIMEOUT_LADDER``:
+      1. ``HEAVY_IMPORT_TIMEOUT_FLOOR`` — office formats (doc/xlsx/pptx) pull in
+         heavy deps (mammoth/openpyxl/python-pptx) on first import; their
+         cold-start (~6-31s observed) shouldn't be misjudged as a hang on small
+         files. PDF is excluded (its fast-fail band is deliberately calibrated).
+      2. ``timeout_mult`` — a global multiplier (from ``--timeout-mult``) for a
+         slow-machine escape hatch.
+    The floor is applied BEFORE the multiplier, so the floor is an absolute
+    minimum and a slowed-down machine may still raise it via ``timeout_mult``.
+    """
     try:
         size = os.path.getsize(path)
     except OSError:
         size = 0
     for up_to, secs in SIZE_TIMEOUT_LADDER:
         if size <= up_to:
-            return (size, secs)
-    return (size, SIZE_TIMEOUT_LADDER[-1][1])
+            break
+    else:
+        secs = SIZE_TIMEOUT_LADDER[-1][1]
+    # Format-aware cold-start floor (office formats only — see module docstring).
+    ext = Path(path).suffix.lower()
+    if ext in HEAVY_IMPORT_EXTS:
+        secs = max(secs, HEAVY_IMPORT_TIMEOUT_FLOOR)
+    # Global slow-machine multiplier.
+    if timeout_mult != 1.0:
+        secs = int(secs * timeout_mult)
+    return (size, secs)
 
 
 def build_subprocess_args(src: str, outdir: str, out_name: str,
@@ -407,6 +450,11 @@ def main() -> int:
                     help="Skip the driver-side pre-decrypt pass (each subprocess decrypts on its own)")
     ap.add_argument("--keep-temp", action="store_true",
                     help="Keep pre-decrypted temp files after the run (debug)")
+    ap.add_argument("--timeout-mult", type=float, default=1.0, metavar="MULT",
+                    help="Multiply ALL per-file timeouts by MULT (slow-machine escape). "
+                         "Default 1.0. e.g. --timeout-mult 2 doubles every timeout band; "
+                         "use when markitdown import/cold-start is slow on this host. "
+                         "Office formats (doc/xlsx/pptx) already get an automatic 40s floor.")
     args = ap.parse_args()
 
     source = Path(args.source)
@@ -445,6 +493,11 @@ def main() -> int:
     print(f"[INFO] Workers      : {args.workers}", flush=True)
     print(f"[INFO] Heavy cap    : {args.heavy_max} (>=10MB)", flush=True)
     print(f"[INFO] Retry mult   : x{RETRY_MULTIPLIER} on timeout", flush=True)
+    floor_note = (f"office_floor={HEAVY_IMPORT_TIMEOUT_FLOOR}s "
+                  f"({','.join(sorted(HEAVY_IMPORT_EXTS))})")
+    if args.timeout_mult != 1.0:
+        floor_note += f"  timeout_mult=x{args.timeout_mult:g}"
+    print(f"[INFO] Timeout cfg  : {floor_note}", flush=True)
     print(f"[INFO] Mode         : DYNAMIC ENHANCED (size->timeout, small-first, subprocess-isolated)",
           flush=True)
     print(f"[INFO] Flags        : table_detect={not args.no_table_detect} "
@@ -461,7 +514,7 @@ def main() -> int:
     sized: list[tuple[str, int, int]] = []  # (path, size, timeout)
 
     def _scan(p: str) -> tuple[str, int, int]:
-        sz, secs = classify_size(p)
+        sz, secs = classify_size(p, timeout_mult=args.timeout_mult)
         return (p, sz, secs)
 
     with ThreadPoolExecutor(max_workers=32) as ex:

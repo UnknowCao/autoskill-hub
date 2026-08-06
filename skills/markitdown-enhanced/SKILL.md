@@ -67,7 +67,26 @@ python scripts/batch_convert_dynamic.py --source standards_dir/ --recursive \
     --outdir output_md/ --workers 13 --heavy-max 3
 # List input also accepted (JSON {"files":[...]} or TXT one-path-per-line):
 python scripts/batch_convert_dynamic.py --source file_list.json --outdir output_md/
+# Slow machine (markitdown cold-start per format import dominates) — multiply
+# every timeout band; office formats (doc/xlsx/pptx) already get an automatic
+# 40s cold-start floor, so this is mainly for csv/html/pdf on a very slow host:
+python scripts/batch_convert_dynamic.py --source standards_dir/ --outdir output_md/ \
+    --workers 6 --timeout-mult 2
 ```
+
+**Slow-machine angle (2026-08-06)**: the size→timeout ladder was calibrated on
+a fast host (1382-record failure log; small file ≈ 5s parse). On a slower host
+markitdown's **per-format import** (mammoth/openpyxl/python-pptx), reissued in
+every subprocess, dominates → a small `report.docx` measured **~31s** just to
+import (before parsing even starts). The `<0.5MB→8s` band then misfires on
+office files. **Mitigation, layered (do NOT start at row 14):**
+
+| Lever | Scope | When to use |
+|-------|-------|-------------|
+| `--workers N` (lower it) | All formats | First thing to try — N simultaneous cold-start imports fight for CPU/disk; halving N often lets each finish within its existing band. Default 13. |
+| Built-in `office_floor=40s` (automatic) | doc/docx/xls/xlsx/ppt/pptx only | Already on by default; nothing to pass. Handles the common case (office cold-start). PDF is **excluded** (its small-file fast-fail is a deliberately hung-PDF detector). |
+| `--timeout-mult MULT` (escape hatch) | Every format, every band | Genuine slow host where even csv/html/pdf exceed a band. MULT applies to all files AFTER the office floor. e.g. `--timeout-mult 2` doubles every timeout. Default 1.0. |
+| `_convert_core.py <file> -o out.md` (single-file, no ladder) | One file at a time | Small doc/xlsx where the run isn't worth a batch call; `_convert_core.py` has **no subprocess timeout** so a 30s import just succeeds. |
 
 > **⚠️ CRITICAL — how to RUN `batch_convert_dynamic.py`.**
 > It is a **long-running job** (thousands of files can take hours). **Never**
@@ -76,34 +95,46 @@ python scripts/batch_convert_dynamic.py --source file_list.json --outdir output_
 > background VS Code task** (`isBackground: true`), then poll progress with
 > `get_task_output`.
 >
-> **Correct invocation (background task):**
-> ```jsonc
-> // create_and_run_task, label e.g. "md-enh-dyn"
-> {
->   "label": "md-enh-dyn",
->   "type": "shell",
->   "command": "<venv>/Scripts/python.exe",
->   "args": [
->     "<skill_dir>/scripts/batch_convert_dynamic.py",
->     "--source", "<dir | file_list.json | file_list.txt>",
->     "--outdir", "<output_dir>",
->     "--recursive",                 // optional, directory mode only
->     "--workers", "13",
->     "--heavy-max", "3"
->     // "--no-table-detect"          // optional: skip sidecar generation
->     // "--no-prompt"                // optional: CI/agent-safe (keyring only)
->     // "--no-predecrypt"            // optional: speed opt when no encrypted files
->   ],
->   "isBackground": true     // <- REQUIRED: keeps it out of the foreground
-> }
-> ```
+> **Use the FROZEN task template — do NOT hand-write the task dict.** A
+> copy-paste-ready task definition lives at
+> [`assets/tasks/md-enh-dyn.jsonc`](assets/tasks/md-enh-dyn.jsonc) with the
+> python.exe path, script path, `"type": "shell"`, `"isBackground": true`,
+> `heavy-max`, and the optional flags all **frozen** (these are the
+> error-prone parts and rarely change). Invoke in 4 steps:
 >
-> **Then monitor (do NOT block):** poll with `get_task_output`. Every 10 files
-> it prints `[N/M] 1234s ok=.. skip=.. fail=.. timeout=.. sidecars=.. eta=..s | filename`.
+> 1. **Read** `assets/tasks/md-enh-dyn.jsonc`.
+> 2. **Replace exactly these 5 placeholders** (search-and-replace,
+>    case-sensitive) — everything else stays verbatim:
+>    | Placeholder | Replace with | Example |
+>    |-------------|--------------|---------|
+>    | `<LABEL>` | auto timestamp label `md-enh-dyn-YYYYMMDD-HHMM` | `md-enh-dyn-20260806-1117` |
+>    | `<SOURCE>` | `--source` value: a directory, `list.json`, or `list.txt` | `K:/standards/` |
+>    | `<OUTDIR>` | `--outdir` value: output markdown directory | `output/md_v1/` |
+>    | `<WORKERS>` | `--workers` value (lower for slow hosts, see Slow-machine angle) | `13` (or `6`) |
+>    | `<TIMEOUT_MULT>` | `--timeout-mult` value | `1` (normal) or `2` (slow host) |
+>    For **list mode** (json/txt source): also delete the `"--recursive"` line.
+>    `heavy-max=3` is FROZEN in the template (tuned for typical sets); the other
+>    optional flags stay commented out — uncomment one only when its condition
+>    holds (see the inline comments in the template).
+> 3. **Pass the result to `create_and_run_task`** (workspaceFolder = the
+>    workspace root). Use the `<LABEL>` you generated as the task label so you
+>    can poll it in step 4.
+> 4. **Monitor (do NOT block):** poll with `get_task_output` using the
+>    `<LABEL>`. Every 10 files it prints
+>    `[N/M] 1234s ok=.. skip=.. fail=.. timeout=.. sidecars=.. eta=..s | filename`.
 >
 > **The script must NOT be launched via:** in-process `_convert_core.convert_file()`
-> loop, foreground terminal, or a non-background shell — any of these wedges the
-> session on large sets.
+> loop, foreground terminal, non-background shell, or hand-writing the task dict
+> instead of using the template — any of these wedges the session on large sets
+> or reintroduces the very path/quoting mistakes the template exists to prevent.
+>
+> **Why a template, not a script?** The VS Code task system writes to
+> `<workspace>/.vscode/tasks.json`; the skill cannot auto-write there without
+> polluting each workspace. The frozen jsonc is a **portable artifact**: the
+> agent reads it, fills 5 slots, and the long-running job + `get_task_output`
+> monitoring loop is preserved unchanged. If the workspace venv lives outside
+> `${workspaceFolder}/.venv`, see the `Environment assumption` note at the top
+> of the template.
 >
 > **Resume after interruption:** relaunch the *same command* with a **new task
 > label**. It auto-skips files whose `.md` already exists, so prior progress is
@@ -207,6 +238,7 @@ Every conversion runs through three stages **automatically** (no flags needed):
 | 11 | **Verify a CredUI-entered password by decrypting the whole document inside the prompt loop** | msoffcrypto's ECMA376-Agile `decrypt().finalize()` hangs for a long time on large files; doing it per-retry makes the dialog look frozen / "no UI appears". | `prompt_and_get_password` returns the user's input unverified. Correctness is checked once by the real decryption in `decrypt_docx` step 4 (cancel/wrong = skip file, per row 5/Q11). |
 | 12 | **Run dynamic batch (`batch_convert_dynamic.py`) in the foreground / terminal** | Thousands of files can take hours; a foreground run blocks the session and is killed by timeout. A hang in one subprocess wedges the whole run if not backgrounded. | Launch as a **background VS Code task** (`isBackground: true`); poll progress with `get_task_output`. Resume by re-launching (it skips files whose `.md` already exists). **See the `⚠️ CRITICAL` block above the Command-Line examples for the exact task config and monitoring steps.** |
 | 13 | **Skip the in-driver pre-decrypt pass (`--no-predecrypt`) for batch sets with many encrypted files** | Without it, each subprocess re-resolves the password independently → N CredUI dialogs / keyring lookups instead of 1. The `_PASSWORD_CACHE` (per-process) is lost across subprocess boundaries. | Leave pre-decrypt ON (default). It writes temp files (`.__dec_*`) to `--outdir`, cleans them up at the end. Only use `--no-predecrypt` when you know there are zero encrypted files (pure speed opt). |
+| 14 | **Train the size→timeout ladder on small office files, then ship the default bands unchanged to a much slower host** | The `<0.5MB→8s` band is calibrated for a DB-less, single-PDF fast machine. On a slow host markitdown pulls in heavy per-format deps (mammoth/openpyxl/python-pptx) **per converted subprocess**, so a small `report.docx` legitimately takes ~30s just to import → the 8s band misfires and **kills every office file mid-cold-start** (the file was NOT hung; it would finish ~2s later). Treating this as a timeout list grows the fail-log with false positives. | `batch_convert_dynamic.py` already applies an **automatic 40s floor to office formats** (`.doc/.docx/.xls/.xlsx/.ppt/.pptx`); PDF is intentionally excluded (its small-file fast-fail band is a deliberately calibrated hang-detector — do NOT add `.pdf` to the floor without re-running the failure analysis). For a genuinely slow host across ALL formats (csv/html/pdf too), pass **`--timeout-mult 2`** (multiples every band; default 1.0). The [INFO] startup banner prints `office_floor=40s (...)` so you can confirm the floor is active. |
 
 **Decision shortcut**: if an action is about to ask the user something other than an
 **Unknown defect with no HTML_REFERENCE** to infer from, or a missing credential,
