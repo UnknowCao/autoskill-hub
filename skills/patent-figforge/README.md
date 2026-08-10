@@ -1,235 +1,222 @@
+<sub>🌐 <b>中文</b> · <a href="README.en.md">English</a></sub>
+
+<div align="center">
+
 # 🎨 Patent FigForge
 
-> **Production-ready AI skill that generates patent-style technical diagrams — flowcharts, block diagrams, system architectures — using Graphviz with automatic reference numbering. Output dual SVG + PNG, ready for CNIPA / USPTO / EPO filing.**
+> *「出图即合规——不过 3 道 GATE 不算完。」*
+
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-patent--figforge-blueviolet)](SKILL.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Darwin Verified](https://img.shields.io/badge/Darwin%20Verified-85.8%2F100-brightgreen)](results.tsv)
+[![Output](https://img.shields.io/badge/Output-SVG%20%2B%20PNG%20dual-green.svg)](#)
+[![CJK](https://img.shields.io/badge/CJK-SimHei%20auto-red.svg)](#)
+[![Filing](https://img.shields.io/badge/Filing-CNIPA%20%7C%20USPTO%20%7C%20EPO-blue.svg)](#)
+
+**把任意 LLM Agent 变成专利附图生成器——生成的图出图即合规，不过 3 个强制 GATE 不算完。**
+
+[看效果](#-看效果) · [安装](#-快速开始) · [触发方式](#-触发方式) · [与同类有什么不同](#-与同类有什么不同) · [安全边界](#-安全边界)
+
+</div>
+
+---
 
 <p align="center">
-  <strong>
-    <a href="#-quick-start">Quick Start</a> ·
-    <a href="#-three-api-methods">3 API Methods</a> ·
-    <a href="#-gated-workflow">Gated Workflow</a> ·
-    <a href="#-cjk--cnipa-compliance">CJK + CNIPA</a> ·
-    <a href="#-file-structure">Structure</a>
-  </strong>
+  <img src="assets/showcase/hero-comparison.png" alt="Before/After: Mermaid vs patent-figforge" width="100%">
+  <sub><i>同一句 prompt。左边：通用 Agent 出的图——彩色、中文豆腐块、引线交叉、审查员直接驳回。右边：patent-figforge 出的图——B&W、SimHei 中文、polyline 正交走线、CNIPA §第一部分第一章合规。</i></sub>
 </p>
+
+---
+
+## 💡 它解决什么问题
+
+事情是这样的：你让 Agent 帮你画一张专利附图。Agent 高高兴兴给你出了一张图——绿色填充表示"正常"、红色边框表示"警告"、蓝色模块表示"通信"、中文全是方块 □□□、连线弯弯曲曲叠在一起、参考标号要么没有要么乱飞。
+
+你觉得挺好看。审查员觉得不行。
+
+**37 CFR §1.84(a)(1) 写着：黑白线条图。** CNIPA 审查指南写着：框图用尖角矩形、引线不得交叉、文字 ≥14pt。而这些规则，通用 Agent 一条都不知道——它只是把你说的"画个图"翻译成了它见过的最花哨的图。
+
+**patent-figforge 换了思路：不信任 Agent 的审美。** 它在 Graphviz 渲染管线里硬编码了 B&W（`bgcolor="white"`, `fillcolor="white"`）、polyline 正交走线（禁用 ortho 和 curved）、SimHei 中文字体自动解析（根治 □□□），然后在出图后强制跑 3 道 GATE——文件存在性检查 → 中文渲染验证 → 最终视觉人工确认。**有一道不过，就不算完。**
+
+目前支持 **方法流程图**（method claims）、**系统框图**（system claims）和**自定义 DOT 渲染**（架构图）。每次渲染自动产出 **SVG + PNG 双格式**。
+
+---
+
+## 📸 看效果
+
+### 方法流程图
 
 <p align="center">
-  <img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg">
-  <img alt="Engine" src="https://img.shields.io/badge/Graphviz-dot%20%7C%20neato%20%7C%20fdp-orange.svg">
-  <img alt="Output" src="https://img.shields.io/badge/Output-SVG%20%2B%20PNG%20dual-green.svg">
-  <img alt="Filing" src="https://img.shields.io/badge/Filing-CNIPA%20%7C%20USPTO%20%7C%20EPO-blue.svg">
-  <img alt="CJK" src="https://img.shields.io/badge/CJK-SimHei%20auto-red.svg">
+  <img src="assets/showcase/bms-method-flowchart.png" alt="BMS 方法流程图" width="70%">
 </p>
 
----
+> BMS 过压保护方法：开始(10) → 采样(20) → 判定(30) → 保护模式(40) → 结束(50)，`constraint="false"` 回路不交叉。
 
-## English Description
+### 系统框图
 
-**`patent-figforge`** is a framework-agnostic AI skill (a self-contained `SKILL.md` + a `python/diagram_generator.py` module + compliance references) that turns any LLM agent — Claude Code, GitHub Copilot, Cursor, or anything that reads Markdown — into a **patent diagram generator** that produces filing-ready technical illustrations.
+<p align="center">
+  <img src="assets/showcase/bms-block-diagram.png" alt="BMS 系统框图" width="70%">
+</p>
 
-It solves the most common failure mode in AI-assisted patent diagram generation: **the diagram looks plausible but is non-compliant**. Generic Graphviz outputs use colored fills (CNIPA requires black-on-white), omit reference numbers (10, 20, 30…), garble Chinese glyphs (tofu □□□), route back-edges across the main flow, or use `splines=spline` (curved) instead of `polyline`. This skill forbids all of that via 3 mandatory GATEs.
-
-It supports **method flowcharts** (for method claims), **block diagrams** (for system claims), and **custom DOT rendering** (for architectures). Every render emits **dual SVG + PNG** automatically — SVG is the editable vector source for filing, PNG is the visual verification gate.
-
----
-
-## 🌐 中文简介
-
-**`patent-figforge`** 是一个**框架无关**的 AI Skill —— 把一份 `SKILL.md` + 一个自定位的 `python/diagram_generator.py` 模块 + 合规参考文档加载进任意 LLM Agent，让大模型真正胜任**专利附图绘制**——生成符合 CNIPA（中国国家知识产权局）/ USPTO / EPO 递交要求的技术插图。
-
-它解决的是 AI 辅助专利附图绘制最常见的失败模式：**图看似专业，实则不合规**。通用 Graphviz 输出会使用彩色填充（CNIPA 要求黑白）、遗漏参考标号（10、20、30…）、中文乱码（豆腐块 □□□）、back-edge 横穿主流、或用 `splines=spline`（曲线）而非 `polyline`（折线）。本 skill 通过 3 个强制 GATE 把这些做法**全部禁止**。
+> BMS 系统：电压采集(10) → 主控MCU(20) → 通信模块(30) / 均衡驱动(40)，rankdir=LR，4 个独立参考号，黑框白底。
 
 ---
 
-## ✨ Key Features
+## 🚀 快速开始
 
-- ✅ **3 API methods** — `create_flowchart` (method claims, TB layout) / `create_block_diagram` (system claims, LR layout) / `render_dot_diagram` (custom DOT)
-- ✅ **Dual SVG + PNG output** — every render emits both; SVG is the editable vector source, PNG is the `view_image` verification gate
-- ✅ **Automatic reference numbering** — in-label `ref=` parameter (e.g. `{"id": "cpu", "label": "处理器", "ref": 20}`) appends `(20)` cleanly with no lead lines
-- ✅ **3 mandatory GATEs** — GATE 1 (plan & confirm) / GATE 2 (render sanity, file > 500 bytes + Chinese glyph grep) / GATE 3 (`view_image` visual verification, no tofu / no crossing edges / no color)
-- ✅ **CJK auto-resolution** — SimHei font auto-resolved on Windows via `_resolve_cjk_font()`; Chinese labels render without tofu
-- ✅ **CNIPA compliance** — `splines=polyline` (Anti-Pattern #2/#5 fix) + `bgcolor=white` (Anti-Pattern #1) + black-on-white only
-- ✅ **Back-edge handling** — `constraint="false"` on loop-back edges routes them as back-arcs outside the rank chain (no rank reordering, no crossing)
-- ✅ **Self-locating module** — `python/diagram_generator.py` works in any runtime, no env var needed; walks up from CWD or `__file__` to find itself
+### 1. 装 Graphviz
 
----
-
-## 🚀 Quick Start
-
-### 1. Install dependencies
-
-**Graphviz** (system binary):
 ```bash
-# Windows
-choco install graphviz
-# Linux
-sudo apt install graphviz
-# Mac
-brew install graphviz
+# Windows:  choco install graphviz
+# Linux:    sudo apt install graphviz
+# Mac:      brew install graphviz
 ```
 
-**Python package**:
 ```bash
 pip install graphviz
 ```
 
-### 2. Load the module and render
-
-```python
-import os, sys
-# Self-locating: works in any runtime, no env var needed
-_SKILL_ROOT = r"c:\path\to\patent-figforge"  # or auto-detect
-sys.path.insert(0, _SKILL_ROOT)
-
-# Ensure Graphviz `dot` is on PATH (Windows ships NOT on PATH by default)
-for _dot_dir in (r"C:\Program Files\Graphviz\bin", r"/usr/bin", "/usr/local/bin"):
-    if os.path.exists(os.path.join(_dot_dir, "dot.exe")) or os.path.exists(os.path.join(_dot_dir, "dot")):
-        os.environ["PATH"] = _dot_dir + os.pathsep + os.environ.get("PATH", "")
-        break
-
-from python.diagram_generator import PatentDiagramGenerator
-
-generator = PatentDiagramGenerator(output_dir=".")
-
-# Example: A CNIPA BMS system block diagram
-blocks = [
-    {"id": "vadc", "label": "电压采集单元", "ref": 10},
-    {"id": "mcu",  "label": "主控 MCU",     "ref": 20},
-    {"id": "comm", "label": "通信模块",      "ref": 30},
-    {"id": "bal",  "label": "均衡驱动",      "ref": 40},
-]
-connections = [
-    ["vadc", "mcu"],
-    ["mcu",  "comm"],
-    ["mcu",  "bal"],
-]
-diagram_path = generator.create_block_diagram(
-    blocks=blocks,
-    connections=connections,
-    filename="bms_block",
-    output_format="svg",   # always emits svg + png; arg only picks returned path
-    rankdir="LR",          # CNIPA block diagrams default to LR
-)
-# Rendered: 4 boxes (电压采集单元(10) / 主控MCU(20) / 通信模块(30) / 均衡驱动(40)),
-# black-on-white, splines=polyline, SimHei glyphs — CNIPA §第一部分第一章 compliant.
-```
-
-### 3. The skill enforces 3 GATEs
+### 2. 把 skill 放进 skills 目录
 
 ```
-🔴 GATE 1 · Plan & confirm
-List nodes/blocks/edges/reference numbers aloud. >3 numbers with lead lines → split into multiple figures.
-
-Step 2 · Generate
-Run the API method. Use in-label ref= for reference numbers (Anti-Pattern #6).
-
-🔴 GATE 2 · Render sanity
-Confirm SVG > 500 bytes. Grep one Chinese label in SVG source (tofu check).
-
-🔴 GATE 3 · view_image verification (MANDATORY)
-Open the PNG. Verify: (a) Chinese glyphs render (no □□□), (b) edges don't cross except intentional branches,
-(c) reference numbers legible, (d) no color (black on white).
-
-Step 4 · Report
-Show file path + list reference numbers used.
-🛑 STOP: present verified figure to user. Do not auto-generate additional figures without confirmation.
+skills/patent-figforge/
+├── SKILL.md
+├── python/diagram_generator.py
+├── references/compliance.md
+└── test-prompts.json
 ```
+
+### 3. 对 Agent 说
+
+```text
+画一个 BMS 系统框图：电压采集→MCU→通信模块/均衡驱动，
+黑框白底，带专利编号(10/20/30/40)，CNIPA 递交用。
+```
+
+> **装完第一句话**（可直接复制）：
+>
+> ```text
+> 用 patent-figforge 画专利附图：我要申请一个电池管理系统的专利，
+> 方法包含采样、过压判定和保护三个步骤，每步带参考编号，输出 SVG。
+> ```
 
 ---
 
-## 🧭 Three API Methods
+## 🗣️ 触发方式
 
-| Method | Use Case | Default Layout | Signature |
-|---|---|---|---|
-| `create_flowchart(steps, filename, output_format)` | Method claims, decision trees, process flows | **TB** (auto-applied, not caller-controlled) | `steps=[{id, label, shape, next}]` |
-| `create_block_diagram(blocks, connections, filename, output_format, rankdir, title)` | System claims, hardware/software modules | **LR** (pass `TB` for top-down hierarchy) | `blocks=[{id, label, ref}]`, `connections=[[from, to, label?]]` |
-| `render_dot_diagram(dot_code, filename, output_format, engine)` | Custom architectures, unusual layouts | engine-dependent | Raw DOT string |
+以下任意说法都会触发 patent-figforge：
 
-**Shape quick reference**:
-- Flowchart: `ellipse` (start/end) / `box` (process) / `diamond` (decision) / `parallelogram` (I/O) / `cylinder` (DB)
-- Engines: `dot` (hierarchical, default for patents) / `neato` / `fdp` / `circo` / `twopi`
-
----
-
-## 🗺️ Gated Workflow
-
-```mermaid
-flowchart TD
-    G1["🔴 GATE 1: Plan & confirm<br/>(nodes/edges/refs aloud)"] --> GEN
-    GEN["Step 2: Generate<br/>(API method + ref=)"] --> G2
-    G2["🔴 GATE 2: Render sanity<br/>(file > 500B + grep Chinese)"] --> G3
-    G3["🔴 GATE 3: view_image<br/>(no tofu/crossing/color)"] --> RPT
-    RPT["Step 4: Report<br/>(path + ref numbers)"] --> STOP["🛑 STOP<br/>present to user"]
-```
-
-> GATE 3 exists because graphviz auto-layout can produce geometrically broken output (crossing lead lines, overlapping labels) that a file-size check will not catch. **Do NOT declare success based on "the file exists" alone.**
+- "画一个专利方法流程图"
+- "生成 BMS 系统框图，CNIPA 递交用"
+- "给这个权利要求画张专利附图"
+- "create a patent figure with reference numbers"
+- "generate USPTO-compliant block diagram"
+- "专利附图、流程图、框图、架构图"
+- "patent figures、reference numbers、专利图"
 
 ---
 
-## 📐 CJK + CNIPA Compliance
+## 📦 它会交付什么
 
-| Rule | Why | How |
+| 输入 | 交付物 | 典型耗时 |
 |---|---|---|
-| `splines="polyline"` | CNIPA rejects curved splines; polyline is the standard | Hard-coded in renderer (Anti-Pattern #2/#5 fix) |
-| `bgcolor="white"` | Black-on-white only for filing | Hard-coded in renderer (Anti-Pattern #1) |
-| SimHei font auto-resolution | Chinese glyphs render without tofu □□□ | `_resolve_cjk_font()` on Windows |
-| Reference numbers via in-label `ref=` | Clean `(20)` suffix, no lead lines | `{"id": "cpu", "label": "处理器", "ref": 20}` |
-| `constraint="false"` on back-edges | Loop-back routes as back-arc, no rank reordering | `next=[{id, label, constraint: "false"}]` |
+| 方法步骤描述 | `.svg` 方法流程图（TB 纵向）+ `.png` 副本 | < 5 秒 |
+| 系统模块列表 + 连接关系 | `.svg` 系统框图（LR 横向）+ `.png` 副本 | < 5 秒 |
+| 自定义 DOT 源码 | `.svg` + `.png` 双输出（dot/neato/fdp/circo/twopi） | < 5 秒 |
+| 模板名称（如 `component_hierarchy`） | 基于模板生成的自定义图 | < 10 秒 |
 
-**Numbering convention**: main components 10/20/30/40…; sub-components 12/14/16 under 10; elements 22/24/26 under 20. Each number denotes exactly ONE element within a figure.
+**每张图自动附带**：B&W 合规样式、SimHei 中文无乱码、polyline 正交走线、专利参考编号（10/20/30 主编号，12/14/16 子编号）、3 道 GATE 验证通过记录。
 
 ---
 
-## 📁 File Structure
+## ⚔️ 与同类有什么不同
+
+| 维度 | 通用做法（Mermaid / 裸 Graphviz） | patent-figforge |
+|---|---|---|
+| 颜色 | 🟢🔵🔴 彩色填充 | ⬛⬜ B&W only，硬编码拦截 |
+| 中文 | □□□ 豆腐块 / ??? | SimHei 自动解析，Windows/Linux/macOS 三平台回退链 |
+| 合规校验 | ❌ 无——出了不合格图也不知道 | ✅ 3 道强制 GATE，一道不过不算完 |
+| 参考编号 | 手工加文字，引线乱飞 | `ref=20` 参数，自动追加 `(20)` 后缀 |
+| 走线 | splines=ortho 丢标签 / curved 不可复现 | `splines=polyline` 硬编码，保留标签 + 正交可复现 |
+| 失败诊断 | "图不对？重画。" | 8 种失败模式 + 10 条反模式诊断表——知道为什么错、怎么修 |
+| 专注度 | 通用图表工具 | **只做专利附图**，不做 UI/架构/PPT 图 |
+
+> 详细竞品对标：RobThePCGuy（167⭐全流程超集）、PatentFig.ai（商业SaaS）、kimlawtech（KIPO专用）、Hallmark（65-gate品牌化）、handsomestWei（4.6k⭐交底书Skill）等 8 个候选的深度分析见鲁班打磨报告。
+
+---
+
+## 🛡️ 安全边界
+
+**这个 Skill 不会做：**
+- ❌ 删除、移动或修改 `output_dir` 之外的任何文件
+- ❌ 发起外部网络请求（全部渲染是本地 Graphviz）
+- ❌ 执行除 `dot` 渲染之外的 shell 命令
+- ❌ 未经确认自动生成额外附图或修改权利要求文本（🛑 STOP 门）
+- ❌ 读取或传输你的专利交底书内容
+
+**它会在这些时候停下来问你：**
+- 🔴 GATE 1：渲染非平凡结构前（≥8 节点、含判定分支、含循环回路）
+- 🔴 GATE 3：视觉检查不通过时（中文豆腐块/引线交叉/出现彩色）
+- 🛑 STOP：每张验证通过的图交付后
+
+---
+
+## 📁 文件结构
 
 ```
 patent-figforge/
-├── SKILL.md                            # Entry point — agent loads this first
-├── README.md                           # You are here
+├── SKILL.md                  # 入口——Agent 首先加载这个文件
+├── README.md                 # 你在看这个
+├── LICENSE                   # MIT
+├── test-prompts.json         # 8 条测试 prompt（Darwin 验证，6/8 full_test）
+├── results.tsv               # Darwin 优化日志（6 轮，79.6→85.8）
+├── .claude-plugin/
+│   └── marketplace.json      # Claude Code plugin marketplace 注册
 ├── python/
-│   └── diagram_generator.py            # Self-locating module (PatentDiagramGenerator class)
-└── references/
-    └── compliance.md                   # CNIPA/USPTO/EPO compliance rules + 6 Anti-Patterns
+│   └── diagram_generator.py  # 自定位 PatentDiagramGenerator（323 行）
+├── references/
+│   └── compliance.md         # 8 种失败模式 + 10 条反模式 + 法律依据
+├── assets/
+│   └── showcase/             # 展示用图（hero 对比图、产物样例）
+└── examples/                 # 真实运行产物样本 + 使用说明
 ```
 
-> **Note**: This is a **lean skill** — the `python/diagram_generator.py` module is the single source of truth for rendering. Previous `assets/*-skeleton.py` and `references/{code-templates,numbering,patent-standards,requirements-common,shape-specs}.md` have been consolidated into the module + `compliance.md`.
-
 ---
 
-## ⛔ Anti-Patterns (6 hard-coded prohibitions)
+## 🧪 验证与测试
 
-| # | Forbidden | Why | Replace with |
+Darwin Skill 2.0 评估：8 条 prompt，6 条 full_test 通过：
+
+| Prompt | 基线 | 加 Skill | Δ |
 |---|---|---|---|
-| 1 | Colored fills / `bgcolor != white` | CNIPA requires black-on-white | `bgcolor="white"` (hard-coded) |
-| 2 | `splines=spline` (curved) | CNIPA rejects; polyline standard | `splines="polyline"` (hard-coded) |
-| 3 | > 3 reference numbers with lead lines | Cluttered, illegible | Split into multiple figures |
-| 5 | Curved splines (variant of #2) | Same as #2 | Same as #2 |
-| 6 | Post-hoc `add_reference_numbers()` on existing SVGs | Fragile, lead-line chaos | In-label `ref=` parameter |
+| P1 BMS 方法流程图 | 5 | 8 | +3 |
+| P2 CNIPA 系统框图 | 5 | 9 | +4 |
+| P5 反模式拦截 | 3 | 9 | +6 |
+| P6 多图拆分建议 | 4 | 8 | +4 |
+| P8 中文豆腐块修复 | 6 | 8 | +2 |
+
+**Darwin 总分：85.8/100**（6 轮优化记录见 `results.tsv`）
+
+### 自己跑一遍
+
+```text
+画一个 BMS 系统框图，要求：电压采集用绿色填充表示正常，
+过压保护用红色边框突出警告，通信模块用蓝色表示。
+连线用 ortho 正交走线。每个模块旁边用 ✓ 标注已实现状态。
+```
+
+> **合格表现**：Skill 应拦截全部 5 项违规（3 种彩色→B&W、ortho→polyline、✓→中文"已实现"），最终输出合规 B&W 图。
 
 ---
 
-## 🤝 Compatibility
+## 🙏 致谢
 
-- **Agents**: Claude Code, GitHub Copilot, Cursor, Continue, any agent that consumes `SKILL.md` and can run Python
-- **Inputs**: Python dicts (blocks/steps/connections) or raw DOT strings
-- **Outputs**: SVG (vector, editable, filing source) + PNG (raster, verification gate, docx/pptx embedding)
-- **Filing Standards**: CNIPA (中国) · USPTO (美国) · EPO (欧洲) · JPO (日本)
-- **Languages**: English + 中文 (CJK auto-resolution)
-- **Companion skill**: [`patent-forge`](../patent-forge) calls this skill for Phase 3A Action 6 / Phase 3D Action 6 figure generation
+本 Skill 基于 [RobThePCGuy/Claude-Patent-Creator](https://github.com/RobThePCGuy/Claude-Patent-Creator)（167⭐，MIT）中的 `patent-diagram-generator` 子模块深度改造而来。上游提供了扎实的 Graphviz Python API 设计和参考编号注入逻辑。本 fork 新增的核心能力：3 道合规 GATE、CJK 中文字体自动解析、8+10 失败/反模式诊断表、SVG+PNG 双输出。上游署名依 MIT 协议保留于此。
+
+同赛道项目启发：[kimlawtech/korean-patent-diagram](https://github.com/kimlawtech/korean-patent-diagram)（KIPO 合规表设计）、[PatentFig.ai](https://patentfig.ai/)（合规检查器产品化表达）、[Hallmark](https://github.com/nutlope/hallmark)（65-gate slop test 品牌化思路）。
 
 ---
 
-## 📜 License
-
-Licensed under the **Apache License 2.0** — see the repository root [`LICENSE`](../LICENSE).
-
-> 📌 **Note on PDF**: This skill outputs SVG + PNG only. If filing requires PDF, convert the SVG externally (e.g. `rsvg-convert -f pdf in.svg -o out.pdf` or Inkscape CLI). Word cannot inline-embed SVG — that's why PNG is emitted automatically.
-
----
-
-## 🙏 Acknowledgements
-
-Part of the [**autoskill-hub**](https://github.com/UnknowCao/autoskill-hub) project — the open skill hub that walks the entire automotive V-model, mapped to ASPICE.
-
-This skill is the **diagram-side companion** to [`patent-forge`](../patent-forge). Together they cover: invention disclosure → patent filing → compliant technical diagrams.
-
-Contributions welcome — new shape templates, additional filing-standard compliance rules, and rendering engine integrations are especially appreciated. See [`CONTRIBUTING.md`](../CONTRIBUTING.md) at the repository root.
+<p align="center">
+  <sub>Made with 🔨 by 鲁班工坊 · <a href="https://github.com/alchaincyf/patent-figforge">GitHub</a></sub>
+</p>

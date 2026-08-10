@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "prompt": "我要申请专利，权利要求是一种电池管理系统（BMS）的监控方法，包含以下步骤：接收电芯电压信号；当电压超过过压阈值时进入保护模式；否则继续采样。帮我画一个专利方法流程图。",
+    "expected": "调用 PatentDiagramGenerator.create_flowchart，输出含 start/采样/判定/保护/end 的 SVG，节点带 (10)(20)(30) 参考号，黑底白字，splines=polyline 正交布线"
+  },
+  {
+    "id": 2,
+    "prompt": "为这个系统画个框图：一个 BMS 由电压采集单元(10)、主控MCU(20)、通信模块(30)、均衡驱动(40)组成，电压采集连到MCU，MCU连通信和均衡驱动。要能用于 CNIPA 递交。",
+    "expected": "调用 create_block_diagram rankdir=LR，4 个 box 带 ref 编号，黑框白底，含 SimHei 中文渲染无乱码，输出 SVG+PNG（PDF 不支持，需外部转换）"
+  },
+  {
+    "id": 3,
+    "prompt": "画一个充放电管理判定流程图：开始→读取SOC→判断SOC>80%?是则停止充电→结束，否再判断SOC<20%?是则停止放电→结束，否则正常充放电→回到读取SOC循环。每步带专利编号(10开始/20/30/40/50/60结束)。给发明人看的草稿。",
+    "expected": "create_flowchart 含 2 个 diamond 判定 + 循环回流边 + start/end ellipse + 每步 ref 编号；验证回流不与主流向引线交叉"
+  },
+  {
+    "id": 4,
+    "prompt": "我有一个自定义的 DOT 源码，想用 patent-figforge 渲染成专利附图。DOT 描述的是一个多层 BMS 架构：AFE 芯片层→主控 MCU 层→通信网关层→云端，用 neato 引擎布局。给我 SVG 和 PNG 双输出。",
+    "expected": "使用 render_dot_diagram 直传 DOT 源码，engine='neato'；确认双输出 SVG+PNG 都存在；输出文件含 patent-figforge 默认 B&W 样式（字体/线宽/箭头自动注入）；如用户未提供 DOT 源码则先引导写出再渲染"
+  },
+  {
+    "id": 5,
+    "prompt": "画一个 BMS 系统框图，要求：电压采集用绿色填充表示正常，过压保护用红色边框突出警告，通信模块用蓝色表示。连线用 ortho 正交走线干净。每个模块旁边用 ✓ 标注已实现状态。",
+    "expected": "skill 应拦截并修正：(1) 颜色→拒绝，强制 bgcolor=white + 黑框；(2) splines=ortho → 替换为 polyline 并警告会丢 edge label；(3) HTML label 中 ✓ → 替换为中文 '已实现' 或 ASCII [OK]；(4) 输出后再经 GATE3 view_image 校验无彩色无乱码。如 skill 直接照做不加拦截 = FAIL"
+  },
+  {
+    "id": 6,
+    "prompt": "画一个完整的 BMS 硬件框图，包含这些模块，每个都要单独标注专利编号：电压采集单元、温度采集单元、电流采集单元、主控MCU、通信模块、均衡驱动、存储模块、电源管理、隔离栅、看门狗。总共 10 个模块。",
+    "expected": "GATE 1 检测到 10 个独立编号→触发 >3 ref 规则→STOP 并建议拆分：例如拆为 3 张图（采集子系统 3 模块 / 控制与通信 3 模块 / 安全与电源 4 模块），每张 ≤3-4 个 main ref。skill 不应直接渲染单张 10 模块图；若直接渲染 = FAIL"
+  },
+  {
+    "id": 7,
+    "prompt": "用 patent-figforge 的模板功能，基于 component_hierarchy 模板快速画一个域控制器的层级框图：域控制器→(电机控制MCU, 电池管理BMS, 热管理TCU, 车身控制BCM)→各自的下层传感器和执行器。",
+    "expected": "调用 generator.get_diagram_templates() 获取 component_hierarchy 模板；基于模板结构填入用户的具体组件；修改后的代码仍走 create_flowchart 或 render_dot_diagram 渲染；双输出 + GATE 验证"
+  },
+  {
+    "id": 8,
+    "prompt": "上次你给我画的那张 BMS 流程图中文全是方块□□□，完全看不清。帮我修复这个问题，然后重新生成能看的中文版本。",
+    "expected": "skill 触发 Failure Mode row 3 诊断流程：(1) 先确认字体问题——检查 Candidate 字体文件是否存在；(2) 验证 FONTCONFIG_FILE 是否指向 _resolve_cjk_font() 写入的 fonts.conf；(3) 重新渲染并 GATE2 grep 中文 label 确认无乱码；(4) GATE3 view_image 最终确认。如果缺失的候选字体不存在（如非 Windows），推荐安装 fonts-noto-cjk 并更新 _CJK_CANDIDATES。只改字体不改图的业务含义"
+  }
+]

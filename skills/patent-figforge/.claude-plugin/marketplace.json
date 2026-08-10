@@ -1,0 +1,23 @@
+{
+  "name": "patent-figforge",
+  "displayName": "Patent FigForge",
+  "description": "Patent-style technical diagram generator with mandatory compliance GATEs — B&W diagrams for CNIPA/USPTO/EPO filing with CJK font auto-resolution. Generates method flowcharts, system block diagrams, and custom DOT architectures.",
+  "version": "1.0.0",
+  "publisher": "alchaincyf",
+  "license": "MIT",
+  "repository": "https://github.com/alchaincyf/patent-figforge",
+  "keywords": ["patent", "diagram", "graphviz", "flowchart", "block-diagram", "CNIPA", "USPTO", "CJK", "compliance"],
+  "categories": ["Diagrams", "Documentation", "Legal"],
+  "runtime": "python",
+  "dependencies": {
+    "system": ["graphviz"],
+    "python": ["graphviz"]
+  },
+  "skills": [
+    {
+      "path": "SKILL.md",
+      "name": "patent-figforge",
+      "description": "Create patent-style technical diagrams with mandatory compliance GATEs"
+    }
+  ]
+}

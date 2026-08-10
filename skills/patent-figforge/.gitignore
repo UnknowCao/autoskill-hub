@@ -12,3 +12,8 @@ __pycache__/
 *_output
 *_output.png
 *_output.svg
+
+# Showcase 临时文件
+assets/showcase/_bad_temp*
+assets/showcase/_bad_temp.png
+assets/showcase/_bad_temp.svg

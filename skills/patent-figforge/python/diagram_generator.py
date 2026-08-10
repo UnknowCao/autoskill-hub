@@ -28,11 +28,17 @@ import sys
 import platform
 import subprocess
 import tempfile
+import warnings
 import graphviz
 from typing import Optional
 
 # Reference-number heuristic: pull trailing (NN) from a node label.
 _REF_RE = re.compile(r"\((\d+)\)\s*$")
+
+# Unicode misc-symbols + dingbats range (U+2600–U+27BF): ✓✗⚠⭐➜✅❌⛔
+# SimHei lacks glyphs here → Graphviz HTML labels emit raw codepoint (e.g. "2713").
+# Plain-text node labels usually survive; HTML labels break. See compliance.md row 4.
+_SYMBOL_DANGER_ZONE = re.compile(r'[\u2600-\u27BF]')
 
 
 # ---------------------------------------------------------------------------
@@ -124,30 +130,42 @@ CJK_FONT = _resolve_cjk_font()
 
 
 class PatentDiagramGenerator:
-    """Generate USPTO/CNIPA-compliant patent figures with Graphviz."""
+    """Generate USPTO/CNIPA-compliant patent figures with Graphviz.
 
-    # Shared B&W style — no color (37 CFR §1.84(a)(1): black ink on white).
-    # fontname uses the CJK font resolved at import (fixes 文字乱码).
+    Style constants are intentionally hard-coded (not caller-configurable)
+    to ensure visual consistency with patent-forge disclosure conventions.
+    Font: SimHei (黑体) — matches patent-forge heading font.
+    Font size: 14pt — matches patent-forge H2 heading (37 CFR §1.84(p)(3) min).
+    """
+
+    # ═══ Graph-level defaults ═══
+    # splines=polyline: orthogonal routing, keeps edge labels (forge §2.2)
+    # penwidth=1.3:       "线条均匀、清晰、足够深" (forge 00-baseline §2.2)
     GRAPH_ATTRS = {
-        "splines": "polyline",   # orthogonal routing, keeps labels
+        "splines": "polyline",
         "nodesep": "0.35",
         "ranksep": "0.55",
         "bgcolor": "white",
         "fontname": CJK_FONT,
         "fontsize": "14",
+        "penwidth": "1.3",
+        "dpi": "300",
     }
-    BOX_ATTRS = {
-        "shape": "box", "style": "filled", "fillcolor": "white",
-        "fontname": CJK_FONT, "fontsize": "14",
+
+    # ═══ Node base — shared by all node shapes ═══
+    # margin=0.15,0.1: comfortable text padding inside nodes
+    _NODE_BASE = {
+        "style": "filled",
+        "fillcolor": "white",
+        "fontname": CJK_FONT,
+        "fontsize": "14",
+        "penwidth": "1.3",
+        "margin": "0.15,0.1",
     }
-    ELLIPSE_ATTRS = {
-        "shape": "ellipse", "style": "filled", "fillcolor": "white",
-        "fontname": CJK_FONT, "fontsize": "14", "width": "1.9", "height": "0.7",
-    }
-    DIAMOND_ATTRS = {
-        "shape": "diamond", "style": "filled", "fillcolor": "white",
-        "fontname": CJK_FONT, "fontsize": "13", "width": "2.0", "height": "1.0",
-    }
+
+    BOX_ATTRS = {**_NODE_BASE, "shape": "box"}
+    ELLIPSE_ATTRS = {**_NODE_BASE, "shape": "ellipse", "width": "1.9", "height": "0.7"}
+    DIAMOND_ATTRS = {**_NODE_BASE, "shape": "diamond", "fontsize": "13", "width": "2.0", "height": "1.0"}
 
     def __init__(self, output_dir: str = "."):
         self.output_dir = output_dir
@@ -165,7 +183,11 @@ class PatentDiagramGenerator:
         # CJK glyphs → edge labels render as tofu/??? (文字乱码). Set the CJK
         # font explicitly on ALL three classes.
         g.attr("node", fontname=self.GRAPH_ATTRS["fontname"])
-        g.attr("edge", fontname=self.GRAPH_ATTRS["fontname"])
+        g.attr("edge", fontname=self.GRAPH_ATTRS["fontname"],
+               fontsize="13",           # edge labels slightly smaller than nodes
+               arrowhead="vee",         # clean patent-figure arrow (forge 02-electronic §2.4)
+               arrowsize="0.9",
+        )
         if label:
             g.attr(label=label, labelloc="b", fontsize="13")
         return g
@@ -193,11 +215,55 @@ class PatentDiagramGenerator:
                     # Best-effort: a missing companion format must not abort
                     # the primary render. The primary file already exists.
                     pass
+        # GATE 2 auto-check: suspiciously small SVG → likely tofu/empty render.
+        svg_path = f"{path}.svg"
+        if os.path.exists(svg_path):
+            svg_size = os.path.getsize(svg_path)
+            if svg_size < 500:
+                raise RuntimeError(
+                    f"SVG render is only {svg_size} bytes (expected ≥500). "
+                    f"Likely font/tofu failure — check CJK font config. "
+                    f"See Failure Mode row 3 in references/compliance.md."
+                )
         return f"{path}.{output_format}"
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+    def _validate_refs_and_symbols(self, elements, figure_type="figure"):
+        """Check duplicate ref numbers + Unicode symbol danger zone.
+
+        elements: list of dicts with optional 'ref' (int) and 'label' (str).
+        Raises ValueError on duplicate refs; emits UserWarning on symbols.
+        """
+        refs = [e.get("ref") for e in elements if e.get("ref")]
+        seen = set()
+        dups = {r for r in refs if r in seen or seen.add(r)}
+        if dups:
+            raise ValueError(
+                f"Duplicate reference numbers in {figure_type}: {sorted(dups)}. "
+                f"Each number = exactly ONE element per figure (CNIPA/USPTO rule)."
+            )
+        if len(refs) > 3:
+            warnings.warn(
+                f"{figure_type} has {len(refs)} reference numbers. "
+                f"Recommend ≤3 per figure to avoid crossing lead lines. "
+                f"See Anti-Pattern #3 in references/compliance.md.",
+                UserWarning, stacklevel=3,
+            )
+        for e in elements:
+            label = e.get("label", "")
+            if _SYMBOL_DANGER_ZONE.search(label):
+                bad = _SYMBOL_DANGER_ZONE.findall(label)
+                warnings.warn(
+                    f"Label '{label}' contains Unicode symbols {bad!r} "
+                    f"(U+2600–U+27BF). SimHei lacks glyphs for these — "
+                    f"may render as raw codepoints in HTML labels. "
+                    f"Use CJK text or ASCII instead. "
+                    f"See compliance.md Failure Mode row 4.",
+                    UserWarning, stacklevel=3,
+                )
+
     def create_flowchart(self, steps, filename="flowchart", output_format="svg"):
         """Create a method-step flowchart.
 
@@ -205,6 +271,7 @@ class PatentDiagramGenerator:
             id, label, shape (ellipse|box|diamond|parallelogram|cylinder),
             next (list of {id, label?}), ref (optional patent number, e.g. 10)
         """
+        self._validate_refs_and_symbols(steps, figure_type="flowchart")
         g = self._new_graph(filename, rankdir="TB")
         shape_attr = {
             "ellipse": self.ELLIPSE_ATTRS,
@@ -238,6 +305,7 @@ class PatentDiagramGenerator:
         connections: list of [from_id, to_id, label?] or
                      [from_id, to_id, label, style]
         """
+        self._validate_refs_and_symbols(blocks, figure_type="block diagram")
         g = self._new_graph(filename, rankdir=rankdir, label=title)
         for b in blocks:
             label = b["label"]
@@ -276,7 +344,17 @@ class PatentDiagramGenerator:
         reference_map: {node_label_substring: number}
         Appends '(NN)' into the matching <text> elements if not already present.
         Returns the (possibly modified) svg_path.
+
+        .. deprecated::
+            Use in-label ``ref=`` on node/block dicts instead — cleaner, no
+            lead-line crossing.  See Anti-Pattern #6 in references/compliance.md.
         """
+        warnings.warn(
+            "add_reference_numbers() is deprecated. Use in-label ref= on node/block "
+            "dicts instead (e.g. {'id':'cpu','label':'处理器','ref':20}). "
+            "See Anti-Pattern #6 in references/compliance.md.",
+            DeprecationWarning, stacklevel=2,
+        )
         if not os.path.exists(svg_path):
             raise FileNotFoundError(svg_path)
         with open(svg_path, "r", encoding="utf-8") as f:
