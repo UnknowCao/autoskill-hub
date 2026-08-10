@@ -76,11 +76,18 @@ x2md（基于 MarkItDown 0.1.7）把下面这些格式转成干净的 Markdown�
 
 ### 一行安装
 
+autoskill-hub 是多 skill 仓库。装整个 hub（含 x2md + patent-forge + verification-criteria 等）：
+
 ```bash
-npx skills add UnknowCao/autoskill-hub/skills/x2md
+npx skills add UnknowCao/autoskill-hub
 ```
 
-> 不用 `npx`？手动 clone 这个目录到你的 `skills/` 下即可——x2md 是纯 Python 脚本，零编译。
+只要 x2md？手动 clone 这个子目录到你的 `skills/x2md/` 下即可——x2md 是纯 Python 脚本，零编译：
+
+```bash
+git clone --depth 1 https://github.com/UnknowCao/autoskill-hub.git
+cp -r autoskill-hub/skills/x2md ~/.claude/skills/x2md   # 或你的 agent skills 目录
+```
 
 ### Python 依赖
 
