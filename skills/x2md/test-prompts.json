@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "scenario": "default_pipeline_single_docx_conversion",
+    "prompt": "把这个 技术方案.docx 转成 markdown。",
+    "expected": "`_convert_core.py` 单文件入口 → 3 阶段管道 → 输出 .md 含 metadata 头 + 公式修 + 表格检测 → exit 0 则一行总结 'converted'。",
+    "assert_criteria": [
+      "入口选 _convert_core.py（单文件），非 batch/dynamic",
+      "输出 .md 首部含 '# ' 标题、**Source**:、**Format**:、--- 分隔符",
+      "$...$ 内无 \\* / \\_ / \\^ 逃逸",
+      "一行总结，不逐表询问",
+      "表格无错误的文件 exit 0"
+    ],
+    "rubric_dim": "dim8 全管道 happy-path — 转换忠实性"
+  },
+  {
+    "id": 2,
+    "scenario": "encrypted_file_keyring_routing",
+    "prompt": "转换这个加密 docx：S06_protected.docx",
+    "expected": "识别加密 → keyring(service='x2md', name='S06_protected') 取密码 → None 则给一行 keyring.set_password 命令 → 密码到位后转换 → 一行总结。",
+    "assert_criteria": [
+      "走 keyring(name=file_stem)，非 cmdkey/Credential Manager GUI",
+      "缺失凭证时给 keyring.set_password 一行命令，不弹 CredUI",
+      "agent 不在对话里复述/请求明文密码",
+      "转换完成给一行总结"
+    ],
+    "rubric_dim": "dim3 加密失败分支 + dim9 Do-NOT #2 #3"
+  },
+  {
+    "id": 3,
+    "scenario": "xlsx_formula_eval_no_NaN",
+    "prompt": "这个 budget_formulas.xlsx 转成 markdown，公式列别出 NaN。",
+    "expected": "提前检查 formulas 库 → 可用则 `_xlsx_formula_eval` 写回 `<v>` → 转换 → 输出表格无 NaN。不可用则 🔴 STOP 提示 pip install formulas。一行总结。",
+    "assert_criteria": [
+      "转换前先调 _xlsx_formula_eval 写回 <v> 缓存值",
+      "输出 .md 表格单元不出现 NaN",
+      "formulas 库缺失则明确 STOP/提示 pip install，不静默吐 NaN",
+      "一行总结"
+    ],
+    "rubric_dim": "dim8 XLSX formula eval C-4 防回归"
+  }
+]

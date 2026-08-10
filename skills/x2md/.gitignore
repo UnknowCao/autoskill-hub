@@ -1,0 +1,48 @@
+# markitdown-enhanced — files NEVER committed
+# Sources: tests/output/ (regenerable), __pycache__/, OS/IDE clutter, secrets
+
+# ── Test output (regenerable by running tests/generate_samples.py + converter) ──
+tests/output/*.md
+tests/output/*.md.errors.md
+tests/output/_live_*
+tests/output/_diag_*
+
+# ── Python caches ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ── venv / virtualenvs (never commit a local interpreter) ──
+.venv/
+venv/
+env/
+.env
+
+# ── IDE / editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Secrets — NEVER commit credentials, tokens, decrypted files ──
+*.key
+*.pem
+*.p12
+*.pfx
+.__dec_*          # batch_convert_dynamic pre-decrypted temp files
+.env
+.env.local
+
+# ── Logs / scratch ──
+*.log
+.sidecars.txt
+_peer_*.json
+_diag_*.py
+_luban_*

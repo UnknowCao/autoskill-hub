@@ -1,0 +1,45 @@
+// ============================================================================
+// batch_convert_dynamic.py — VS Code task template (copy-paste-ready)
+// ============================================================================
+// HOW THE AGENT USES THIS FILE (see SKILL.md "Dynamic batch" section):
+//   1. Read this file.
+//   2. Replace these 5 placeholders (search-and-replace, case-sensitive):
+//        <LABEL>        -> auto timestamp label, e.g.  x2md-dyn-20260806-1117
+//        <SOURCE>       --> --source value (dir | list.json | list.txt)
+//        <OUTDIR>       --> --outdir value (output markdown directory)
+//        <WORKERS>      --> --workers value (e.g. "13"; lower for slow hosts)
+//        <TIMEOUT_MULT> --> --timeout-mult value (e.g. "1" normal, "2" slow host)
+//   3. Pass the resulting object to create_and_run_task.
+//   4. Poll progress with get_task_output using the <LABEL> you chose.
+//
+// The python.exe / script paths / "type" / "isBackground" / heavy-max are
+// FROZEN here on purpose — they are the error-prone parts and rarely change.
+// Do NOT add new args without updating SKILL.md to match.
+//
+// Environment assumption (verify once per workspace):
+//   venv python at <workspace>/.venv/Scripts/python.exe
+//   If your workspace puts the venv elsewhere, edit PYTHON below OR, better,
+//   keep this path as-is and override via the agent's configured interpreter.
+// ============================================================================
+
+{
+  "label": "<LABEL>",
+  "type": "shell",
+  "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "args": [
+    "${workspaceFolder}/.github/skills/x2md/scripts/batch_convert_dynamic.py",
+    "--source", "<SOURCE>",
+    "--outdir", "<OUTDIR>",
+    "--recursive",                 // optional: directory mode only; remove for list mode
+    "--workers", "<WORKERS>",
+    "--heavy-max", "3",                // FROZEN: do not change (tuned for typical sets)
+    "--timeout-mult", "<TIMEOUT_MULT>"
+    // "--no-table-detect"          // optional: skip sidecar generation
+    // "--no-metadata"              // optional: skip the # title / Source / Format header
+    // "--no-prompt"                // optional: CI/agent-safe (keyring only)
+    // "--no-predecrypt"            // optional: speed opt when no encrypted files
+    // "--keep-temp"                // optional: keep .__dec_* temp files after run (debug)
+  ],
+  "isBackground": true,            // REQUIRED: keeps the long-running job out of the foreground
+  "problemMatcher": []
+}
