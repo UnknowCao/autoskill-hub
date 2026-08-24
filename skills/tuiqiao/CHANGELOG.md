@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-08-24
+
+### 修改
+
+- README：撤下 skills.sh 安装徽章（注册表搜索索引尚未收录本 skill，徽章渲染为 invalid，挂着比没有难看）。为什么：skills.sh 对 autoskill-hub 仓库的爬取快照早于本 skill 推送（8-20），索引更新节奏由 skills.sh 控制；待索引生效后按 README 内注释放回。
+
 ## 2026-08-20
 
 ### 新增

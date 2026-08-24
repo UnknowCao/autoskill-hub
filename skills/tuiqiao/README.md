@@ -6,7 +6,9 @@
 
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-tuiqiao-blueviolet)](SKILL.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<!-- skills.sh 徽章待注册表索引生效后放回（未索引时渲染为 invalid）：
 [![skills.sh](https://skills.sh/b/UnknowCao/autoskill-hub/tuiqiao)](https://skills.sh/UnknowCao/autoskill-hub/tuiqiao)
+-->
 
 **把「一个字也要掂量」的中文母语编辑，做成可执行、可验收、能换八位作者声线的去 AI 味 skill。**
 
